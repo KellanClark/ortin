@@ -1,0 +1,90 @@
+name: CMake
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+      with:
+        submodules: true
+
+    - name: Setup dependencies
+      run: |
+        sudo apt-get update -y -qq
+        sudo apt-get install libgtk-3-dev
+        sudo apt-get install libsdl2-dev
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    
+    - name: Create Archive
+      run: |
+        mkdir upload
+        mv build/ortin upload/
+        mv LICENSE upload/
+        cd upload
+        tar -cavf ../ortin_linux.zip *
+        tar -cavf ../ortin_linux.tar.gz *
+        cd ..
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: "latest"
+        prerelease: true
+        name: "Development Build"
+        files: |
+          ortin_linux.zip
+          ortin_linux.tar.gz
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@master
+      with:
+        submodules: true
+
+    - name: Setup dependencies
+      run: |
+        vcpkg install sdl2:x64-windows
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -T clangcl -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Create Archive
+      run: |
+        mkdir upload
+        mv build/Release/ortin.exe upload/
+        mv build/Release/SDL2.dll upload/
+        mv LICENSE upload/
+        cd upload
+        tar -cavf ../ortin_windows.zip *
+        cd ..
+
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: "latest"
+        prerelease: true
+        name: "Development Build"
+        files: |
+          ortin_windows.zip

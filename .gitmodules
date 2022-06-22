@@ -1,0 +1,18 @@
+[submodule "modules/emulator-common"]
+	path = include/emulator-common
+	url = git@github.com:KellanClark/emulator-common.git
+[submodule "modules/imgui"]
+	path = modules/imgui
+	url = https://github.com/ocornut/imgui.git
+[submodule "modules/imgui_club"]
+	path = modules/imgui_club
+	url = https://github.com/ocornut/imgui_club.git
+[submodule "modules/nativefiledialog-extended"]
+	path = modules/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended.git
+[submodule "modules/fmt"]
+	path = modules/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "mio"]
+	path = modules/mio
+	url = https://github.com/StrikerX3/mio.git
