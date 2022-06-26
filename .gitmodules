@@ -1,5 +1,5 @@
 [submodule "modules/emulator-common"]
-	path = modules/emulator-common
+	path = include/emulator-common
 	url = git@github.com:KellanClark/emulator-common.git
 [submodule "modules/imgui"]
 	path = modules/imgui
@@ -13,3 +13,6 @@
 [submodule "modules/mio"]
 	path = modules/mio
 	url = https://github.com/mandreyel/mio.git
+[submodule "modules/fmt"]
+	path = modules/fmt
+	url = https://github.com/fmtlib/fmt.git

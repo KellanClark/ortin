@@ -20,8 +20,7 @@ include_directories(
 	modules/imgui_club/imgui_memory_editor/
 
 	include/
-	modules/emulator-common/
-	modules/emulator-common/arm7tdmi/
+	include/emulator-common/
 )
 
 add_executable(Ortin
@@ -33,7 +32,15 @@ add_executable(Ortin
 	modules/imgui/backends/imgui_impl_sdl.cpp
 	modules/imgui/backends/imgui_impl_opengl3.cpp
 
+	src/ortin.cpp
 	src/main.cpp
+	src/menus/file.cpp
+	src/menus/dev.cpp
+
+	src/nds.cpp
+	src/busshared.cpp
+	src/busarm9.cpp
+	src/busarm7.cpp
 )
 
 target_compile_definitions(fmt PUBLIC FMT_EXCEPTIONS=0)
@@ -52,7 +59,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIA
 		#-fstack-protector-all
 		#-fsanitize=undefined
 		#-fsanitize=thread
-		)
+	)
 
 	target_link_libraries(Ortin PRIVATE
 		SDL2::SDL2
@@ -68,7 +75,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIA
 		#-fstack-protector-all
 		#-fsanitize=undefined
 		#-fsanitize=thread
-		)
+	)
 else()
 	target_compile_options(Ortin PRIVATE
 		-ftemplate-depth=5000
@@ -83,7 +90,7 @@ else()
 		#-fstack-protector-all
 		#-fsanitize=undefined
 		#-fsanitize=thread
-		)
+	)
 
 	target_link_libraries(Ortin PRIVATE
 		SDL2::SDL2
@@ -103,5 +110,5 @@ else()
 		#-fstack-protector-all
 		#-fsanitize=undefined
 		#-fsanitize=thread
-		)
+	)
 endif()
