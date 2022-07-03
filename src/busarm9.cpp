@@ -10,10 +10,18 @@ static constexpr u32 toAddress(u32 page) {
 }
 
 BusARM9::BusARM9(BusShared &shared, PPU &ppu, std::stringstream &log) : cpu(*this), shared(shared), log(log), ppu(ppu) {
+	itcm = new u8[0x8000]; // 32KB TODO: Move this to the ARM9
+
 	// Fill page tables
 	memset(&readTable, 0, sizeof(readTable));
 	memset(&readTable8, 0, sizeof(readTable8));
 	memset(&writeTable, 0, sizeof(writeTable));
+
+	// ITCM (32KB mirrored 0x0000000 - 0x1FFFFFF)
+	for (int i = 0; i < toPage(0x2000000); i += 2) {
+		readTable[i] = readTable8[i] = writeTable[i] = itcm;
+		readTable[i + 1] = readTable8[i + 1] = writeTable[i + 1] = itcm + 0x4000;
+	}
 
 	// PSRAM/Main Memory (4MB mirrored 0x2000000 - 0x3000000)
 	for (int i = toPage(0x2000000); i < toPage(0x3000000); i++) {
@@ -22,11 +30,12 @@ BusARM9::BusARM9(BusShared &shared, PPU &ppu, std::stringstream &log) : cpu(*thi
 }
 
 BusARM9::~BusARM9() {
-	//
+	delete[] itcm;
 }
 
 void BusARM9::reset() {
 	log.str("");
+	delay = 0;
 
 	cpu.resetARM946E();
 }
@@ -85,7 +94,7 @@ void BusARM9::hacf() {
 }
 
 template <typename T, bool code>
-u32 BusARM9::read(u32 address, bool sequential) {
+T BusARM9::read(u32 address, bool sequential) {
 	u32 alignedAddress = address & ~(sizeof(T) - 1);
 	u32 page = toPage(alignedAddress & 0x0FFFFFFF);
 	u32 offset = alignedAddress & 0x3FFF;
@@ -97,7 +106,7 @@ u32 BusARM9::read(u32 address, bool sequential) {
 		ptr = readTable[page];
 	}
 
-	u32 val = 0;
+	T val = 0;
 	if ((address < 0x10000000) && (ptr != NULL)) { [[likely]]
 		memcpy(&val, ptr + offset, sizeof(T));
 	} else {
@@ -123,9 +132,9 @@ u32 BusARM9::read(u32 address, bool sequential) {
 
 	return val;
 }
-template u32 BusARM9::read<u8, false>(u32, bool);
-template u32 BusARM9::read<u16, true>(u32, bool);
-template u32 BusARM9::read<u16, false>(u32, bool);
+template u8 BusARM9::read<u8, false>(u32, bool);
+template u16 BusARM9::read<u16, true>(u32, bool);
+template u16 BusARM9::read<u16, false>(u32, bool);
 template u32 BusARM9::read<u32, true>(u32, bool);
 template u32 BusARM9::read<u32, false>(u32, bool);
 
@@ -169,9 +178,13 @@ void BusARM9::iCycle(int cycles) {
 
 u8 BusARM9::readIO(u32 address) {
 	switch (address) {
+	case 0x4000130 ... 0x4000137:
+		return shared.readIO9(address);
+
 	case 0x4000000 ... 0x400006F:
 	case 0x4000304 ... 0x4000307:
 		return ppu.readIO9(address);
+
 	default:
 		log << fmt::format("[ARM9 Bus] Read from unknown IO register 0x{:0>8X}\n", address);
 		return 0;
@@ -180,13 +193,74 @@ u8 BusARM9::readIO(u32 address) {
 
 void BusARM9::writeIO(u32 address, u8 value) {
 	switch (address) {
+	case 0x4000130 ... 0x4000137:
+		shared.writeIO9(address, value);
+		break;
+
 	case 0x4000000 ... 0x400006F:
 	case 0x4000240 ... 0x4000249:
 	case 0x4000304 ... 0x4000307:
 		ppu.writeIO9(address, value);
 		break;
+
 	default:
 		log << fmt::format("[ARM9 Bus] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
 		break;
+	}
+}
+
+u32 BusARM9::coprocessorRead(u32 copNum, u32 copOpc, u32 copSrcDestReg, u32 copOpReg, u32 copOpcType) {
+	if (copNum != 15) {
+		log << "Invalid coprocessor: p" << copNum << "\n";
+		hacf();
+		return 0;
+	}
+	if (copOpc != 0) {
+		log << "Invalid coprocessor opcode: " << copOpc << "\n";
+		hacf();
+		return 0;
+	}
+
+	switch (copSrcDestReg) {
+	case 0: // ID Codes
+		if (copOpReg != 0) {
+			log << "Invalid coprocessor operand register: c0,c" << copOpReg << "\n";
+			hacf();
+			return 0;
+		}
+
+		switch (copOpcType) {
+		default:
+		case 0: // Main ID Register
+			return 0x41059461;
+		case 1: // Cache Type Register
+			return 0x0F0D2112;
+		case 2: // Tightly Coupled Memory Size Register
+			return 0x00140180;
+		}
+	default:
+		log << "Unknown coprocessor source/destination register: c" << copSrcDestReg << "\n";
+		hacf();
+		return 0;
+	}
+}
+
+void BusARM9::coprocessorWrite(u32 copNum, u32 copOpc, u32 copSrcDestReg, u32 copOpReg, u32 copOpcType, u32 value) {
+	if (copNum != 15) {
+		log << "Invalid coprocessor: p" << copNum << "\n";
+		hacf();
+		return;
+	}
+	if (copOpc != 0) {
+		log << "Invalid coprocessor opcode: " << copOpc << "\n";
+		hacf();
+		return;
+	}
+
+	switch (copSrcDestReg) {
+	default:
+		log << "Unknown coprocessor source/destination register: c" << copSrcDestReg << "\n";
+		hacf();
+		return;
 	}
 }

@@ -19,15 +19,19 @@ private:
 	bool showArm7Debug;
 	bool showMemEditor9;
 	bool showMemEditor7;
+	bool showIoReg9;
+	bool showIoReg7;
 
 	void logsWindow();
 	void arm9DebugWindow();
 	void arm7DebugWindow();
 	void memEditor9Window();
 	void memEditor7Window();
+	void ioReg9Window();
+	void ioReg7Window();
 
-	ARM946EDisassembler arm9disasm;
-	ARM7TDMIDisassembler arm7disasm;
+	ARM946EDisassembler arm9disasm{};
+	ARM7TDMIDisassembler arm7disasm{};
 };
 
 #endif //ORTIN_MENU_DEBUG_HPP

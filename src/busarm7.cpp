@@ -19,12 +19,12 @@ BusARM7::BusARM7(BusShared &shared, PPU &ppu, std::stringstream &log) : cpu(*thi
 
 	// PSRAM/Main Memory (4MB mirrored 0x2000000 - 0x3000000)
 	for (int i = toPage(0x2000000); i < toPage(0x3000000); i++) {
-		readTable[i] = writeTable[i] = shared.psram + ((toAddress(i) - 0x2000000)) % 0x400000;
+		readTable[i] = writeTable[i] = shared.psram + (((toAddress(i) - 0x2000000)) % 0x400000);
 	}
 
 	// ARM7 WRAM (64KB mirrored 0x3800000 - 0x4000000)
 	for (int i = toPage(0x3800000); i < toPage(0x4000000); i++) {
-		readTable[i] = writeTable[i] = wram + ((toAddress(i) - 0x3800000)) % 0x10000;
+		readTable[i] = writeTable[i] = wram + (((toAddress(i) - 0x3800000)) % 0x10000);
 	}
 }
 
@@ -34,6 +34,7 @@ BusARM7::~BusARM7() {
 
 void BusARM7::reset() {
 	log.str("");
+	delay = 0;
 
 	cpu.resetARM7TDMI();
 }
@@ -43,13 +44,15 @@ void BusARM7::hacf() {
 }
 
 template <typename T, bool code>
-u32 BusARM7::read(u32 address, bool sequential) {
+T BusARM7::read(u32 address, bool sequential) {
 	u32 alignedAddress = address & ~(sizeof(T) - 1);
 	u32 page = toPage(alignedAddress & 0x0FFFFFFF);
 	u32 offset = alignedAddress & 0x3FFF;
-	u8 *ptr = readTable[page];
-	u32 val = 0;
 
+	delay += 2;
+
+	u8 *ptr = readTable[page];
+	T val = 0;
 	if ((address < 0x10000000) && (ptr != NULL)) { [[likely]]
 		memcpy(&val, ptr + offset, sizeof(T));
 	} else {
@@ -75,9 +78,9 @@ u32 BusARM7::read(u32 address, bool sequential) {
 
 	return val;
 }
-template u32 BusARM7::read<u8, false>(u32, bool);
-template u32 BusARM7::read<u16, true>(u32, bool);
-template u32 BusARM7::read<u16, false>(u32, bool);
+template u8 BusARM7::read<u8, false>(u32, bool);
+template u16 BusARM7::read<u16, true>(u32, bool);
+template u16 BusARM7::read<u16, false>(u32, bool);
 template u32 BusARM7::read<u32, true>(u32, bool);
 template u32 BusARM7::read<u32, false>(u32, bool);
 
@@ -86,8 +89,10 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 	u32 alignedAddress = address & ~(sizeof(T) - 1);
 	u32 page = toPage(alignedAddress & 0x0FFFFFFF);
 	u32 offset = alignedAddress & 0x3FFF;
-	u8 *ptr = readTable[page];
 
+	delay += 2;
+
+	u8 *ptr = writeTable[page];
 	if ((address < 0x10000000) && (ptr != NULL)) { [[likely]]
 		memcpy(ptr + offset, &value, sizeof(T));
 	} else {
@@ -116,14 +121,14 @@ template void BusARM7::write<u16>(u32, u16, bool);
 template void BusARM7::write<u32>(u32, u32, bool);
 
 void BusARM7::iCycle(int cycles) {
-	//
+	delay += cycles * 2;
 }
 
 u8 BusARM7::readIO(u32 address) {
 	switch (address) {
-	/*case 0x4000304 ... 0x4000307:
-		ppu.readIO7(address);
-		break;*/
+	case 0x4000130 ... 0x4000137:
+		return shared.readIO7(address);
+
 	default:
 		log << fmt::format("[ARM7 Bus] Read from unknown IO register 0x{:0>8X}\n", address);
 		return 0;
@@ -132,9 +137,14 @@ u8 BusARM7::readIO(u32 address) {
 
 void BusARM7::writeIO(u32 address, u8 value) {
 	switch (address) {
+	case 0x4000130 ... 0x4000137:
+		shared.writeIO9(address, value);
+		break;
+
 	/*case 0x4000304 ... 0x4000307:
 		ppu.writeIO7(address, value);
 		break;*/
+
 	default:
 		log << fmt::format("[ARM7 Bus] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
 		break;

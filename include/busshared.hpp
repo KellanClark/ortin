@@ -16,11 +16,21 @@ enum EventType {
 // It's a catch-all for shared memory, I/O registers, and other things that either don't warrant their own class or need to be seen by everything.
 class BusShared {
 public:
-	BusShared();
+	u8 *psram;
+	std::stringstream& log;
+
+	BusShared(std::stringstream &log);
 	~BusShared();
 	void reset();
 
-	u8 *psram;
+	u8 readIO9(u32 address);
+	void writeIO9(u32 address, u8 value);
+	u8 readIO7(u32 address);
+	void writeIO7(u32 address, u8 value);
+
+	u16 KEYINPUT; // 0x4000130
+	u16 KEYCNT; // 0x4000132
+	u16 EXTKEYIN; // NDS7 - 0x4000136
 
 	// For the scheduler
 	struct Event {

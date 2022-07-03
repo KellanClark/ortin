@@ -1,7 +1,7 @@
 
 #include "nds.hpp"
 
-NDS::NDS() : ppu(shared, log), nds9(shared, ppu, log), nds7(shared, ppu, log) {
+NDS::NDS() : shared(log), ppu(shared, log), nds9(shared, ppu, log), nds7(shared, ppu, log) {
 	//
 }
 
@@ -30,13 +30,14 @@ void NDS::reset() {
 }
 
 void NDS::run() {
-	std::cout << "Hi from thread!" << std::endl;
-
 	while (true) {
 		while (running) { [[likely]]
-			nds9.cpu.cycle();
-			nds9.cpu.cycle();
-			nds7.cpu.cycle();
+			if (--nds9.delay <= 0) {
+				nds9.cpu.cycle();
+				nds9.delay = 1;
+			}
+			if (--nds7.delay <= 0)
+				nds7.cpu.cycle();
 
 			while (shared.eventQueue.top().timeStamp <= shared.currentTime) {
 				auto type = shared.eventQueue.top().type;
@@ -50,6 +51,9 @@ void NDS::run() {
 					break;
 				case EventType::PPU_LINE_START:
 					ppu.lineStart();
+
+					if (ppu.currentScanline == 0)
+						handleThreadQueue();
 					break;
 				case EventType::PPU_HBLANK:
 					ppu.hBlank();
@@ -60,7 +64,7 @@ void NDS::run() {
 				}
 			}
 
-			shared.currentTime += 2;
+			++shared.currentTime;
 		}
 
 		handleThreadQueue();
@@ -84,6 +88,14 @@ void NDS::handleThreadQueue() {
 		case RESET:
 			reset();
 			break;
+		case STEP_ARM9:
+			running = true;
+			shared.addEvent(nds9.delay - 1, EventType::STOP);
+			break;
+		case STEP_ARM7:
+			running = true;
+			shared.addEvent(nds7.delay - 1, EventType::STOP);
+			break;
 		/*case LOAD_BIOS:
 			if (loadBios(*(std::filesystem::path *)currentEvent.ptrArg)) {
 				threadQueue = {};
@@ -95,8 +107,11 @@ void NDS::handleThreadQueue() {
 			}
 			break;
 		case CLEAR_LOG:
-			nds9.log.str("");
-			nds7.log.str("");
+			log.str("");
+			break;
+		case UPDATE_KEYS:
+			shared.KEYINPUT = ~currentEvent.intArg & 0x03FF;
+			shared.EXTKEYIN = ((~currentEvent.intArg >> 10) & 0x0003) | 0x007C;
 			break;
 		default:
 			printf("Unknown thread event:  %d\n", currentEvent.type);

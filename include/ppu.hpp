@@ -142,7 +142,7 @@ public:
 			u8 : 4;
 			u8 vramHEnable : 1;
 		};
-		u8 VRAMCNT_H; // NDS9 - 0x4000247
+		u8 VRAMCNT_H; // NDS9 - 0x4000248
 	};
 
 	union {
@@ -151,7 +151,7 @@ public:
 			u8 : 4;
 			u8 vramIEnable : 1;
 		};
-		u8 VRAMCNT_I; // NDS9 - 0x4000248
+		u8 VRAMCNT_I; // NDS9 - 0x4000249
 	};
 
 	union {

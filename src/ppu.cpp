@@ -204,12 +204,12 @@ void PPU::writeIO9(u32 address, u8 value) {
 
 		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
-	case 0x4000247:
+	case 0x4000248:
 		VRAMCNT_H = value & 0x83;
 
 		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
-	case 0x4000248:
+	case 0x4000249:
 		VRAMCNT_I = value & 0x83;
 
 		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);

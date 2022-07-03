@@ -50,10 +50,13 @@ public:
 		STOP,
 		START,
 		RESET,
+		STEP_ARM9,
+		STEP_ARM7,
 		LOAD_BIOS_ARM9,
 		LOAD_BIOS_ARM7,
 		LOAD_ROM,
-		CLEAR_LOG
+		CLEAR_LOG,
+		UPDATE_KEYS
 	};
 	struct threadEvent {
 		threadEventType type;

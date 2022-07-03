@@ -25,11 +25,12 @@ public:
 	void reset();
 
 	// For CPU and memory
+	i64 delay;
 	u8 *readTable[0x4000];
 	u8 *writeTable[0x4000];
 
 	void hacf();
-	template <typename T, bool code> u32 read(u32 address, bool sequential);
+	template <typename T, bool code> T read(u32 address, bool sequential);
 	template <typename T> void write(u32 address, T value, bool sequential);
 	void iCycle(int cycles);
 
