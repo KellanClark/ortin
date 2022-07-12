@@ -39,6 +39,45 @@ void BusARM7::reset() {
 	cpu.resetARM7TDMI();
 }
 
+void BusARM7::refreshWramPages() {
+	// Set the first two pages in one table
+	switch (shared.WRAMCNT) { // > ARM9/ARM7 (0-3 = 32K/0K, 2nd 16K/1st 16K, 1st 16K/2nd 16K, 0K/32K)
+	case 0:
+		readTable[toPage(0x3000000)] = wram + 0x0000;
+		readTable[toPage(0x3004000)] = wram + 0x4000;
+		readTable[toPage(0x3008000)] = wram + 0x8000;
+		readTable[toPage(0x300C000)] = wram + 0xC000;
+		break;
+	case 1:
+		readTable[toPage(0x3000000)] = shared.wram;
+		readTable[toPage(0x3004000)] = shared.wram;
+		readTable[toPage(0x3008000)] = shared.wram;
+		readTable[toPage(0x300C000)] = shared.wram;
+		break;
+	case 2:
+		readTable[toPage(0x3000000)] = shared.wram + 0x4000;
+		readTable[toPage(0x3004000)] = shared.wram + 0x4000;
+		readTable[toPage(0x3008000)] = shared.wram + 0x4000;
+		readTable[toPage(0x300C000)] = shared.wram + 0x4000;
+		break;
+	case 3:
+		readTable[toPage(0x3000000)] = shared.wram;
+		readTable[toPage(0x3004000)] = shared.wram + 0x4000;
+		readTable[toPage(0x3008000)] = shared.wram;
+		readTable[toPage(0x300C000)] = shared.wram + 0x4000;
+		break;
+	}
+
+	// Mirror it across the full 16MB in all tables
+	for (int i = toPage(0x3000000); i < toPage(0x3800000); i += 4) {
+		readTable[i] = writeTable[i] = readTable[toPage(0x3000000)];
+		readTable[i + 1] = writeTable[i + 1] = readTable[toPage(0x3004000)];
+		readTable[i + 2] = writeTable[i + 2] = readTable[toPage(0x3004000)];
+		readTable[i + 3] = writeTable[i + 3] = readTable[toPage(0x3008000)];
+		readTable[i + 4] = writeTable[i + 4] = readTable[toPage(0x300C000)];
+	}
+}
+
 void BusARM7::hacf() {
 	shared.addEvent(0, EventType::STOP);
 }

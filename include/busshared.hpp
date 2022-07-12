@@ -9,6 +9,7 @@ enum EventType {
 	STOP,
 	PPU_LINE_START,
 	PPU_HBLANK,
+	REFRESH_WRAM_PAGES,
 	REFRESH_VRAM_PAGES
 };
 
@@ -17,6 +18,7 @@ enum EventType {
 class BusShared {
 public:
 	u8 *psram;
+	u8 *wram;
 	std::stringstream& log;
 
 	BusShared(std::stringstream &log);
@@ -31,6 +33,7 @@ public:
 	u16 KEYINPUT; // 0x4000130
 	u16 KEYCNT; // 0x4000132
 	u16 EXTKEYIN; // NDS7 - 0x4000136
+	u8 WRAMCNT; // NDS9 - 0x4000247 aka. WRAMSTAT NDS7 - 0x4000241
 
 	// For the scheduler
 	struct Event {

@@ -40,6 +40,34 @@ void BusARM9::reset() {
 	cpu.resetARM946E();
 }
 
+void BusARM9::refreshWramPages() {
+	// Set the first two pages in one table
+	switch (shared.WRAMCNT) { // > ARM9/ARM7 (0-3 = 32K/0K, 2nd 16K/1st 16K, 1st 16K/2nd 16K, 0K/32K)
+	case 0:
+		readTable[toPage(0x3000000)] = shared.wram;
+		readTable[toPage(0x3004000)] = shared.wram + 0x4000;
+		break;
+	case 1:
+		readTable[toPage(0x3000000)] = shared.wram + 0x4000;
+		readTable[toPage(0x3004000)] = shared.wram + 0x4000;
+		break;
+	case 2:
+		readTable[toPage(0x3000000)] = shared.wram;
+		readTable[toPage(0x3004000)] = shared.wram;
+		break;
+	case 3:
+		readTable[toPage(0x3000000)] = NULL;
+		readTable[toPage(0x3004000)] = NULL;
+		break;
+	}
+
+	// Mirror it across the full 16MB in all tables
+	for (int i = toPage(0x3000000); i < toPage(0x4000000); i += 2) {
+		readTable[i] = readTable8[i] = writeTable[i] = readTable[toPage(0x3000000)];
+		readTable[i + 1] = readTable8[i + 1] = writeTable[i + 1] = readTable[toPage(0x3004000)];
+	}
+}
+
 void BusARM9::refreshVramPages() {
 	// Clear the VRAM section of the table
 	for (int i = toPage(0x6000000); i < toPage(0x7000000); i++)
@@ -194,11 +222,14 @@ u8 BusARM9::readIO(u32 address) {
 void BusARM9::writeIO(u32 address, u8 value) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
+	case 0x4000247:
 		shared.writeIO9(address, value);
 		break;
 
 	case 0x4000000 ... 0x400006F:
-	case 0x4000240 ... 0x4000249:
+	case 0x4000240 ... 0x4000246:
+	case 0x4000248:
+	case 0x4000249:
 	case 0x4000304 ... 0x4000307:
 		ppu.writeIO9(address, value);
 		break;

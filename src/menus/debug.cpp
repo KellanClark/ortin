@@ -635,7 +635,7 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 13> registers9 = {{
+static const std::array<IoRegister, 14> registers9 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){{"V-Blank", 0, 1, CHECKBOX}, {"H-Blank", 1, 1, CHECKBOX}, {"VCOUNT Compare Status", 2, 1, CHECKBOX}, {"V-Blank IRQ", 3, 1, CHECKBOX}, {"H-Blank IRQ", 4, 1, CHECKBOX}, {"VCOUNT Compare IRQ", 5, 1, CHECKBOX}, {"VCOUNT Compare Value", 7, 9, SPECIAL}}},
 	{"VCOUNT", "Shows the Current Scanline", 0x4000006, 2, true, false, 1, (IoField[]){{"Current Scanline", 0, 9}}},
 	{"KEYINPUT", "Currently Pressed Keys (Inverted)", 0x4000130, 2, true, false, 10, (IoField[]){{"A", 0, 1, CHECKBOX}, {"B", 1, 1, CHECKBOX}, {"Select", 2, 1, CHECKBOX}, {"Start", 3, 1, CHECKBOX}, {"Right", 4, 1, CHECKBOX}, {"Left", 5, 1, CHECKBOX}, {"Up", 6, 1, CHECKBOX}, {"Down", 7, 1, CHECKBOX}, {"R", 8, 1, CHECKBOX}, {"L", 9, 1, CHECKBOX}}},
@@ -647,12 +647,13 @@ static const std::array<IoRegister, 13> registers9 = {{
 	{"VRAMCNT_E", "VRAM Bank E Control", 0x4000244, 1, false, true, 2, (IoField[]){{"MST", 0, 3, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
 	{"VRAMCNT_F", "VRAM Bank F Control", 0x4000245, 1, false, true, 3, (IoField[]){{"MST", 0, 3, TEXT_BOX}, {"Offset", 3, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
 	{"VRAMCNT_G", "VRAM Bank G Control", 0x4000246, 1, false, true, 3, (IoField[]){{"MST", 0, 3, TEXT_BOX}, {"Offset", 3, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
+	{"WRAMCNT",	"Shared WRAM Control", 0x4000247, 1, true, true, 1, (IoField[]){{"Mapping", 0, 2, SPECIAL}}},
 	{"VRAMCNT_H", "VRAM Bank D Control", 0x4000248, 1, false, true, 2, (IoField[]){{"MST", 0, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
 	{"VRAMCNT_I", "VRAM Bank D Control", 0x4000249, 1, false, true, 2, (IoField[]){{"MST", 0, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 13> registerPointers9 = {
+	static std::array<void *, 14> registerPointers9 = {
 		&ortin.nds.ppu.DISPSTAT,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.shared.KEYINPUT,
@@ -664,6 +665,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 		&ortin.nds.ppu.VRAMCNT_E,
 		&ortin.nds.ppu.VRAMCNT_F,
 		&ortin.nds.ppu.VRAMCNT_G,
+		&ortin.nds.shared.WRAMCNT,
 		&ortin.nds.ppu.VRAMCNT_H,
 		&ortin.nds.ppu.VRAMCNT_I
 	};
@@ -732,10 +734,14 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 					fValue = numberInput(((std::string)field.name).c_str(), false, (fValue >> 1) | ((fValue & 1) << 8), mask >> field.startBit);
 					fValue = ((fValue & 0xFF) << 1) | (fValue >> 8);
 					break;
-				case 0x4000132: // KEYCNT
+				case 0x4000132: { // KEYCNT
 					const char *items[] = {"OR Mode", "AND Mode"};
 					ImGui::Combo("combo", (int *)&fValue, items, 2);
-					break;
+					} break;
+				case 0x4000247: { // WAITCNT
+					const char *items[] = {"Full 32KB", "Top 16KB", "Bottom 16KB", "Unmapped"};
+					ImGui::Combo("combo", (int *)&fValue, items, 4);
+					} break;
 				}
 				break;
 			}

@@ -17,6 +17,10 @@ void NDS::reset() {
 	nds9.reset();
 	nds7.reset();
 
+	nds9.refreshWramPages();
+	nds7.refreshWramPages();
+	nds9.refreshVramPages();
+
 	// Copy entry points into memory
 	for (int i = 0; i < romInfo.arm9CopySize; i++)
 		nds9.write<u8>(romInfo.arm9CopyDestination + i, romMap[romInfo.arm9RomOffset + i], false);
@@ -57,6 +61,10 @@ void NDS::run() {
 					break;
 				case EventType::PPU_HBLANK:
 					ppu.hBlank();
+					break;
+				case EventType::REFRESH_WRAM_PAGES:
+					nds9.refreshWramPages();
+					nds7.refreshWramPages();
 					break;
 				case EventType::REFRESH_VRAM_PAGES:
 					nds9.refreshVramPages();

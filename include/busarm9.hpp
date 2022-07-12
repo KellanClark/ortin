@@ -30,6 +30,7 @@ public:
 	u8 *readTable8[0x4000];
 	u8 *writeTable[0x4000];
 
+	void refreshWramPages();
 	void refreshVramPages();
 
 	void hacf();

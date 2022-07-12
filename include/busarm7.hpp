@@ -29,6 +29,8 @@ public:
 	u8 *readTable[0x4000];
 	u8 *writeTable[0x4000];
 
+	void refreshWramPages();
+
 	void hacf();
 	template <typename T, bool code> T read(u32 address, bool sequential);
 	template <typename T> void write(u32 address, T value, bool sequential);
