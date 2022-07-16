@@ -4,26 +4,35 @@
 
 #include "types.hpp"
 #include "busshared.hpp"
+#include "ipc.hpp"
 #include "ppu.hpp"
-#include "busarm9.hpp"
-#include "busarm7.hpp"
+#include "emulator/nds9/busarm9.hpp"
+#include "emulator/nds7/busarm7.hpp"
+#include "arm946e/arm946edisasm.hpp"
+#include "arm7tdmi/arm7tdmidisasm.hpp"
 
 #include <filesystem>
 #include <mutex>
 #include <system_error>
 
-#include <mio/mmap.hpp>
+#include "mio/mmap.hpp"
 
 class NDS {
 public:
 	BusShared shared;
+	IPC ipc;
 	PPU ppu;
 	BusARM9 nds9;
 	BusARM7 nds7;
 	std::stringstream log;
+	ARM946EDisassembler disassembler9;
+	ARM7TDMIDisassembler disassembler7;
 
 	struct {
+		bool romLoaded, bios9Loaded, bios7Loaded;
 		std::filesystem::path filePath;
+		std::filesystem::path bios9FilePath;
+		std::filesystem::path bios7FilePath;
 
 		std::string name; // 12 bytes - 0x000
 		u8 version; // 1 byte - 0x01E
@@ -52,9 +61,9 @@ public:
 		RESET,
 		STEP_ARM9,
 		STEP_ARM7,
-		LOAD_BIOS_ARM9,
-		LOAD_BIOS_ARM7,
 		LOAD_ROM,
+		LOAD_BIOS9,
+		LOAD_BIOS7,
 		CLEAR_LOG,
 		UPDATE_KEYS
 	};
@@ -73,7 +82,11 @@ public:
 
 	bool running;
 	mio::mmap_source romMap;
-	int loadRom(std::filesystem::path romFilePath_);
+	mio::mmap_source bios9Map;
+	mio::mmap_source bios7Map;
+	int loadRom(std::filesystem::path romFilePath);
+	int loadBios9(std::filesystem::path bios9FilePath);
+	int loadBios7(std::filesystem::path bios7FilePath);
 };
 
 #endif //ORTIN_NDS_HPP

@@ -349,7 +349,7 @@ void DebugMenu::arm7DebugWindow() {
 
 	ImGui::Spacing();
 	if (ImGui::Button("Step")) {
-		ortin.nds.addThreadEvent(NDS::STEP_ARM9);
+		ortin.nds.addThreadEvent(NDS::STEP_ARM7);
 	}
 
 	ImGui::Separator();
@@ -581,8 +581,9 @@ void DebugMenu::memEditor9Window() {
 void DebugMenu::memEditor7Window() {
 	static MemoryEditor memEditor;
 	static int selectedRegion = 0;
-	std::array<MemoryRegion, 2> regions = {{
+	std::array<MemoryRegion, 3> regions = {{
 		{"PSRAM/Main Memory (4MB mirrored 0x2000000 - 0x3000000)", ortin.nds.shared.psram, 0x400000},
+		{"Shared WRAM (32KB mirrored 0x3000000 - 0x3800000)", ortin.nds.shared.wram, 0x8000},
 		{"ARM7 WRAM (64KB mirrored 0x3800000 - 0x4000000)", ortin.nds.nds7.wram, 0x10000}
 	}};
 
@@ -635,29 +636,146 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 14> registers9 = {{
-	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){{"V-Blank", 0, 1, CHECKBOX}, {"H-Blank", 1, 1, CHECKBOX}, {"VCOUNT Compare Status", 2, 1, CHECKBOX}, {"V-Blank IRQ", 3, 1, CHECKBOX}, {"H-Blank IRQ", 4, 1, CHECKBOX}, {"VCOUNT Compare IRQ", 5, 1, CHECKBOX}, {"VCOUNT Compare Value", 7, 9, SPECIAL}}},
-	{"VCOUNT", "Shows the Current Scanline", 0x4000006, 2, true, false, 1, (IoField[]){{"Current Scanline", 0, 9}}},
-	{"KEYINPUT", "Currently Pressed Keys (Inverted)", 0x4000130, 2, true, false, 10, (IoField[]){{"A", 0, 1, CHECKBOX}, {"B", 1, 1, CHECKBOX}, {"Select", 2, 1, CHECKBOX}, {"Start", 3, 1, CHECKBOX}, {"Right", 4, 1, CHECKBOX}, {"Left", 5, 1, CHECKBOX}, {"Up", 6, 1, CHECKBOX}, {"Down", 7, 1, CHECKBOX}, {"R", 8, 1, CHECKBOX}, {"L", 9, 1, CHECKBOX}}},
-	{"KEYCNT", "KEYCNT IRQ Control", 0x4000132, 2, true, true, 12, (IoField[]){{"A", 0, 1, CHECKBOX}, {"B", 1, 1, CHECKBOX}, {"Select", 2, 1, CHECKBOX}, {"Start", 3, 1, CHECKBOX}, {"Right", 4, 1, CHECKBOX}, {"Left", 5, 1, CHECKBOX}, {"Up", 6, 1, CHECKBOX}, {"Down", 7, 1, CHECKBOX}, {"R", 8, 1, CHECKBOX}, {"L", 9, 1, CHECKBOX}, {"IRQ Enable", 14, 1, CHECKBOX}, {"Condition", 15, 1, SPECIAL}}},
-	{"VRAMCNT_A", "VRAM Bank A Control", 0x4000240, 1, false, true, 3, (IoField[]){{"MST", 0, 2, TEXT_BOX}, {"Offset", 3, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
-	{"VRAMCNT_B", "VRAM Bank B Control", 0x4000241, 1, false, true, 3, (IoField[]){{"MST", 0, 2, TEXT_BOX}, {"Offset", 3, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
-	{"VRAMCNT_C", "VRAM Bank C Control", 0x4000242, 1, false, true, 3, (IoField[]){{"MST", 0, 3, TEXT_BOX}, {"Offset", 3, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
-	{"VRAMCNT_D", "VRAM Bank D Control", 0x4000243, 1, false, true, 3, (IoField[]){{"MST", 0, 3, TEXT_BOX}, {"Offset", 3, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
-	{"VRAMCNT_E", "VRAM Bank E Control", 0x4000244, 1, false, true, 2, (IoField[]){{"MST", 0, 3, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
-	{"VRAMCNT_F", "VRAM Bank F Control", 0x4000245, 1, false, true, 3, (IoField[]){{"MST", 0, 3, TEXT_BOX}, {"Offset", 3, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
-	{"VRAMCNT_G", "VRAM Bank G Control", 0x4000246, 1, false, true, 3, (IoField[]){{"MST", 0, 3, TEXT_BOX}, {"Offset", 3, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
-	{"WRAMCNT",	"Shared WRAM Control", 0x4000247, 1, true, true, 1, (IoField[]){{"Mapping", 0, 2, SPECIAL}}},
-	{"VRAMCNT_H", "VRAM Bank D Control", 0x4000248, 1, false, true, 2, (IoField[]){{"MST", 0, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
-	{"VRAMCNT_I", "VRAM Bank D Control", 0x4000249, 1, false, true, 2, (IoField[]){{"MST", 0, 2, TEXT_BOX}, {"Enable", 7, 1, CHECKBOX}}},
+static const std::array<IoRegister, 19> registers9 = {{
+	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
+		{"V-Blank", 0, 1, CHECKBOX},
+		{"H-Blank", 1, 1, CHECKBOX},
+		{"VCOUNT Compare Status", 2, 1, CHECKBOX},
+		{"V-Blank IRQ", 3, 1, CHECKBOX},
+		{"H-Blank IRQ", 4, 1, CHECKBOX},
+		{"VCOUNT Compare IRQ", 5, 1, CHECKBOX},
+		{"VCOUNT Compare Value", 7, 9, SPECIAL}}},
+	{"VCOUNT", "Shows the Current Scanline", 0x4000006, 2, true, false, 1, (IoField[]){
+		{"Current Scanline", 0, 9}}},
+	{"KEYINPUT", "Key Status (Inverted)", 0x4000130, 2, true, false, 10, (IoField[]){
+		{"A", 0, 1, CHECKBOX},
+		{"B", 1, 1, CHECKBOX},
+		{"Select", 2, 1, CHECKBOX},
+		{"Start", 3, 1, CHECKBOX},
+		{"Right", 4, 1, CHECKBOX},
+		{"Left", 5, 1, CHECKBOX},
+		{"Up", 6, 1, CHECKBOX},
+		{"Down", 7, 1, CHECKBOX},
+		{"R", 8, 1, CHECKBOX},
+		{"L", 9, 1, CHECKBOX}}},
+	{"KEYCNT", "Key Interrupt Control", 0x4000132, 2, true, true, 12, (IoField[]){
+		{"A", 0, 1, CHECKBOX},
+		{"B", 1, 1, CHECKBOX},
+		{"Select", 2, 1, CHECKBOX},
+		{"Start", 3, 1, CHECKBOX},
+		{"Right", 4, 1, CHECKBOX},
+		{"Left", 5, 1, CHECKBOX},
+		{"Up", 6, 1, CHECKBOX},
+		{"Down", 7, 1, CHECKBOX},
+		{"R", 8, 1, CHECKBOX},
+		{"L", 9, 1, CHECKBOX},
+		{"IRQ Enable", 14, 1, CHECKBOX},
+		{"Condition", 15, 1, SPECIAL}}},
+	{"IPCSYNC", "IPC Synchronize Register", 0x4000180, 2, true, true, 4, (IoField[]){
+		{"Data input from IPCSYNC of remote CPU", 0, 4, TEXT_BOX_HEX},
+		{"Data output to IPCSYNC of remote CPU", 8, 4, TEXT_BOX_HEX},
+		{"Send IRQ to remote CPU", 13, 1, CHECKBOX},
+		{"Enable IRQ from remote CPU", 14, 1, CHECKBOX}}},
+	{"IPCFIFOCNT", "IPC Fifo Control Register", 0x4000184, 2, true, true, 9, (IoField[]){
+		{"Send Fifo Empty Status", 0, 1, CHECKBOX},
+		{"Send Fifo Full Status", 1, 1, CHECKBOX},
+		{"Send Fifo Empty IRQ", 2, 1, CHECKBOX},
+		{"Send Fifo Clear", 3, 1, CHECKBOX},
+		{"Receive Fifo Empty Status", 8, 1, CHECKBOX},
+		{"Receive Fifo Full Status", 9, 1, CHECKBOX},
+		{"Receive Fifo Not Empty IRQ", 10, 1, CHECKBOX},
+		{"Error, Read Empty/Send Full", 14, 1, CHECKBOX},
+		{"Enable Send/Receive Fifo", 15, 1, CHECKBOX}}},
+	{"IME",	"Interrupt Master Enable", 0x4000208, 4, true, true, 1, (IoField[]){
+		{"Enable Interrupts", 0, 1, CHECKBOX}}},
+	{"IE", "Interrupt Enable", 0x4000210, 4, true, true, 19, (IoField[]){
+		{"LCD V-BLank", 0, 1, CHECKBOX},
+		{"LCD H-BLank", 1, 1, CHECKBOX},
+		{"LCD V-Counter Match", 2, 1, CHECKBOX},
+		{"Timer 0 Overflow", 3, 1, CHECKBOX},
+		{"Timer 1 Overflow", 4, 1, CHECKBOX},
+		{"Timer 2 Overflow", 5, 1, CHECKBOX},
+		{"Timer 3 Overflow", 6, 1, CHECKBOX},
+		{"DMA 0", 8, 1, CHECKBOX},
+		{"DMA 1", 9, 1, CHECKBOX},
+		{"DMA 2", 10, 1, CHECKBOX},
+		{"DMA 3", 11, 1, CHECKBOX},
+		{"Keypad", 12, 1, CHECKBOX},
+		{"GBA Slot", 13, 1, CHECKBOX},
+		{"IPC Sync", 16, 1, CHECKBOX},
+		{"IPC Send FIFO Empty", 17, 1, CHECKBOX},
+		{"IPC Recv FIFO Not Empty", 18, 1, CHECKBOX},
+		{"NDS-Slot Game Card Data Transfer Completion", 19, 1, CHECKBOX},
+		{"NDS-Slot Game Card IREQ_MC", 20, 1, CHECKBOX},
+		{"Geometry Command FIFO", 21, 1, CHECKBOX}}},
+	{"IF", "Interrupt Request Flags", 0x4000214, 4, true, true, 19, (IoField[]){
+		{"LCD V-BLank", 0, 1, CHECKBOX},
+		{"LCD H-BLank", 1, 1, CHECKBOX},
+		{"LCD V-Counter Match", 2, 1, CHECKBOX},
+		{"Timer 0 Overflow", 3, 1, CHECKBOX},
+		{"Timer 1 Overflow", 4, 1, CHECKBOX},
+		{"Timer 2 Overflow", 5, 1, CHECKBOX},
+		{"Timer 3 Overflow", 6, 1, CHECKBOX},
+		{"DMA 0", 8, 1, CHECKBOX},
+		{"DMA 1", 9, 1, CHECKBOX},
+		{"DMA 2", 10, 1, CHECKBOX},
+		{"DMA 3", 11, 1, CHECKBOX},
+		{"Keypad", 12, 1, CHECKBOX},
+		{"GBA Slot", 13, 1, CHECKBOX},
+		{"IPC Sync", 16, 1, CHECKBOX},
+		{"IPC Send FIFO Empty", 17, 1, CHECKBOX},
+		{"IPC Recv FIFO Not Empty", 18, 1, CHECKBOX},
+		{"NDS-Slot Game Card Data Transfer Completion", 19, 1, CHECKBOX},
+		{"NDS-Slot Game Card IREQ_MC", 20, 1, CHECKBOX},
+		{"Geometry Command FIFO", 21, 1, CHECKBOX}}},
+	{"VRAMCNT_A", "VRAM Bank A Control", 0x4000240, 1, false, true, 3, (IoField[]){
+		{"MST", 0, 2, TEXT_BOX},
+		{"Offset", 3, 2, TEXT_BOX},
+		{"Enable", 7, 1, CHECKBOX}}},
+	{"VRAMCNT_B", "VRAM Bank B Control", 0x4000241, 1, false, true, 3, (IoField[]){
+		{"MST", 0, 2, TEXT_BOX},
+		{"Offset", 3, 2, TEXT_BOX},
+		{"Enable", 7, 1, CHECKBOX}}},
+	{"VRAMCNT_C", "VRAM Bank C Control", 0x4000242, 1, false, true, 3, (IoField[]){
+		{"MST", 0, 3, TEXT_BOX},
+		{"Offset", 3, 2, TEXT_BOX},
+		{"Enable", 7, 1, CHECKBOX}}},
+	{"VRAMCNT_D", "VRAM Bank D Control", 0x4000243, 1, false, true, 3, (IoField[]){
+		{"MST", 0, 3, TEXT_BOX},
+		{"Offset", 3, 2, TEXT_BOX},
+		{"Enable", 7, 1, CHECKBOX}}},
+	{"VRAMCNT_E", "VRAM Bank E Control", 0x4000244, 1, false, true, 2, (IoField[]){
+		{"MST", 0, 3, TEXT_BOX},
+		{"Enable", 7, 1, CHECKBOX}}},
+	{"VRAMCNT_F", "VRAM Bank F Control", 0x4000245, 1, false, true, 3, (IoField[]){
+		{"MST", 0, 3, TEXT_BOX},
+		{"Offset", 3, 2, TEXT_BOX},
+		{"Enable", 7, 1, CHECKBOX}}},
+	{"VRAMCNT_G", "VRAM Bank G Control", 0x4000246, 1, false, true, 3, (IoField[]){
+		{"MST", 0, 3, TEXT_BOX},
+		{"Offset", 3, 2, TEXT_BOX},
+		{"Enable", 7, 1, CHECKBOX}}},
+	{"WRAMCNT",	"WRAM Bank Control", 0x4000247, 1, true, true, 1, (IoField[]){
+		{"Mapping", 0, 2, SPECIAL}}},
+	{"VRAMCNT_H", "VRAM Bank D Control", 0x4000248, 1, false, true, 2, (IoField[]){
+		{"MST", 0, 2, TEXT_BOX},
+		{"Enable", 7, 1, CHECKBOX}}},
+	{"VRAMCNT_I", "VRAM Bank D Control", 0x4000249, 1, false, true, 2, (IoField[]){
+		{"MST", 0, 2, TEXT_BOX},
+		{"Enable", 7, 1, CHECKBOX}}},
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 14> registerPointers9 = {
-		&ortin.nds.ppu.DISPSTAT,
+	static std::array<void *, 19> registerPointers9 = {
+		&ortin.nds.ppu.DISPSTAT9,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.shared.KEYINPUT,
-		&ortin.nds.shared.KEYCNT,
+		&ortin.nds.shared.KEYCNT9,
+		&ortin.nds.ipc.IPCSYNC9,
+		&ortin.nds.ipc.IPCFIFOCNT9,
+		&ortin.nds.nds9.IME,
+		&ortin.nds.nds9.IE,
+		&ortin.nds.nds9.IF,
 		&ortin.nds.ppu.VRAMCNT_A,
 		&ortin.nds.ppu.VRAMCNT_B,
 		&ortin.nds.ppu.VRAMCNT_C,
@@ -760,15 +878,15 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 
 		if (ImGui::Button("Write")) {
 			if (size == 4) {
-				ortin.nds.nds9.writeIO(address | 0, (u8)(value >> 0));
-				ortin.nds.nds9.writeIO(address | 1, (u8)(value >> 8));
-				ortin.nds.nds9.writeIO(address | 2, (u8)(value >> 16));
-				ortin.nds.nds9.writeIO(address | 3, (u8)(value >> 24));
+				ortin.nds.nds9.writeIO(address | 0, (u8)(value >> 0), false);
+				ortin.nds.nds9.writeIO(address | 1, (u8)(value >> 8), false);
+				ortin.nds.nds9.writeIO(address | 2, (u8)(value >> 16), false);
+				ortin.nds.nds9.writeIO(address | 3, (u8)(value >> 24), true);
 			} else if (size == 2) {
-				ortin.nds.nds9.writeIO(address | 0, (u8)(value >> 0));
-				ortin.nds.nds9.writeIO(address | 1, (u8)(value >> 8));
+				ortin.nds.nds9.writeIO(address | 0, (u8)(value >> 0), false);
+				ortin.nds.nds9.writeIO(address | 1, (u8)(value >> 8), true);
 			} else {
-				ortin.nds.nds9.writeIO(address, (u8)value);
+				ortin.nds.nds9.writeIO(address, (u8)value, true);
 			}
 
 			tmpRefresh = true;
@@ -779,6 +897,230 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
+static const std::array<IoRegister, 11> registers7 = {{
+	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
+		{"V-Blank", 0, 1, CHECKBOX},
+		{"H-Blank", 1, 1, CHECKBOX},
+		{"VCOUNT Compare Status", 2, 1, CHECKBOX},
+		{"V-Blank IRQ", 3, 1, CHECKBOX},
+		{"H-Blank IRQ", 4, 1, CHECKBOX},
+		{"VCOUNT Compare IRQ", 5, 1, CHECKBOX},
+		{"VCOUNT Compare Value", 7, 9, SPECIAL}}},
+	{"VCOUNT", "Shows the Current Scanline", 0x4000006, 2, true, false, 1, (IoField[]){
+		{"Current Scanline", 0, 9}}},
+	{"KEYINPUT", "Key Status (Inverted)", 0x4000130, 2, true, false, 10, (IoField[]){
+		{"A", 0, 1, CHECKBOX},
+		{"B", 1, 1, CHECKBOX},
+		{"Select", 2, 1, CHECKBOX},
+		{"Start", 3, 1, CHECKBOX},
+		{"Right", 4, 1, CHECKBOX},
+		{"Left", 5, 1, CHECKBOX},
+		{"Up", 6, 1, CHECKBOX},
+		{"Down", 7, 1, CHECKBOX},
+		{"R", 8, 1, CHECKBOX},
+		{"L", 9, 1, CHECKBOX}}},
+	{"KEYCNT", "Key Interrupt Control", 0x4000132, 2, true, true, 12, (IoField[]){
+		{"A", 0, 1, CHECKBOX},
+		{"B", 1, 1, CHECKBOX},
+		{"Select", 2, 1, CHECKBOX},
+		{"Start", 3, 1, CHECKBOX},
+		{"Right", 4, 1, CHECKBOX},
+		{"Left", 5, 1, CHECKBOX},
+		{"Up", 6, 1, CHECKBOX},
+		{"Down", 7, 1, CHECKBOX},
+		{"R", 8, 1, CHECKBOX},
+		{"L", 9, 1, CHECKBOX},
+		{"IRQ Enable", 14, 1, CHECKBOX},
+		{"Condition", 15, 1, SPECIAL}}},
+	{"EXTKEYIN", "Key X/Y Input (Inverted)", 0x4000136, 2, true, false, 5, (IoField[]){
+		{"X", 0, 1, CHECKBOX},
+		{"Y", 1, 1, CHECKBOX},
+		{"DEBUG button", 3, 1, CHECKBOX},
+		{"Pen down", 6, 1, CHECKBOX},
+		{"Hinge open", 7, 1, CHECKBOX}}},
+	{"IPCSYNC", "IPC Synchronize Register", 0x4000180, 2, true, true, 4, (IoField[]){
+		{"Data input from IPCSYNC of remote CPU", 0, 4, TEXT_BOX_HEX},
+		{"Data output to IPCSYNC of remote CPU", 8, 4, TEXT_BOX_HEX},
+		{"Send IRQ to remote CPU", 13, 1, CHECKBOX},
+		{"Enable IRQ from remote CPU", 14, 1, CHECKBOX}}},
+	{"IPCFIFOCNT", "IPC Fifo Control Register", 0x4000184, 2, true, true, 9, (IoField[]){
+		{"Send Fifo Empty Status", 0, 1, CHECKBOX},
+		{"Send Fifo Full Status", 1, 1, CHECKBOX},
+		{"Send Fifo Empty IRQ", 2, 1, CHECKBOX},
+		{"Send Fifo Clear", 3, 1, CHECKBOX},
+		{"Receive Fifo Empty Status", 8, 1, CHECKBOX},
+		{"Receive Fifo Full Status", 9, 1, CHECKBOX},
+		{"Receive Fifo Not Empty IRQ", 10, 1, CHECKBOX},
+		{"Error, Read Empty/Send Full", 14, 1, CHECKBOX},
+		{"Enable Send/Receive Fifo", 15, 1, CHECKBOX}}},
+	{"IME", "Interrupt Master Enable", 0x4000208, 4, true, true, 1, (IoField[]){
+		{"Enable Interrupts", 0, 1, CHECKBOX}}},
+	{"IE", "Interrupt Enable", 0x4000210, 4, true, true, 22, (IoField[]){
+		{"LCD V-BLank", 0,  1, CHECKBOX},
+		{"LCD H-BLank", 1,  1, CHECKBOX},
+		{"LCD V-Counter Match", 2,  1, CHECKBOX},
+		{"Timer 0 Overflow", 3,  1, CHECKBOX},
+		{"Timer 1 Overflow", 4,  1, CHECKBOX},
+		{"Timer 2 Overflow", 5,  1, CHECKBOX},
+		{"Timer 3 Overflow", 6,  1, CHECKBOX},
+		{"SIO/RCNT/RTC", 7,  1, CHECKBOX},
+		{"DMA 0", 8,  1, CHECKBOX},
+		{"DMA 1", 9,  1, CHECKBOX},
+		{"DMA 2", 10, 1, CHECKBOX},
+		{"DMA 3", 11, 1, CHECKBOX},
+		{"Keypad", 12, 1, CHECKBOX},
+		{"GBA Slot", 13, 1, CHECKBOX},
+		{"IPC Sync",  16, 1, CHECKBOX},
+		{"IPC Send FIFO Empty", 17, 1, CHECKBOX},
+		{"IPC Recv FIFO Not Empty", 18, 1, CHECKBOX},
+		{"NDS-Slot Game Card Data Transfer Completion", 19, 1, CHECKBOX},
+		{"NDS-Slot Game Card IREQ_MC", 20, 1, CHECKBOX},
+		{"Screens unfolding", 22, 1, CHECKBOX},
+		{"SPI bus", 23, 1, CHECKBOX},
+		{"Wifi", 24, 1, CHECKBOX}}},
+	{"IF", "Interrupt Request Flags", 0x4000214, 4, true, true, 22, (IoField[]){
+		{"LCD V-BLank", 0,  1, CHECKBOX},
+		{"LCD H-BLank", 1,  1, CHECKBOX},
+		{"LCD V-Counter Match", 2,  1, CHECKBOX},
+		{"Timer 0 Overflow", 3,  1, CHECKBOX},
+		{"Timer 1 Overflow", 4,  1, CHECKBOX},
+		{"Timer 2 Overflow", 5,  1, CHECKBOX},
+		{"Timer 3 Overflow", 6,  1, CHECKBOX},
+		{"SIO/RCNT/RTC", 7,  1, CHECKBOX},
+		{"DMA 0", 8,  1, CHECKBOX},
+		{"DMA 1", 9,  1, CHECKBOX},
+		{"DMA 2", 10, 1, CHECKBOX},
+		{"DMA 3", 11, 1, CHECKBOX},
+		{"Keypad", 12, 1, CHECKBOX},
+		{"GBA Slot", 13, 1, CHECKBOX},
+		{"IPC Sync",  16, 1, CHECKBOX},
+		{"IPC Send FIFO Empty", 17, 1, CHECKBOX},
+		{"IPC Recv FIFO Not Empty", 18, 1, CHECKBOX},
+		{"NDS-Slot Game Card Data Transfer Completion", 19, 1, CHECKBOX},
+		{"NDS-Slot Game Card IREQ_MC", 20, 1, CHECKBOX},
+		{"Screens unfolding", 22, 1, CHECKBOX},
+		{"SPI bus", 23, 1, CHECKBOX},
+		{"Wifi", 24, 1, CHECKBOX}}},
+	{"WRAMSTAT", "WRAM Bank Status", 0x4000241, 1, true, false, 1, (IoField[]){
+		{"Mapping", 0, 2, SPECIAL}}},
+}};
+
 void DebugMenu::ioReg7Window() {
-	//
+	static std::array<void *, 11> registerPointers7 = {
+		&ortin.nds.ppu.DISPSTAT7,
+		&ortin.nds.ppu.VCOUNT,
+		&ortin.nds.shared.KEYINPUT,
+		&ortin.nds.shared.KEYCNT7,
+		&ortin.nds.shared.EXTKEYIN,
+		&ortin.nds.ipc.IPCSYNC7,
+		&ortin.nds.ipc.IPCFIFOCNT7,
+		&ortin.nds.nds7.IME,
+		&ortin.nds.nds7.IE,
+		&ortin.nds.nds7.IF,
+		&ortin.nds.shared.WRAMCNT
+	};
+
+	static int selected = 0;
+	static bool refresh = true;
+	static bool tmpRefresh = false;
+
+	ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_FirstUseEver);
+	ImGui::Begin("ARM7 IO Registers", &showIoReg7);
+
+	// Left
+	{
+		ImGui::BeginChild("left pane", ImVec2(200, 0), true);
+		for (int i = 0; i < registers7.size(); i++) {
+			auto reg = registers7[i];
+			if (ImGui::Selectable(fmt::format("{}: 0x{:0>7X} ({})", reg.name, reg.address, reg.readable == reg.writable ? "R/W" : (reg.readable ? "R" : "W")).c_str(), selected == i)) {
+				if (i != selected)
+					tmpRefresh = true;
+				selected = i;
+			}
+		}
+		ImGui::EndChild();
+	}
+	ImGui::SameLine();
+
+	// Right
+	int size = registers7[selected].size;
+	u32 address = registers7[selected].address;
+	static u32 value;
+	{
+		if (refresh || tmpRefresh) {
+			if (size == 4) {
+				value = *(u32 *)registerPointers7[selected];
+			} else if (size == 2) {
+				value = *(u16 *)registerPointers7[selected];
+			} else {
+				value = *(u8 *)registerPointers7[selected];
+			}
+		}
+
+		ImGui::BeginGroup();
+		ImGui::BeginChild("item view", ImVec2(0, -ImGui::GetFrameHeightWithSpacing())); // Leave room for 1 line below us
+
+		ImGui::Text("%s", fmt::format("0x{:0>{}X} - {}", value, size * 2, registers7[selected].description).c_str());
+		ImGui::Separator();
+
+		for (int i = 0; i < registers7[selected].numFields; i++) {
+			auto field = registers7[selected].fields[i];
+			unsigned mask = ((1 << field.length) - 1) << field.startBit;
+			u32 fValue = (value & mask) >> field.startBit;
+
+			switch (field.type) {
+			case TEXT_BOX:
+				fValue = numberInput(((std::string)field.name).c_str(), false, fValue, mask >> field.startBit);
+				break;
+			case TEXT_BOX_HEX:
+				fValue = numberInput(((std::string)field.name).c_str(), true, fValue, mask >> field.startBit);
+				break;
+			case CHECKBOX:
+				ImGui::Checkbox(((std::string)field.name).c_str(), (bool *)&fValue);
+				break;
+			case SPECIAL:
+				switch (address) {
+				case 0x4000004: // DISPCNT
+					fValue = numberInput(((std::string)field.name).c_str(), false, (fValue >> 1) | ((fValue & 1) << 8), mask >> field.startBit);
+					fValue = ((fValue & 0xFF) << 1) | (fValue >> 8);
+					break;
+				case 0x4000241: { // WAITSTAT
+					const char *items[] = {"Unmapped/WRAM Mirror", "Bottom 16KB", "Top 16KB", "Full 32KB"};
+					ImGui::Combo("combo", (int *)&fValue, items, 4);
+					} break;
+				}
+				break;
+			}
+
+			value = (value & ~mask) | (fValue << field.startBit);
+		}
+		ImGui::EndChild();
+
+		ImGui::Checkbox("Refresh", &refresh);
+		ImGui::SameLine();
+
+		tmpRefresh = false;
+		if (ImGui::Button("Refresh"))
+			tmpRefresh = true;
+		ImGui::SameLine();
+
+		if (ImGui::Button("Write")) {
+			if (size == 4) {
+				ortin.nds.nds7.writeIO(address | 0, (u8)(value >> 0), false);
+				ortin.nds.nds7.writeIO(address | 1, (u8)(value >> 8), false);
+				ortin.nds.nds7.writeIO(address | 2, (u8)(value >> 16), false);
+				ortin.nds.nds7.writeIO(address | 3, (u8)(value >> 24), true);
+			} else if (size == 2) {
+				ortin.nds.nds7.writeIO(address | 0, (u8)(value >> 0), false);
+				ortin.nds.nds7.writeIO(address | 1, (u8)(value >> 8), true);
+			} else {
+				ortin.nds.nds7.writeIO(address, (u8)value, true);
+			}
+
+			tmpRefresh = true;
+		}
+		ImGui::EndGroup();
+	}
+
+	ImGui::End();
 }

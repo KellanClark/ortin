@@ -1,5 +1,5 @@
 
-#include "busarm7.hpp"
+#include "emulator/nds7/busarm7.hpp"
 
 static constexpr u32 toPage(u32 address) {
 	return address >> 14; // Pages are 16KB
@@ -9,9 +9,11 @@ static constexpr u32 toAddress(u32 page) {
 	return page << 14;
 }
 
-BusARM7::BusARM7(BusShared &shared, PPU &ppu, std::stringstream &log) : cpu(*this), shared(shared), log(log), ppu(ppu) {
+BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log) : cpu(*this), ipc(ipc), shared(shared), log(log), ppu(ppu) {
 	wram = new u8[0x10000]; // 64KB
 	memset(wram, 0, 0x10000);
+	bios = new u8[0x4000]; // 16KB
+	memset(bios, 0, 0x4000);
 
 	// Fill page tables
 	memset(&readTable, 0, sizeof(readTable));
@@ -30,6 +32,7 @@ BusARM7::BusARM7(BusShared &shared, PPU &ppu, std::stringstream &log) : cpu(*thi
 
 BusARM7::~BusARM7() {
 	delete[] wram;
+	delete[] bios;
 }
 
 void BusARM7::reset() {
@@ -37,6 +40,20 @@ void BusARM7::reset() {
 	delay = 0;
 
 	cpu.resetARM7TDMI();
+}
+
+void BusARM7::requestInterrupt(InterruptType type) {
+	IF |= type;
+
+	refreshInterrupts();
+}
+
+void BusARM7::refreshInterrupts() {
+	if (IME && (IE & IF)) {
+		cpu.processIrq = true;
+	} else {
+		cpu.processIrq = false;
+	}
 }
 
 void BusARM7::refreshWramPages() {
@@ -68,13 +85,12 @@ void BusARM7::refreshWramPages() {
 		break;
 	}
 
-	// Mirror it across the full 16MB in all tables
+	// Mirror it across the full 8MB in all tables
 	for (int i = toPage(0x3000000); i < toPage(0x3800000); i += 4) {
 		readTable[i] = writeTable[i] = readTable[toPage(0x3000000)];
 		readTable[i + 1] = writeTable[i + 1] = readTable[toPage(0x3004000)];
-		readTable[i + 2] = writeTable[i + 2] = readTable[toPage(0x3004000)];
-		readTable[i + 3] = writeTable[i + 3] = readTable[toPage(0x3008000)];
-		readTable[i + 4] = writeTable[i + 4] = readTable[toPage(0x300C000)];
+		readTable[i + 2] = writeTable[i + 2] = readTable[toPage(0x3008000)];
+		readTable[i + 3] = writeTable[i + 3] = readTable[toPage(0x300C000)];
 	}
 }
 
@@ -96,21 +112,24 @@ T BusARM7::read(u32 address, bool sequential) {
 		memcpy(&val, ptr + offset, sizeof(T));
 	} else {
 		switch (address) {
-		case 0x4000000 ... 0x4FFFFFF:
+		case 0x0000000 ... 0x0004000: // ARM7-BIOS
+			memcpy(&val, bios + alignedAddress, sizeof(T));
+			break;
+		case 0x4000000 ... 0x4FFFFFF: // ARM7-I/O Ports
 			if constexpr (sizeof(T) == 4) {
-				val |= (readIO(alignedAddress | 0) << 0);
-				val |= (readIO(alignedAddress | 1) << 8);
-				val |= (readIO(alignedAddress | 2) << 16);
-				val |= (readIO(alignedAddress | 3) << 24);
+				val |= (readIO(alignedAddress | 0, false) << 0);
+				val |= (readIO(alignedAddress | 1, false) << 8);
+				val |= (readIO(alignedAddress | 2, false) << 16);
+				val |= (readIO(alignedAddress | 3, true) << 24);
 			} else if constexpr (sizeof(T) == 2) {
-				val |= (readIO(alignedAddress | 0) << 0);
-				val |= (readIO(alignedAddress | 1) << 8);
+				val |= (readIO(alignedAddress | 0, false) << 0);
+				val |= (readIO(alignedAddress | 1, true) << 8);
 			} else {
-				val = readIO(alignedAddress);
+				val = readIO(alignedAddress, true);
 			}
 			break;
 		default:
-			log << fmt::format("[ARM7 Bus] Read from unknown location 0x{:0>8X}\n", address);
+			log << fmt::format("[NDS7 Bus] Read from unknown location 0x{:0>8X}\n", address);
 			break;
 		}
 	}
@@ -138,19 +157,19 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 		switch (address) {
 		case 0x4000000 ... 0x4FFFFFF:
 			if constexpr (sizeof(T) == 4) {
-				writeIO(alignedAddress | 0, (u8)(value >> 0));
-				writeIO(alignedAddress | 1, (u8)(value >> 8));
-				writeIO(alignedAddress | 2, (u8)(value >> 16));
-				writeIO(alignedAddress | 3, (u8)(value >> 24));
+				writeIO(alignedAddress | 0, (u8)(value >> 0), false);
+				writeIO(alignedAddress | 1, (u8)(value >> 8), false);
+				writeIO(alignedAddress | 2, (u8)(value >> 16), false);
+				writeIO(alignedAddress | 3, (u8)(value >> 24), true);
 			} else if constexpr (sizeof(T) == 2) {
-				writeIO(alignedAddress | 0, (u8)(value >> 0));
-				writeIO(alignedAddress | 1, (u8)(value >> 8));
+				writeIO(alignedAddress | 0, (u8)(value >> 0), false);
+				writeIO(alignedAddress | 1, (u8)(value >> 8), true);
 			} else {
-				writeIO(alignedAddress, value);
+				writeIO(alignedAddress, value, true);
 			}
 			break;
 		default:
-			log << fmt::format("[ARM7 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
+			log << fmt::format("[NDS7 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
 			break;
 		}
 	}
@@ -163,29 +182,101 @@ void BusARM7::iCycle(int cycles) {
 	delay += cycles * 2;
 }
 
-u8 BusARM7::readIO(u32 address) {
+u8 BusARM7::readIO(u32 address, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
+	case 0x4000241:
 		return shared.readIO7(address);
 
+	case 0x4000180 ... 0x4000187:
+	case 0x4100000 ... 0x4100003:
+		return ipc.readIO7(address, final);
+
+	case 0x4000004 ... 0x4000007:
+		return ppu.readIO7(address);
+
+	case 0x4000208:
+		return (u8)IME;
+	case 0x4000209 ... 0x400020B:
+		return 0;
+	case 0x4000210:
+		return (u8)(IE >> 0);
+	case 0x4000211:
+		return (u8)(IE >> 8);
+	case 0x4000212:
+		return (u8)(IE >> 16);
+	case 0x4000213:
+		return (u8)(IE >> 24);
+	case 0x4000214:
+		return (u8)(IF >> 0);
+	case 0x4000215:
+		return (u8)(IF >> 8);
+	case 0x4000216:
+		return (u8)(IF >> 16);
+	case 0x4000217:
+		return (u8)(IF >> 24);
+
 	default:
-		log << fmt::format("[ARM7 Bus] Read from unknown IO register 0x{:0>8X}\n", address);
+		log << fmt::format("[NDS7 Bus] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
 
-void BusARM7::writeIO(u32 address, u8 value) {
+void BusARM7::writeIO(u32 address, u8 value, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
-		shared.writeIO9(address, value);
+		shared.writeIO7(address, value);
 		break;
 
-	/*case 0x4000304 ... 0x4000307:
+	case 0x4000180 ... 0x400018B:
+		ipc.writeIO7(address, value, final);
+		break;
+
+	case 0x4000004 ... 0x4000007:
 		ppu.writeIO7(address, value);
-		break;*/
+		break;
+
+	case 0x4000208:
+		IME = value & 1;
+		refreshInterrupts();
+		break;
+	case 0x4000209 ... 0x400020B:
+		break;
+	case 0x4000210:
+		IE = (IE & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		refreshInterrupts();
+		break;
+	case 0x4000211:
+		IE = (IE & 0xFFFF00FF) | ((value & 0x3F) << 8);
+		refreshInterrupts();
+		break;
+	case 0x4000212:
+		IE = (IE & 0xFF00FFFF) | ((value & 0xDF) << 16);
+		refreshInterrupts();
+		break;
+	case 0x4000213:
+		IE = (IE & 0x00FFFFFF) | ((value & 0x01) << 24);
+		refreshInterrupts();
+		break;
+	case 0x4000214:
+		IF &= ~(value << 0);
+		refreshInterrupts();
+		break;
+	case 0x4000215:
+		IF &= ~(value << 8);
+		refreshInterrupts();
+		break;
+	case 0x4000216:
+		IF &= ~(value << 16);
+		refreshInterrupts();
+		break;
+	case 0x4000217:
+		IF &= ~(value << 24);
+		refreshInterrupts();
+		break;
 
 	default:
-		log << fmt::format("[ARM7 Bus] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
+		log << fmt::format("[NDS7 Bus] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }

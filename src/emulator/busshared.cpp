@@ -1,5 +1,5 @@
 
-#include "busshared.hpp"
+#include "emulator/busshared.hpp"
 
 BusShared::BusShared(std::stringstream &log) : log(log) {
 	psram = new u8[0x400000]; // 4MB
@@ -8,7 +8,7 @@ BusShared::BusShared(std::stringstream &log) : log(log) {
 	memset(wram, 0, 0x8000);
 
 	KEYINPUT = 0x03FF;
-	KEYCNT = 0x0000;
+	KEYCNT9 = KEYCNT7 = 0x0000;
 	EXTKEYIN = 0x007F;
 	WRAMCNT = 0x03;
 }
@@ -38,9 +38,9 @@ u8 BusShared::readIO9(u32 address) {
 	case 0x4000131:
 		return (u8)(KEYINPUT) >> 8;
 	case 0x4000132:
-		return (u8)KEYCNT;
+		return (u8)KEYCNT9;
 	case 0x4000133:
-		return (u8)(KEYCNT) >> 8;
+		return (u8)(KEYCNT9) >> 8;
 	case 0x4000247:
 		return WRAMCNT;
 	default:
@@ -52,10 +52,10 @@ u8 BusShared::readIO9(u32 address) {
 void BusShared::writeIO9(u32 address, u8 value) {
 	switch (address) {
 	case 0x4000132:
-		KEYCNT = (KEYCNT & 0xFF00) | ((value & 0xFF) << 0);
+		KEYCNT9 = (KEYCNT9 & 0xFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x4000133:
-		KEYCNT = (KEYCNT & 0x00FF) | ((value & 0xC3) << 8);
+		KEYCNT9 = (KEYCNT9 & 0x00FF) | ((value & 0xC3) << 8);
 		break;
 	case 0x4000247:
 		WRAMCNT = value & 0x03;
@@ -75,9 +75,9 @@ u8 BusShared::readIO7(u32 address) {
 	case 0x4000131:
 		return (u8)(KEYINPUT) >> 8;
 	case 0x4000132:
-		return (u8)KEYCNT;
+		return (u8)KEYCNT7;
 	case 0x4000133:
-		return (u8)(KEYCNT) >> 8;
+		return (u8)(KEYCNT7) >> 8;
 	case 0x4000136:
 		return (u8)EXTKEYIN;
 	case 0x4000137:
@@ -93,10 +93,10 @@ u8 BusShared::readIO7(u32 address) {
 void BusShared::writeIO7(u32 address, u8 value) {
 	switch (address) {
 	case 0x4000132:
-		KEYCNT = (KEYCNT & 0xFF00) | ((value & 0xFF) << 0);
+		KEYCNT7 = (KEYCNT7 & 0xFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x4000133:
-		KEYCNT = (KEYCNT & 0x00FF) | ((value & 0xC3) << 8);
+		KEYCNT7 = (KEYCNT7 & 0x00FF) | ((value & 0xC3) << 8);
 		break;
 	default:
 		log << fmt::format("[ARM7 Bus][Shared] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);

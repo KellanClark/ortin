@@ -11,7 +11,7 @@
 #include <SDL.h>
 #include <SDL_opengl.h>
 
-#include "nds.hpp"
+#include "emulator/nds.hpp"
 
 class Submenu {
 public:

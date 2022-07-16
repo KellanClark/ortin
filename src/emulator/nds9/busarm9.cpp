@@ -1,5 +1,5 @@
 
-#include "busarm9.hpp"
+#include "emulator/nds9/busarm9.hpp"
 
 static constexpr u32 toPage(u32 address) {
 	return address >> 14; // Pages are 16KB
@@ -9,19 +9,14 @@ static constexpr u32 toAddress(u32 page) {
 	return page << 14;
 }
 
-BusARM9::BusARM9(BusShared &shared, PPU &ppu, std::stringstream &log) : cpu(*this), shared(shared), log(log), ppu(ppu) {
-	itcm = new u8[0x8000]; // 32KB TODO: Move this to the ARM9
+BusARM9::BusARM9(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log) : cpu(*this), ipc(ipc), shared(shared), log(log), ppu(ppu) {
+	bios = new u8[0x8000]; // 32KB
+	memset(bios, 0, 0x8000);
 
 	// Fill page tables
 	memset(&readTable, 0, sizeof(readTable));
 	memset(&readTable8, 0, sizeof(readTable8));
 	memset(&writeTable, 0, sizeof(writeTable));
-
-	// ITCM (32KB mirrored 0x0000000 - 0x1FFFFFF)
-	for (int i = 0; i < toPage(0x2000000); i += 2) {
-		readTable[i] = readTable8[i] = writeTable[i] = itcm;
-		readTable[i + 1] = readTable8[i + 1] = writeTable[i + 1] = itcm + 0x4000;
-	}
 
 	// PSRAM/Main Memory (4MB mirrored 0x2000000 - 0x3000000)
 	for (int i = toPage(0x2000000); i < toPage(0x3000000); i++) {
@@ -30,7 +25,7 @@ BusARM9::BusARM9(BusShared &shared, PPU &ppu, std::stringstream &log) : cpu(*thi
 }
 
 BusARM9::~BusARM9() {
-	delete[] itcm;
+	//
 }
 
 void BusARM9::reset() {
@@ -38,6 +33,20 @@ void BusARM9::reset() {
 	delay = 0;
 
 	cpu.resetARM946E();
+}
+
+void BusARM9::requestInterrupt(InterruptType type) {
+	IF |= type;
+
+	refreshInterrupts();
+}
+
+void BusARM9::refreshInterrupts() {
+	if (IME && (IE & IF)) {
+		cpu.processIrq = true;
+	} else {
+		cpu.processIrq = false;
+	}
 }
 
 void BusARM9::refreshWramPages() {
@@ -127,6 +136,16 @@ T BusARM9::read(u32 address, bool sequential) {
 	u32 page = toPage(alignedAddress & 0x0FFFFFFF);
 	u32 offset = alignedAddress & 0x3FFF;
 
+	// TCM
+	T val = 0;
+	if (cpu.cp15.itcmEnable && !cpu.cp15.itcmWriteOnly && (address < cpu.cp15.itcmEnd)) {
+		memcpy(&val, &cpu.cp15.itcm[alignedAddress & 0x7FFF], sizeof(T));
+		return val;
+	} else if (!code && cpu.cp15.dtcmEnable && !cpu.cp15.dtcmWriteOnly && (address >= cpu.cp15.dtcmStart) && (address < cpu.cp15.dtcmEnd)) {
+		memcpy(&val, &cpu.cp15.dtcm[alignedAddress & 0x3FFF], sizeof(T));
+		return val;
+	}
+
 	u8 *ptr;
 	if constexpr (sizeof(T) == 1) {
 		ptr = readTable8[page];
@@ -134,26 +153,28 @@ T BusARM9::read(u32 address, bool sequential) {
 		ptr = readTable[page];
 	}
 
-	T val = 0;
 	if ((address < 0x10000000) && (ptr != NULL)) { [[likely]]
 		memcpy(&val, ptr + offset, sizeof(T));
 	} else {
 		switch (address) {
-		case 0x4000000 ... 0x4FFFFFF:
+		case 0x4000000 ... 0x4FFFFFF: // ARM9-I/O Ports
 			if constexpr (sizeof(T) == 4) {
-				val |= (readIO(alignedAddress | 0) << 0);
-				val |= (readIO(alignedAddress | 1) << 8);
-				val |= (readIO(alignedAddress | 2) << 16);
-				val |= (readIO(alignedAddress | 3) << 24);
+				val |= (readIO(alignedAddress | 0, false) << 0);
+				val |= (readIO(alignedAddress | 1, false) << 8);
+				val |= (readIO(alignedAddress | 2, false) << 16);
+				val |= (readIO(alignedAddress | 3, true) << 24);
 			} else if constexpr (sizeof(T) == 2) {
-				val |= (readIO(alignedAddress | 0) << 0);
-				val |= (readIO(alignedAddress | 1) << 8);
+				val |= (readIO(alignedAddress | 0, false) << 0);
+				val |= (readIO(alignedAddress | 1, true) << 8);
 			} else {
-				val = readIO(alignedAddress);
+				val = readIO(alignedAddress, true);
 			}
 			break;
+		case 0xFFFF0000 ... 0xFFFFFFFF: // ARM9-BIOS
+			memcpy(&val, bios + (alignedAddress - 0xFFFF0000), sizeof(T));
+			break;
 		default:
-			log << fmt::format("[ARM9 Bus] Read from unknown location 0x{:0>8X}\n", address);
+			log << fmt::format("[NDS9 Bus] Read from unknown location 0x{:0>8X}\n", address);
 			break;
 		}
 	}
@@ -173,25 +194,34 @@ void BusARM9::write(u32 address, T value, bool sequential) {
 	u32 offset = alignedAddress & 0x3FFF;
 	u8 *ptr = readTable[page];
 
+	// TCM
+	if (cpu.cp15.itcmEnable && (address < cpu.cp15.itcmEnd)) {
+		memcpy(&cpu.cp15.itcm[alignedAddress & 0x7FFF], &value, sizeof(T));
+		return;
+	} else if (cpu.cp15.dtcmEnable && (address >= cpu.cp15.dtcmStart) && (address < cpu.cp15.dtcmEnd)) {
+		memcpy(&cpu.cp15.dtcm[alignedAddress & 0x3FFF], &value, sizeof(T));
+		return;
+	}
+
 	if ((address < 0x10000000) && (ptr != NULL)) { [[likely]]
 		memcpy(ptr + offset, &value, sizeof(T));
 	} else {
 		switch (address) {
 		case 0x4000000 ... 0x4FFFFFF:
 			if constexpr (sizeof(T) == 4) {
-				writeIO(alignedAddress | 0, (u8)(value >> 0));
-				writeIO(alignedAddress | 1, (u8)(value >> 8));
-				writeIO(alignedAddress | 2, (u8)(value >> 16));
-				writeIO(alignedAddress | 3, (u8)(value >> 24));
+				writeIO(alignedAddress | 0, (u8)(value >> 0), false);
+				writeIO(alignedAddress | 1, (u8)(value >> 8), false);
+				writeIO(alignedAddress | 2, (u8)(value >> 16), false);
+				writeIO(alignedAddress | 3, (u8)(value >> 24), true);
 			} else if constexpr (sizeof(T) == 2) {
-				writeIO(alignedAddress | 0, (u8)(value >> 0));
-				writeIO(alignedAddress | 1, (u8)(value >> 8));
+				writeIO(alignedAddress | 0, (u8)(value >> 0), false);
+				writeIO(alignedAddress | 1, (u8)(value >> 8), true);
 			} else {
-				writeIO(alignedAddress, value);
+				writeIO(alignedAddress, value, true);
 			}
 			break;
 		default:
-			log << fmt::format("[ARM9 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
+			log << fmt::format("[NDS9 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
 			break;
 		}
 	}
@@ -204,26 +234,56 @@ void BusARM9::iCycle(int cycles) {
 	//
 }
 
-u8 BusARM9::readIO(u32 address) {
+u8 BusARM9::readIO(u32 address, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
+	case 0x4000247:
 		return shared.readIO9(address);
+
+	case 0x4000180 ... 0x4000187:
+	case 0x4100000 ... 0x4100003:
+		return ipc.readIO9(address, final);
 
 	case 0x4000000 ... 0x400006F:
 	case 0x4000304 ... 0x4000307:
 		return ppu.readIO9(address);
 
+	case 0x4000208:
+		return (u8)IME;
+	case 0x4000209 ... 0x400020B:
+		return 0;
+	case 0x4000210:
+		return (u8)(IE >> 0);
+	case 0x4000211:
+		return (u8)(IE >> 8);
+	case 0x4000212:
+		return (u8)(IE >> 16);
+	case 0x4000213:
+		return (u8)(IE >> 24);
+	case 0x4000214:
+		return (u8)(IF >> 0);
+	case 0x4000215:
+		return (u8)(IF >> 8);
+	case 0x4000216:
+		return (u8)(IF >> 16);
+	case 0x4000217:
+		return (u8)(IF >> 24);
+
 	default:
-		log << fmt::format("[ARM9 Bus] Read from unknown IO register 0x{:0>8X}\n", address);
+		log << fmt::format("[NDS9 Bus] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
 
-void BusARM9::writeIO(u32 address, u8 value) {
+void BusARM9::writeIO(u32 address, u8 value, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
 	case 0x4000247:
 		shared.writeIO9(address, value);
+		break;
+
+	case 0x4000180 ... 0x400018B:
+		ipc.writeIO9(address, value, final);
 		break;
 
 	case 0x4000000 ... 0x400006F:
@@ -234,8 +294,47 @@ void BusARM9::writeIO(u32 address, u8 value) {
 		ppu.writeIO9(address, value);
 		break;
 
+	case 0x4000208:
+		IME = value & 1;
+		refreshInterrupts();
+		break;
+	case 0x4000209 ... 0x400020B:
+		break;
+	case 0x4000210:
+		IE = (IE & 0xFFFFFF00) | ((value & 0x7F) << 0);
+		refreshInterrupts();
+		break;
+	case 0x4000211:
+		IE = (IE & 0xFFFF00FF) | ((value & 0x3F) << 8);
+		refreshInterrupts();
+		break;
+	case 0x4000212:
+		IE = (IE & 0xFF00FFFF) | ((value & 0x3F) << 16);
+		refreshInterrupts();
+		break;
+	case 0x4000213:
+		IE = (IE & 0x00FFFFFF) | ((value & 0x00) << 24);
+		refreshInterrupts();
+		break;
+	case 0x4000214:
+		IF &= ~(value << 0);
+		refreshInterrupts();
+		break;
+	case 0x4000215:
+		IF &= ~(value << 8);
+		refreshInterrupts();
+		break;
+	case 0x4000216:
+		IF &= ~(value << 16);
+		refreshInterrupts();
+		break;
+	case 0x4000217:
+		IF &= ~(value << 24);
+		refreshInterrupts();
+		break;
+
 	default:
-		log << fmt::format("[ARM9 Bus] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
+		log << fmt::format("[NDS9 Bus] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }
@@ -255,9 +354,7 @@ u32 BusARM9::coprocessorRead(u32 copNum, u32 copOpc, u32 copSrcDestReg, u32 copO
 	switch (copSrcDestReg) {
 	case 0: // ID Codes
 		if (copOpReg != 0) {
-			log << "Invalid coprocessor operand register: c0,c" << copOpReg << "\n";
-			hacf();
-			return 0;
+			break;
 		}
 
 		switch (copOpcType) {
@@ -269,11 +366,27 @@ u32 BusARM9::coprocessorRead(u32 copNum, u32 copOpc, u32 copSrcDestReg, u32 copO
 		case 2: // Tightly Coupled Memory Size Register
 			return 0x00140180;
 		}
-	default:
-		log << "Unknown coprocessor source/destination register: c" << copSrcDestReg << "\n";
-		hacf();
-		return 0;
+	case 1: // Control Register
+		return cpu.cp15.control;
+	case 2:
+	case 3:
+	case 5:
+	case 6:
+	case 7: return 0; // I hate crt0
+	case 9:
+		if (copOpReg == 1) {
+			if (copOpcType == 0) {
+				return cpu.cp15.dtcmConfig;
+			} else if (copOpcType == 1) {
+				return cpu.cp15.itcmConfig;
+			}
+		}
+		return 0; // I hate crt0
 	}
+
+	log << fmt::format("Invalid CP15 register {}, c{}, c{}, {}", copOpc, copSrcDestReg, copOpReg, copOpcType);
+	hacf();
+	return 0;
 }
 
 void BusARM9::coprocessorWrite(u32 copNum, u32 copOpc, u32 copSrcDestReg, u32 copOpReg, u32 copOpcType, u32 value) {
@@ -289,9 +402,33 @@ void BusARM9::coprocessorWrite(u32 copNum, u32 copOpc, u32 copSrcDestReg, u32 co
 	}
 
 	switch (copSrcDestReg) {
-	default:
-		log << "Unknown coprocessor source/destination register: c" << copSrcDestReg << "\n";
-		hacf();
+	case 1: // Control register
+		if (copOpReg != 0)
+			break;
+
+		cpu.cp15.control = (value & 0xFF085) | 0x00000078;
 		return;
+	case 2:
+	case 3:
+	case 5:
+	case 6:
+	case 7: return; // I hate crt0
+	case 9:
+		if (copOpReg == 1) {
+			if (copOpcType == 0) {
+				cpu.cp15.dtcmConfig = value & 0xFFFFF03E;
+
+				cpu.cp15.dtcmStart = cpu.cp15.dtcmRegionBase << 12;
+				cpu.cp15.dtcmEnd = cpu.cp15.dtcmStart + (512 << cpu.cp15.dtcmVirtualSize);
+			} else if (copOpcType == 1) {
+				cpu.cp15.itcmConfig = value & 0x0000003E;
+
+				cpu.cp15.itcmEnd = 512 << cpu.cp15.itcmVirtualSize;
+			}
+		}
+		return; // I hate crt0
 	}
+
+	log << fmt::format("Invalid CP15 register {}, c{}, c{}, {}", copOpc, copSrcDestReg, copOpReg, copOpcType);
+	hacf();
 }

@@ -38,11 +38,12 @@ add_executable(Ortin
 	src/menus/debug.cpp
 	src/menus/dev.cpp
 
-	src/nds.cpp
-	src/busshared.cpp
-	src/ppu.cpp
-	src/busarm9.cpp
-	src/busarm7.cpp
+	src/emulator/nds.cpp
+	src/emulator/busshared.cpp
+	src/emulator/ipc.cpp
+	src/emulator/ppu.cpp
+	src/emulator/nds9/busarm9.cpp
+	src/emulator/nds7/busarm7.cpp
 )
 
 target_compile_definitions(fmt PUBLIC FMT_EXCEPTIONS=0)

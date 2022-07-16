@@ -1,6 +1,6 @@
 
 #include "menus/file.hpp"
-#include "nds.hpp"
+#include "emulator/nds.hpp"
 
 FileMenu::FileMenu() {
 	showRomInfo = false;
@@ -13,6 +13,8 @@ FileMenu::~FileMenu() {
 void FileMenu::drawMenu() {
 	if (ImGui::BeginMenu("File")) {
 		if (ImGui::MenuItem("Load ROM")) { romFileDialog(); }
+		if (ImGui::MenuItem("Load NDS9 BIOS")) { bios9FileDialog(); }
+		if (ImGui::MenuItem("Load NDS7 BIOS")) { bios7FileDialog(); }
 		ImGui::Separator();
 
 		ImGui::MenuItem("ROM Info", nullptr, &showRomInfo);
@@ -27,15 +29,51 @@ void FileMenu::drawWindows() {
 
 void FileMenu::romFileDialog() {
 	NFD::UniquePath outPath;
-	nfdfilteritem_t filterItem[1] = {{"Source code", "nds,bin"}};
+	nfdfilteritem_t filterItem[1] = {{"NDS ROM", "nds,bin"}};
 
 	nfdresult_t result = NFD::OpenDialog(outPath, filterItem, 1);
 	if (result == NFD_OKAY) {
 		romFilePath = outPath.get();
-		std::cout << "Success!" << std::endl << outPath.get() << std::endl;
+		std::cout << "Selected " << outPath.get() << std::endl;
 
 		ortin.nds.addThreadEvent(NDS::STOP);
 		ortin.nds.addThreadEvent(NDS::LOAD_ROM, &romFilePath);
+		ortin.nds.addThreadEvent(NDS::RESET);
+		ortin.nds.addThreadEvent(NDS::START);
+	} else if (result != NFD_CANCEL) {
+		std::cout << "Error: " << NFD::GetError() << std::endl;
+	}
+}
+
+void FileMenu::bios9FileDialog() {
+	NFD::UniquePath outPath;
+	nfdfilteritem_t filterItem[1] = {{"NDS BIOS", "bin, rom"}};
+
+	nfdresult_t result = NFD::OpenDialog(outPath, filterItem, 1);
+	if (result == NFD_OKAY) {
+		bios9FilePath = outPath.get();
+		std::cout << "Selected " << outPath.get() << std::endl;
+
+		ortin.nds.addThreadEvent(NDS::STOP);
+		ortin.nds.addThreadEvent(NDS::LOAD_BIOS9, &bios9FilePath);
+		ortin.nds.addThreadEvent(NDS::RESET);
+		ortin.nds.addThreadEvent(NDS::START);
+	} else if (result != NFD_CANCEL) {
+		std::cout << "Error: " << NFD::GetError() << std::endl;
+	}
+}
+
+void FileMenu::bios7FileDialog() {
+	NFD::UniquePath outPath;
+	nfdfilteritem_t filterItem[1] = {{"NDS BIOS", "bin, rom"}};
+
+	nfdresult_t result = NFD::OpenDialog(outPath, filterItem, 1);
+	if (result == NFD_OKAY) {
+		bios7FilePath = outPath.get();
+		std::cout << "Selected " << outPath.get() << std::endl;
+
+		ortin.nds.addThreadEvent(NDS::STOP);
+		ortin.nds.addThreadEvent(NDS::LOAD_BIOS7, &bios7FilePath);
 		ortin.nds.addThreadEvent(NDS::RESET);
 		ortin.nds.addThreadEvent(NDS::START);
 	} else if (result != NFD_CANCEL) {
@@ -49,6 +87,8 @@ void FileMenu::romInfoWindow() {
 	ImGui::Begin("ROM Info", &showRomInfo);
 
 	ImGui::Text("Path:  %s", romInfo.filePath.string().c_str());
+	ImGui::Text("BIOS9 Path:  %s", romInfo.bios9FilePath.string().c_str());
+	ImGui::Text("BIOS7 Path:  %s", romInfo.bios7FilePath.string().c_str());
 	ImGui::Separator();
 
 	ImGui::Text("Name:  %s", romInfo.name.c_str());
