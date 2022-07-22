@@ -182,6 +182,10 @@ void BusARM7::iCycle(int cycles) {
 	delay += cycles * 2;
 }
 
+void BusARM7::breakpoint() {
+	shared.addEvent(0, EventType::STOP);
+}
+
 u8 BusARM7::readIO(u32 address, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:

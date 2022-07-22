@@ -45,6 +45,14 @@ void DebugMenu::drawWindows() {
 	if (showIoReg7) ioReg7Window();
 }
 
+// A helper function for input boxes
+u32 numberInput(const char *text, bool hex, u32 currentValue, u32 max) {
+	char buf[128];
+	sprintf(buf, hex ? "0x%X" : "%d", currentValue);
+	ImGui::InputText(text, buf, 128, hex ? ImGuiInputTextFlags_CharsHexadecimal : ImGuiInputTextFlags_CharsDecimal);
+	return (u32)std::clamp(strtoul(buf, NULL, 0), (unsigned long)0, (unsigned long)max);
+}
+
 struct MemoryRegion {
 	std::string name;
 	u8 *pointer;
@@ -109,6 +117,7 @@ void DebugMenu::logsWindow() {
 void DebugMenu::arm9DebugWindow() {
 	auto& cpu = ortin.nds.nds9.cpu;
 
+	ImGui::SetNextWindowSize(ImVec2(760, 480));
 	ImGui::Begin("ARM9 Debug", &showArm9Debug);
 
 	if (ImGui::Button("Reset"))
@@ -126,207 +135,267 @@ void DebugMenu::arm9DebugWindow() {
 	if (ImGui::Button("Step")) {
 		ortin.nds.addThreadEvent(NDS::STEP_ARM9);
 	}
-
 	ImGui::Separator();
-	std::string tmp = arm9disasm.disassemble(cpu.reg.R[15] - (cpu.reg.thumbMode ? 4 : 8), cpu.pipelineOpcode3, cpu.reg.thumbMode);
-	ImGui::Text("Current Opcode:  %s", tmp.c_str());
-	ImGui::Spacing();
-	if (ImGui::BeginTable("registers9", 8, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("Current");
-		ImGui::TableNextColumn();
-		ImGui::Text("User/\nSystem");
-		ImGui::TableNextColumn();
-		ImGui::Text("FIQ");
-		ImGui::TableNextColumn();
-		ImGui::Text("IRQ");
-		ImGui::TableNextColumn();
-		ImGui::Text("Supervisor");
-		ImGui::TableNextColumn();
-		ImGui::Text("Abort");
-		ImGui::TableNextColumn();
-		ImGui::Text("Undefined");
-		ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r0:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[0]);
-		ImGui::TableNextRow();
+	// CPU Status
+	{
+		ImGui::BeginChild("ChildL#arm9", ImVec2(525, 0), false);
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r1:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[1]);
-		ImGui::TableNextRow();
+		std::string tmp = arm9disasm.disassemble(cpu.reg.R[15] - (cpu.reg.thumbMode ? 4 : 8), cpu.pipelineOpcode3, cpu.reg.thumbMode);
+		ImGui::Text("Current Opcode:  %s", tmp.c_str());
+		ImGui::Spacing();
+		if (ImGui::BeginTable("registers9", 8, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("Current");
+			ImGui::TableNextColumn();
+			ImGui::Text("User/\nSystem");
+			ImGui::TableNextColumn();
+			ImGui::Text("FIQ");
+			ImGui::TableNextColumn();
+			ImGui::Text("IRQ");
+			ImGui::TableNextColumn();
+			ImGui::Text("Supervisor");
+			ImGui::TableNextColumn();
+			ImGui::Text("Abort");
+			ImGui::TableNextColumn();
+			ImGui::Text("Undefined");
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r2:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[2]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r0:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[0]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r3:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[3]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r1:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[1]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r4:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[4]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r2:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[2]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r5:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[5]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r3:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[3]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r6:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[6]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r4:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[4]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r7:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[7]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r5:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[5]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r8:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[8]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R8_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R8_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r6:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[6]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r9:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[9]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R9_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R9_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r7:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[7]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r10:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[10]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R10_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R10_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r8:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[8]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R8_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R8_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r11:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[11]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R11_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R11_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r9:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[9]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R9_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R9_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r12:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[12]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R12_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R12_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r10:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[10]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R10_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R10_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r13:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[13]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_fiq);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_irq);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_svc);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_abt);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_und);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r11:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[11]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R11_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R11_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r14:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[14]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_fiq);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_irq);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_svc);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_abt);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_und);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r12:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[12]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R12_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R12_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r15:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[15]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r13:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[13]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_fiq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_irq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_svc);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_abt);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_und);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("SPSR:");
-		ImGui::TableSetColumnIndex(3);
-		ImGui::Text("%08X", cpu.reg.SPSR_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r14:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[14]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_fiq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_irq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_svc);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_abt);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_und);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("CPSR:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.CPSR);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r15:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[15]);
+			ImGui::TableNextRow();
 
-		ImGui::EndTable();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("SPSR:");
+			ImGui::TableSetColumnIndex(3);
+			ImGui::Text("%08X", cpu.reg.SPSR_fiq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.SPSR_irq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.SPSR_svc);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.SPSR_abt);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.SPSR_und);
+			ImGui::TableNextRow();
+
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("CPSR:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.CPSR);
+			ImGui::TableNextRow();
+
+			ImGui::EndTable();
+		}
+		ImGui::Spacing();
+		bool n = cpu.reg.flagN;
+		ImGui::Checkbox("N", &n);
+		ImGui::SameLine();
+		bool z = cpu.reg.flagZ;
+		ImGui::Checkbox("Z", &z);
+		ImGui::SameLine();
+		bool c = cpu.reg.flagC;
+		ImGui::Checkbox("C", &c);
+		ImGui::SameLine();
+		bool v = cpu.reg.flagV;
+		ImGui::Checkbox("V", &v);
+		ImGui::SameLine();
+		bool q = cpu.reg.flagQ;
+		ImGui::Checkbox("Q", &q);
+		ImGui::SameLine();
+		bool i = cpu.reg.irqDisable;
+		ImGui::Checkbox("I", &i);
+		ImGui::SameLine();
+		bool f = cpu.reg.fiqDisable;
+		ImGui::Checkbox("F", &f);
+		ImGui::SameLine();
+		bool t = cpu.reg.thumbMode;
+		ImGui::Checkbox("T", &t);
+
+		ImGui::EndChild();
 	}
-	ImGui::Spacing();
-	bool n = cpu.reg.flagN; ImGui::Checkbox("N", &n);
-	ImGui::SameLine();
-	bool z = cpu.reg.flagZ; ImGui::Checkbox("Z", &z);
-	ImGui::SameLine();
-	bool c = cpu.reg.flagC; ImGui::Checkbox("C", &c);
-	ImGui::SameLine();
-	bool v = cpu.reg.flagV; ImGui::Checkbox("V", &v);
-	ImGui::SameLine();
-	bool q = cpu.reg.flagQ; ImGui::Checkbox("Q", &q);
-	ImGui::SameLine();
-	bool i = cpu.reg.irqDisable; ImGui::Checkbox("I", &i);
-	ImGui::SameLine();
-	bool f = cpu.reg.fiqDisable; ImGui::Checkbox("F", &f);
-	ImGui::SameLine();
-	bool t = cpu.reg.thumbMode; ImGui::Checkbox("T", &t);
 
-	/*ImGui::Spacing();
-	bool imeTmp = GBA.cpu.IME;
-	ImGui::Checkbox("IME", &imeTmp);
 	ImGui::SameLine();
-	ImGui::Text("IE: %04X", GBA.cpu.IE);
-	ImGui::SameLine();
-	ImGui::Text("IF: %04X", GBA.cpu.IF);*/
+
+	// Breakpoints Window
+	{
+		static u32 breakpointAddress = 0;
+		static int selectedBreakpoint = -1;
+		static std::vector<u32> breakpoints {};
+		ImGui::BeginChild("ChildR##bkpt9", ImVec2(210, ImGui::GetContentRegionAvail().y), true);
+
+		ImGui::Text("Breakpoints");
+		ImGui::Separator();
+
+		ImGui::PushItemWidth(80);
+		breakpointAddress = numberInput("##bkptin9", true, breakpointAddress, 0x0FFFFFFF);
+		ImGui::PopItemWidth();
+		ImGui::SameLine();
+		if (ImGui::Button("Add Breakpoint")) {
+			bool match = false;
+			for (u32 i : breakpoints) {
+				if (i == breakpointAddress)
+					match = true;
+			}
+
+			if (!match) {
+				cpu.addBreakpoint(breakpointAddress);
+				breakpoints.push_back(breakpointAddress);
+			}
+		}
+
+		if (ImGui::Button("Delete Selected")) {
+			if (selectedBreakpoint != -1) {
+				cpu.removeBreakpoint(breakpoints[selectedBreakpoint]);
+				breakpoints.erase(breakpoints.begin() + selectedBreakpoint);
+				selectedBreakpoint = -1;
+			}
+		}
+
+		for (int i = 0; i < breakpoints.size(); i++) {
+			if (ImGui::Selectable(fmt::format("0x{:0>7X}", breakpoints[i]).c_str(), selectedBreakpoint == i))
+				selectedBreakpoint = i;
+		}
+
+		ImGui::EndChild();
+	}
 
 	ImGui::End();
 }
@@ -334,6 +403,7 @@ void DebugMenu::arm9DebugWindow() {
 void DebugMenu::arm7DebugWindow() {
 	auto& cpu = ortin.nds.nds7.cpu;
 
+	ImGui::SetNextWindowSize(ImVec2(760, 480));
 	ImGui::Begin("ARM7 Debug", &showArm7Debug);
 
 	if (ImGui::Button("Reset"))
@@ -351,205 +421,264 @@ void DebugMenu::arm7DebugWindow() {
 	if (ImGui::Button("Step")) {
 		ortin.nds.addThreadEvent(NDS::STEP_ARM7);
 	}
-
 	ImGui::Separator();
-	std::string tmp = arm9disasm.disassemble(cpu.reg.R[15] - (cpu.reg.thumbMode ? 4 : 8), cpu.pipelineOpcode3, cpu.reg.thumbMode);
-	ImGui::Text("Current Opcode:  %s", tmp.c_str());
-	ImGui::Spacing();
-	if (ImGui::BeginTable("registers7", 8, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
-		ImGui::TableNextRow();
-		ImGui::TableSetColumnIndex(1);
-		ImGui::Text("Current");
-		ImGui::TableNextColumn();
-		ImGui::Text("User/\nSystem");
-		ImGui::TableNextColumn();
-		ImGui::Text("FIQ");
-		ImGui::TableNextColumn();
-		ImGui::Text("IRQ");
-		ImGui::TableNextColumn();
-		ImGui::Text("Supervisor");
-		ImGui::TableNextColumn();
-		ImGui::Text("Abort");
-		ImGui::TableNextColumn();
-		ImGui::Text("Undefined");
-		ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r0:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[0]);
-		ImGui::TableNextRow();
+	// CPU Status
+	{
+		ImGui::BeginChild("ChildL#arm7", ImVec2(525, 0), false);
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r1:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[1]);
-		ImGui::TableNextRow();
+		std::string tmp = arm9disasm.disassemble(cpu.reg.R[15] - (cpu.reg.thumbMode ? 4 : 8), cpu.pipelineOpcode3, cpu.reg.thumbMode);
+		ImGui::Text("Current Opcode:  %s", tmp.c_str());
+		ImGui::Spacing();
+		if (ImGui::BeginTable("registers7", 8, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
+			ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(1);
+			ImGui::Text("Current");
+			ImGui::TableNextColumn();
+			ImGui::Text("User/\nSystem");
+			ImGui::TableNextColumn();
+			ImGui::Text("FIQ");
+			ImGui::TableNextColumn();
+			ImGui::Text("IRQ");
+			ImGui::TableNextColumn();
+			ImGui::Text("Supervisor");
+			ImGui::TableNextColumn();
+			ImGui::Text("Abort");
+			ImGui::TableNextColumn();
+			ImGui::Text("Undefined");
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r2:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[2]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r0:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[0]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r3:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[3]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r1:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[1]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r4:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[4]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r2:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[2]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r5:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[5]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r3:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[3]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r6:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[6]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r4:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[4]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r7:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[7]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r5:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[5]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r8:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[8]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R8_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R8_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r6:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[6]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r9:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[9]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R9_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R9_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r7:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[7]);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r10:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[10]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R10_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R10_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r8:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[8]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R8_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R8_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r11:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[11]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R11_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R11_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r9:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[9]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R9_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R9_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r12:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[12]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R12_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R12_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r10:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[10]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R10_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R10_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r13:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[13]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_fiq);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_irq);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_svc);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_abt);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R13_und);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r11:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[11]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R11_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R11_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r14:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[14]);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_user);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_fiq);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_irq);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_svc);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_abt);
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R14_und);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r12:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[12]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R12_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R12_fiq);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("r15:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.R[15]);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r13:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[13]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_fiq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_irq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_svc);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_abt);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R13_und);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("SPSR:");
-		ImGui::TableSetColumnIndex(3);
-		ImGui::Text("%08X", cpu.reg.SPSR_fiq);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r14:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[14]);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_user);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_fiq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_irq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_svc);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_abt);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R14_und);
+			ImGui::TableNextRow();
 
-		ImGui::TableSetColumnIndex(0);
-		ImGui::Text("CPSR:");
-		ImGui::TableNextColumn();
-		ImGui::Text("%08X", cpu.reg.CPSR);
-		ImGui::TableNextRow();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("r15:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.R[15]);
+			ImGui::TableNextRow();
 
-		ImGui::EndTable();
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("SPSR:");
+			ImGui::TableSetColumnIndex(3);
+			ImGui::Text("%08X", cpu.reg.SPSR_fiq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.SPSR_irq);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.SPSR_svc);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.SPSR_abt);
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.SPSR_und);
+			ImGui::TableNextRow();
+
+			ImGui::TableSetColumnIndex(0);
+			ImGui::Text("CPSR:");
+			ImGui::TableNextColumn();
+			ImGui::Text("%08X", cpu.reg.CPSR);
+			ImGui::TableNextRow();
+
+			ImGui::EndTable();
+		}
+		ImGui::Spacing();
+		bool n = cpu.reg.flagN;
+		ImGui::Checkbox("N", &n);
+		ImGui::SameLine();
+		bool z = cpu.reg.flagZ;
+		ImGui::Checkbox("Z", &z);
+		ImGui::SameLine();
+		bool c = cpu.reg.flagC;
+		ImGui::Checkbox("C", &c);
+		ImGui::SameLine();
+		bool v = cpu.reg.flagV;
+		ImGui::Checkbox("V", &v);
+		ImGui::SameLine();
+		bool i = cpu.reg.irqDisable;
+		ImGui::Checkbox("I", &i);
+		ImGui::SameLine();
+		bool f = cpu.reg.fiqDisable;
+		ImGui::Checkbox("F", &f);
+		ImGui::SameLine();
+		bool t = cpu.reg.thumbMode;
+		ImGui::Checkbox("T", &t);
+
+		ImGui::EndChild();
 	}
-	ImGui::Spacing();
-	bool n = cpu.reg.flagN; ImGui::Checkbox("N", &n);
-	ImGui::SameLine();
-	bool z = cpu.reg.flagZ; ImGui::Checkbox("Z", &z);
-	ImGui::SameLine();
-	bool c = cpu.reg.flagC; ImGui::Checkbox("C", &c);
-	ImGui::SameLine();
-	bool v = cpu.reg.flagV; ImGui::Checkbox("V", &v);
-	ImGui::SameLine();
-	bool i = cpu.reg.irqDisable; ImGui::Checkbox("I", &i);
-	ImGui::SameLine();
-	bool f = cpu.reg.fiqDisable; ImGui::Checkbox("F", &f);
-	ImGui::SameLine();
-	bool t = cpu.reg.thumbMode; ImGui::Checkbox("T", &t);
 
-	/*ImGui::Spacing();
-	bool imeTmp = GBA.cpu.IME;
-	ImGui::Checkbox("IME", &imeTmp);
 	ImGui::SameLine();
-	ImGui::Text("IE: %04X", GBA.cpu.IE);
-	ImGui::SameLine();
-	ImGui::Text("IF: %04X", GBA.cpu.IF);*/
+
+	// Breakpoints Window
+	{
+		static u32 breakpointAddress = 0;
+		static int selectedBreakpoint = -1;
+		static std::vector<u32> breakpoints {};
+		ImGui::BeginChild("ChildR##bkpt7", ImVec2(210, ImGui::GetContentRegionAvail().y), true);
+
+		ImGui::Text("Breakpoints");
+		ImGui::Separator();
+
+		ImGui::PushItemWidth(80);
+		breakpointAddress = numberInput("##bkptin7", true, breakpointAddress, 0x0FFFFFFF);
+		ImGui::PopItemWidth();
+		ImGui::SameLine();
+		if (ImGui::Button("Add Breakpoint")) {
+			bool match = false;
+			for (u32 i : breakpoints) {
+				if (i == breakpointAddress)
+					match = true;
+			}
+
+			if (!match) {
+				cpu.addBreakpoint(breakpointAddress);
+				breakpoints.push_back(breakpointAddress);
+			}
+		}
+
+		if (ImGui::Button("Delete Selected")) {
+			if (selectedBreakpoint != -1) {
+				cpu.removeBreakpoint(breakpoints[selectedBreakpoint]);
+				breakpoints.erase(breakpoints.begin() + selectedBreakpoint);
+				selectedBreakpoint = -1;
+			}
+		}
+
+		for (int i = 0; i < breakpoints.size(); i++) {
+			if (ImGui::Selectable(fmt::format("0x{:0>7X}", breakpoints[i]).c_str(), selectedBreakpoint == i))
+				selectedBreakpoint = i;
+		}
+
+		ImGui::EndChild();
+	}
 
 	ImGui::End();
 }
@@ -602,13 +731,6 @@ void DebugMenu::memEditor7Window() {
 	memEditor.DrawContents(regions[selectedRegion].pointer, regions[selectedRegion].size);
 
 	ImGui::End();
-}
-
-u32 numberInput(const char *text, bool hex, u32 currentValue, u32 max) {
-	char buf[128];
-	sprintf(buf, hex ? "0x%X" : "%d", currentValue);
-	ImGui::InputText(text, buf, 128, hex ? ImGuiInputTextFlags_CharsHexadecimal : ImGuiInputTextFlags_CharsDecimal);
-	return (u32)std::clamp(atoi(buf), 0, (int)max);
 }
 
 enum InputType {

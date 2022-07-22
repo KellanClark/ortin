@@ -234,6 +234,10 @@ void BusARM9::iCycle(int cycles) {
 	//
 }
 
+void BusARM9::breakpoint() {
+	shared.addEvent(0, EventType::STOP);
+}
+
 u8 BusARM9::readIO(u32 address, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:

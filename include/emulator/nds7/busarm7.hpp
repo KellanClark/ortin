@@ -71,6 +71,7 @@ public:
 	template <typename T, bool code> T read(u32 address, bool sequential);
 	template <typename T> void write(u32 address, T value, bool sequential);
 	void iCycle(int cycles);
+	void breakpoint();
 
 	u8 readIO(u32 address, bool final);
 	void writeIO(u32 address, u8 value, bool final);
