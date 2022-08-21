@@ -758,7 +758,7 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 19> registers9 = {{
+static const std::array<IoRegister, 22> registers9 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -885,10 +885,19 @@ static const std::array<IoRegister, 19> registers9 = {{
 	{"VRAMCNT_I", "VRAM Bank D Control", 0x4000249, 1, false, true, 2, (IoField[]){
 		{"MST", 0, 2, TEXT_BOX},
 		{"Enable", 7, 1, CHECKBOX}}},
+	{"DIVCNT", "Division Control", 0x4000280, 2, true, true, 3, (IoField[]){
+		{"Division Mode", 0, 2, SPECIAL},
+		{"Division by zero", 14, 1, CHECKBOX},
+		{"Busy", 15, 1, CHECKBOX}}},
+	{"SQRTCNT", "Square Root Control", 0x40002B0, 2, true, true, 2, (IoField[]){
+		{"Mode", 0, 1, SPECIAL},
+		{"Busy", 15, 1, CHECKBOX}}},
+	{"SQRT_RESULT", "Square Root Result", 0x40002B4, 4, true, false, 1, (IoField[]){
+		{"Square Root Result", 0, 32, TEXT_BOX}}},
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 19> registerPointers9 = {
+	static std::array<void *, 22> registerPointers9 = {
 		&ortin.nds.ppu.DISPSTAT9,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.shared.KEYINPUT,
@@ -907,7 +916,10 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 		&ortin.nds.ppu.VRAMCNT_G,
 		&ortin.nds.shared.WRAMCNT,
 		&ortin.nds.ppu.VRAMCNT_H,
-		&ortin.nds.ppu.VRAMCNT_I
+		&ortin.nds.ppu.VRAMCNT_I,
+		&ortin.nds.nds9.dsmath.DIVCNT,
+		&ortin.nds.nds9.dsmath.SQRTCNT,
+		&ortin.nds.nds9.dsmath.SQRT_RESULT,
 	};
 
 	static int selected = 0;
@@ -975,13 +987,29 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 					fValue = ((fValue & 0xFF) << 1) | (fValue >> 8);
 					break;
 				case 0x4000132: { // KEYCNT
-					const char *items[] = {"OR Mode", "AND Mode"};
+					const char *items[] = {"OR Mode",
+										   "AND Mode"};
 					ImGui::Combo("combo", (int *)&fValue, items, 2);
 					} break;
 				case 0x4000247: { // WAITCNT
-					const char *items[] = {"Full 32KB", "Top 16KB", "Bottom 16KB", "Unmapped"};
+					const char *items[] = {"Full 32KB",
+										   "Top 16KB",
+										   "Bottom 16KB",
+										   "Unmapped"};
 					ImGui::Combo("combo", (int *)&fValue, items, 4);
 					} break;
+				case 0x4000280: { // DIVCNT
+					const char *items[] = {"32bit / 32bit = 32bit , 32bit",
+										   "64bit / 32bit = 64bit , 32bit",
+										   "64bit / 64bit = 64bit , 64bit",
+										   "Reserved; same as Mode 1"};
+					ImGui::Combo("combo", (int *)&fValue, items, 4);
+					} break;
+				case 0x40002B0: { // SQRTCNT
+					const char *items[] = {"32bit input",
+										   "64bit input"};
+					ImGui::Combo("combo", (int *)&fValue, items, 2);
+				} break;
 				}
 				break;
 			}

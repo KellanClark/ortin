@@ -8,6 +8,7 @@
 #include "emulator/busshared.hpp"
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
+#include "emulator/nds9/dsmath.hpp"
 #include "arm946e/arm946e.hpp"
 
 class BusARM9 {
@@ -17,6 +18,7 @@ public:
 	IPC& ipc;
 	PPU& ppu;
 	BusShared& shared;
+	DSMath dsmath;
 	u8 *bios;
 
 	// For normal use

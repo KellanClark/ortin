@@ -16,3 +16,6 @@
 [submodule "mio"]
 	path = modules/mio
 	url = https://github.com/StrikerX3/mio.git
+[submodule "modules/mINI"]
+	path = modules/mINI
+	url = https://github.com/pulzed/mINI.git

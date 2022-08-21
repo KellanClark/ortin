@@ -1,6 +1,8 @@
 
 #include "ortin.hpp"
 
+#include "ini.h"
+
 Ortin ortin;
 
 SDL_Scancode keymap[12] = {
@@ -23,12 +25,26 @@ int main(int argc, char *argv[]) {
 	if (ortin.error)
 		return -1;
 
+	// Load settings
+	mINI::INIFile file("settings.ini");
+	mINI::INIStructure ini;
+	file.read(ini);
+	if (ini["files"]["autoloadbios9"] == "true") {
+		static std::filesystem::path path = ini["files"]["bios9path"];
+		ortin.nds.addThreadEvent(NDS::LOAD_BIOS9, &path);
+	}
+	if (ini["files"]["autoloadbios7"] == "true") {
+		static std::filesystem::path path = ini["files"]["bios7path"];
+		ortin.nds.addThreadEvent(NDS::LOAD_BIOS7, &path);
+	}
+
 	int emuThreadFps = 0;
 	u32 lastFpsPoll = 0;
 	SDL_Event event;
 
 	volatile bool done = false;
 	while (!done) {
+		// Input
 		while (SDL_PollEvent(&event)) {
 			ImGui_ImplSDL2_ProcessEvent(&event);
 			if (event.type == SDL_QUIT)
@@ -48,14 +64,18 @@ int main(int argc, char *argv[]) {
 			lastJoypad = currentJoypad;
 		}
 
+		// Count FPS
 		if ((SDL_GetTicks() - lastFpsPoll) >= 1000) {
 			lastFpsPoll = SDL_GetTicks();
 			emuThreadFps = ortin.nds.ppu.frameCounter;
 			ortin.nds.ppu.frameCounter = 0;
 		}
+
+		// Set window name
 		std::string windowName = "Ortin - " + ortin.nds.romInfo.filePath.string() + " - " + std::to_string(emuThreadFps) + "FPS";
 		SDL_SetWindowTitle(ortin.window, windowName.c_str());
 
+		// Update display texture
 		//auto ppu = ortin.nds.ppu;
 		if (ortin.nds.ppu.updateScreen) {
 			glBindTexture(GL_TEXTURE_2D, ortin.engineATexture);

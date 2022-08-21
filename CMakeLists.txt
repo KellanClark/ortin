@@ -18,6 +18,7 @@ add_subdirectory(modules/mio)
 include_directories(
 	modules/imgui/
 	modules/imgui_club/imgui_memory_editor/
+	modules/mINI/src/mini
 
 	include/
 	include/emulator-common/
@@ -43,6 +44,7 @@ add_executable(Ortin
 	src/emulator/ipc.cpp
 	src/emulator/ppu.cpp
 	src/emulator/nds9/busarm9.cpp
+	src/emulator/nds9/dsmath.cpp
 	src/emulator/nds7/busarm7.cpp
 )
 
