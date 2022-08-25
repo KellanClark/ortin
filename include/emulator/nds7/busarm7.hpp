@@ -8,6 +8,7 @@
 #include "emulator/busshared.hpp"
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
+#include "emulator/dma.hpp"
 #include "arm7tdmi/arm7tdmi.hpp"
 
 class BusARM7 {
@@ -17,6 +18,7 @@ public:
 	BusShared& shared;
 	IPC& ipc;
 	PPU& ppu;
+	DMA<false> dma;
 	u8 *wram;
 	u8 *bios;
 

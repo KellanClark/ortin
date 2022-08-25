@@ -8,6 +8,7 @@
 #include "emulator/busshared.hpp"
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
+#include "emulator/dma.hpp"
 #include "emulator/nds9/dsmath.hpp"
 #include "arm946e/arm946e.hpp"
 
@@ -15,16 +16,17 @@ class BusARM9 {
 public:
 	// Connected components
 	ARM946E<BusARM9> cpu;
+	BusShared& shared;
 	IPC& ipc;
 	PPU& ppu;
-	BusShared& shared;
+	DMA<true> dma;
 	DSMath dsmath;
 	u8 *bios;
 
 	// For normal use
 	std::stringstream& log;
 
-	BusARM9(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log);
+	BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu);
 	~BusARM9();
 	void reset();
 

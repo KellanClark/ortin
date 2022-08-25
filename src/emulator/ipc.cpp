@@ -54,7 +54,7 @@ u8 IPC::readIO9(u32 address, bool final) {
 		return 0;
 	}
 
-	// Pop value off the receive FIFO
+	// Pop value off the recieve FIFO
 	if (final && fifoEnable9) {
 		bool wasEmpty = true;
 		if (fifo7to9.empty()) {
@@ -70,7 +70,7 @@ u8 IPC::readIO9(u32 address, bool final) {
 			receiveFifoEmpty9 = true;
 			receiveFifoFull9 = false;
 
-			IPCFIFORECV9 = 0;
+			//IPCFIFORECV9 = 0;
 
 			if (!wasEmpty && sendFifoEmptyIrq7)
 				shared.addEvent(0, EventType::IPC_SEND_FIFO7);
@@ -106,7 +106,7 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 	case 0x4000183:
 		return;
 	case 0x4000184:
-		IPCFIFOCNT9 = (IPCFIFOCNT9 & 0xFF00) | ((value & 0x0F) << 0);
+		IPCFIFOCNT9 = (IPCFIFOCNT9 & 0xFF03) | ((value & 0x0C) << 0);
 
 		if (sendFifoClear9) {
 			sendFifoClear9 = false;
@@ -125,8 +125,8 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 		}
 		return;
 	case 0x4000185:
-		value &= ~((IPCFIFOCNT9 >> 8) & 0x40); // Error acknowledge
-		IPCFIFOCNT9 = (IPCFIFOCNT9 & 0x00FF) | ((value & 0xC7) << 8);
+		IPCFIFOCNT9 &= ~((value & 0x40) << 8); // Error acknowledge
+		IPCFIFOCNT9 = (IPCFIFOCNT9 & 0x43FF) | ((value & 0x84) << 8);
 		return;
 	case 0x4000186:
 	case 0x4000187:
@@ -222,7 +222,7 @@ u8 IPC::readIO7(u32 address, bool final) {
 		return 0;
 	}
 
-	// Pop value off the receive FIFO
+	// Pop value off the recieve FIFO
 	if (final && fifoEnable7) {
 		bool wasEmpty = true;
 		if (fifo9to7.empty()) {
@@ -238,7 +238,7 @@ u8 IPC::readIO7(u32 address, bool final) {
 			receiveFifoEmpty7 = true;
 			receiveFifoFull7 = false;
 
-			IPCFIFORECV7 = 0;
+			//IPCFIFORECV7 = 0;
 
 			if (!wasEmpty && sendFifoEmptyIrq9)
 				shared.addEvent(0, EventType::IPC_SEND_FIFO9);
@@ -274,7 +274,7 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 	case 0x4000183:
 		return;
 	case 0x4000184:
-		IPCFIFOCNT7 = (IPCFIFOCNT7 & 0xFF00) | ((value & 0x0F) << 0);
+		IPCFIFOCNT7 = (IPCFIFOCNT7 & 0xFF03) | ((value & 0x0C) << 0);
 
 		if (sendFifoClear7) {
 			sendFifoClear7 = false;
@@ -293,8 +293,8 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 		}
 		return;
 	case 0x4000185:
-		value &= ~((IPCFIFOCNT7 >> 8) & 0x40); // Error acknowledge
-		IPCFIFOCNT7 = (IPCFIFOCNT7 & 0x00FF) | ((value & 0xC7) << 8);
+		IPCFIFOCNT7 &= ~((value & 0x40) << 8); // Error acknowledge
+		IPCFIFOCNT7 = (IPCFIFOCNT7 & 0x43FF) | ((value & 0x84) << 8);
 		return;
 	case 0x4000186:
 	case 0x4000187:

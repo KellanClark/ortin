@@ -1,7 +1,7 @@
 
 #include "emulator/nds.hpp"
 
-NDS::NDS() : shared(log), ipc(shared, log), ppu(shared, log), nds9(shared, ipc, ppu, log), nds7(shared, ipc, ppu, log) {
+NDS::NDS() : shared(log), ipc(shared, log), ppu(shared, log), nds9(shared, log, ipc, ppu), nds7(shared, ipc, ppu, log) {
 	romInfo.romLoaded = romInfo.bios9Loaded = romInfo.bios7Loaded = false;
 
 	disassembler9.defaultSettings();
@@ -16,6 +16,7 @@ void NDS::reset() {
 	running = false;
 
 	shared.reset();
+	ipc.reset();
 	ppu.reset();
 	nds9.reset();
 	nds7.reset();

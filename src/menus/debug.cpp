@@ -50,7 +50,7 @@ u32 numberInput(const char *text, bool hex, u32 currentValue, u32 max) {
 	char buf[128];
 	sprintf(buf, hex ? "0x%X" : "%d", currentValue);
 	ImGui::InputText(text, buf, 128, hex ? ImGuiInputTextFlags_CharsHexadecimal : ImGuiInputTextFlags_CharsDecimal);
-	return (u32)std::clamp(strtoul(buf, NULL, 0), (unsigned long)0, (unsigned long)max);
+	return (u32)std::clamp(strtoull(buf, NULL, hex ? 16 : 0), (unsigned long long)0, (unsigned long long)max);
 }
 
 struct MemoryRegion {
@@ -758,7 +758,7 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 22> registers9 = {{
+static const std::array<IoRegister, 38> registers9 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -768,7 +768,67 @@ static const std::array<IoRegister, 22> registers9 = {{
 		{"VCOUNT Compare IRQ", 5, 1, CHECKBOX},
 		{"VCOUNT Compare Value", 7, 9, SPECIAL}}},
 	{"VCOUNT", "Shows the Current Scanline", 0x4000006, 2, true, false, 1, (IoField[]){
-		{"Current Scanline", 0, 9}}},
+		{"Current Scanline", 0, 9, TEXT_BOX}}},
+	{"DMA0SAD", "DMA 0 Source Address", 0x40000B0, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Source Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA0DAD", "DMA 0 Destination Address", 0x40000B4, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA0CNT", "DMA 0 Control", 0x40000B8, 4, true, true, 8, (IoField[]){
+		{"Word Count", 0, 21, TEXT_BOX_HEX},
+		{"Dest Addr Control", 21, 2, SPECIAL},
+		{"Source Adr Control", 23, 2, SPECIAL},
+		{"DMA Repeat", 25, 1, CHECKBOX},
+		{"DMA Transfer Type", 26, 1, CHECKBOX},
+		{"DMA Start Timing", 27, 3, SPECIAL},
+		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
+		{"DMA Enable", 31, 1, CHECKBOX}}},
+	{"DMA1SAD", "DMA 1 Source Address", 0x40000BC, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Source Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA1DAD", "DMA 1 Destination Address", 0x40000C0, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA1CNT", "DMA 1 Control", 0x40000C4, 4, true, true, 8, (IoField[]){
+		{"Word Count", 0, 21, TEXT_BOX_HEX},
+		{"Dest Addr Control", 21, 2, SPECIAL},
+		{"Source Adr Control", 23, 2, SPECIAL},
+		{"DMA Repeat", 25, 1, CHECKBOX},
+		{"DMA Transfer Type", 26, 1, CHECKBOX},
+		{"DMA Start Timing", 27, 3, SPECIAL},
+		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
+		{"DMA Enable", 31, 1, CHECKBOX}}},
+	{"DMA2SAD", "DMA 2 Source Address", 0x40000C8, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Source Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA2DAD", "DMA 2 Destination Address", 0x40000CC, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA2CNT", "DMA 2 Control", 0x40000D0, 4, true, true, 8, (IoField[]){
+		{"Word Count", 0, 21, TEXT_BOX_HEX},
+		{"Dest Addr Control", 21, 2, SPECIAL},
+		{"Source Adr Control", 23, 2, SPECIAL},
+		{"DMA Repeat", 25, 1, CHECKBOX},
+		{"DMA Transfer Type", 26, 1, CHECKBOX},
+		{"DMA Start Timing", 27, 3, SPECIAL},
+		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
+		{"DMA Enable", 31, 1, CHECKBOX}}},
+	{"DMA3SAD", "DMA 3 Source Address", 0x40000D4, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Source Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA3DAD", "DMA 3 Destination Address", 0x40000D8, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA3CNT", "DMA 3 Control", 0x40000DC, 4, true, true, 8, (IoField[]){
+		{"Word Count", 0, 21, TEXT_BOX_HEX},
+		{"Dest Addr Control", 21, 2, SPECIAL},
+		{"Source Adr Control", 23, 2, SPECIAL},
+		{"DMA Repeat", 25, 1, CHECKBOX},
+		{"DMA Transfer Type", 26, 1, CHECKBOX},
+		{"DMA Start Timing", 27, 3, SPECIAL},
+		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
+		{"DMA Enable", 31, 1, CHECKBOX}}},
+	{"DMA0FILL", "DMA 0 Filldata", 0x40000E0, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Filldata", 0, 32, TEXT_BOX_HEX}}},
+	{"DMA1FILL", "DMA 1 Filldata", 0x40000E4, 4, true, true, 1, (IoField[]){
+		{"DMA 1 Filldata", 0, 32, TEXT_BOX_HEX}}},
+	{"DMA2FILL", "DMA 2 Filldata", 0x40000E8, 4, true, true, 1, (IoField[]){
+		{"DMA 2 Filldata", 0, 32, TEXT_BOX_HEX}}},
+	{"DMA3FILL", "DMA 3 Filldata", 0x40000EC, 4, true, true, 1, (IoField[]){
+		{"DMA 3 Filldata", 0, 32, TEXT_BOX_HEX}}},
 	{"KEYINPUT", "Key Status (Inverted)", 0x4000130, 2, true, false, 10, (IoField[]){
 		{"A", 0, 1, CHECKBOX},
 		{"B", 1, 1, CHECKBOX},
@@ -897,9 +957,25 @@ static const std::array<IoRegister, 22> registers9 = {{
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 22> registerPointers9 = {
+	static std::array<void *, 38> registerPointers9 = {
 		&ortin.nds.ppu.DISPSTAT9,
 		&ortin.nds.ppu.VCOUNT,
+		&ortin.nds.nds9.dma.channel[0].DMASAD,
+		&ortin.nds.nds9.dma.channel[0].DMADAD,
+		&ortin.nds.nds9.dma.channel[0].DMACNT,
+		&ortin.nds.nds9.dma.channel[1].DMASAD,
+		&ortin.nds.nds9.dma.channel[1].DMADAD,
+		&ortin.nds.nds9.dma.channel[1].DMACNT,
+		&ortin.nds.nds9.dma.channel[2].DMASAD,
+		&ortin.nds.nds9.dma.channel[2].DMADAD,
+		&ortin.nds.nds9.dma.channel[2].DMACNT,
+		&ortin.nds.nds9.dma.channel[3].DMASAD,
+		&ortin.nds.nds9.dma.channel[3].DMADAD,
+		&ortin.nds.nds9.dma.channel[3].DMACNT,
+		&ortin.nds.nds9.dma.DMA0FILL,
+		&ortin.nds.nds9.dma.DMA1FILL,
+		&ortin.nds.nds9.dma.DMA2FILL,
+		&ortin.nds.nds9.dma.DMA3FILL,
 		&ortin.nds.shared.KEYINPUT,
 		&ortin.nds.shared.KEYCNT9,
 		&ortin.nds.ipc.IPCSYNC9,
@@ -986,6 +1062,38 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 					fValue = numberInput(((std::string)field.name).c_str(), false, (fValue >> 1) | ((fValue & 1) << 8), mask >> field.startBit);
 					fValue = ((fValue & 0xFF) << 1) | (fValue >> 8);
 					break;
+				case 0x40000B8: // DMA0CNT
+				case 0x40000C4: // DMA1CNT
+				case 0x40000D0: // DMA2CNT
+				case 0x40000DC: { // DMA3CNT
+					const char *items1[] = {"Increment",
+										   "Decrement",
+										   "Fixed",
+										   "Increment/Reload"};
+					const char *items2[] = {"Increment",
+											"Decrement",
+											"Fixed",
+											"Prohibited"};
+					const char *items5[] = {"Start Immediately",
+										    "Start at V-Blank",
+											"Start at H-Blank",
+											"Synchronize to start of display",
+											"Main memory display",
+											"DS Cartridge Slot",
+											"GBA Cartridge Slot",
+											"Geometry Command FIFO"};
+					switch (i) {
+					case 1:
+						ImGui::Combo("combo", (int *)&fValue, items1, 4);
+						break;
+					case 2:
+						ImGui::Combo("combo", (int *)&fValue, items2, 4);
+						break;
+					case 5:
+						ImGui::Combo("combo", (int *)&fValue, items5, 8);
+						break;
+					}
+					} break;
 				case 0x4000132: { // KEYCNT
 					const char *items[] = {"OR Mode",
 										   "AND Mode"};
@@ -1047,7 +1155,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
-static const std::array<IoRegister, 11> registers7 = {{
+static const std::array<IoRegister, 23> registers7 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -1058,6 +1166,58 @@ static const std::array<IoRegister, 11> registers7 = {{
 		{"VCOUNT Compare Value", 7, 9, SPECIAL}}},
 	{"VCOUNT", "Shows the Current Scanline", 0x4000006, 2, true, false, 1, (IoField[]){
 		{"Current Scanline", 0, 9}}},
+	{"DMA0SAD", "DMA 0 Source Address", 0x40000B0, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"DMA0DAD", "DMA 0 Destination Address", 0x40000B4, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Destination Address", 0, 27, TEXT_BOX_HEX}}},
+	{"DMA0CNT", "DMA 0 Control", 0x40000B8, 4, true, true, 8, (IoField[]){
+		{"Word Count", 0, 14, TEXT_BOX_HEX},
+		{"Dest Addr Control", 21, 2, SPECIAL},
+		{"Source Adr Control", 23, 2, SPECIAL},
+		{"DMA Repeat", 25, 1, CHECKBOX},
+		{"DMA Transfer Type", 26, 1, CHECKBOX},
+		{"DMA Start Timing", 28, 2, SPECIAL},
+		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
+		{"DMA Enable", 31, 1, CHECKBOX}}},
+	{"DMA1SAD", "DMA 1 Source Address", 0x40000BC, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Source Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA1DAD", "DMA 1 Destination Address", 0x40000C0, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Destination Address", 0, 27, TEXT_BOX_HEX}}},
+	{"DMA1CNT", "DMA 1 Control", 0x40000C4, 4, true, true, 8, (IoField[]){
+		{"Word Count", 0, 14, TEXT_BOX_HEX},
+		{"Dest Addr Control", 21, 2, SPECIAL},
+		{"Source Adr Control", 23, 2, SPECIAL},
+		{"DMA Repeat", 25, 1, CHECKBOX},
+		{"DMA Transfer Type", 26, 1, CHECKBOX},
+		{"DMA Start Timing", 28, 2, SPECIAL},
+		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
+		{"DMA Enable", 31, 1, CHECKBOX}}},
+	{"DMA2SAD", "DMA 2 Source Address", 0x40000C8, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Source Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA2DAD", "DMA 2 Destination Address", 0x40000CC, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Destination Address", 0, 27, TEXT_BOX_HEX}}},
+	{"DMA2CNT", "DMA 2 Control", 0x40000D0, 4, true, true, 8, (IoField[]){
+		{"Word Count", 0, 14, TEXT_BOX_HEX},
+		{"Dest Addr Control", 21, 2, SPECIAL},
+		{"Source Adr Control", 23, 2, SPECIAL},
+		{"DMA Repeat", 25, 1, CHECKBOX},
+		{"DMA Transfer Type", 26, 1, CHECKBOX},
+		{"DMA Start Timing", 28, 2, SPECIAL},
+		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
+		{"DMA Enable", 31, 1, CHECKBOX}}},
+	{"DMA3SAD", "DMA 3 Source Address", 0x40000D4, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Source Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA3DAD", "DMA 3 Destination Address", 0x40000D8, 4, true, true, 1, (IoField[]){
+		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
+	{"DMA3CNT", "DMA 3 Control", 0x40000DC, 4, true, true, 8, (IoField[]){
+		{"Word Count", 0, 16, TEXT_BOX_HEX},
+		{"Dest Addr Control", 21, 2, SPECIAL},
+		{"Source Adr Control", 23, 2, SPECIAL},
+		{"DMA Repeat", 25, 1, CHECKBOX},
+		{"DMA Transfer Type", 26, 1, CHECKBOX},
+		{"DMA Start Timing", 28, 2, SPECIAL},
+		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
+		{"DMA Enable", 31, 1, CHECKBOX}}},
 	{"KEYINPUT", "Key Status (Inverted)", 0x4000130, 2, true, false, 10, (IoField[]){
 		{"A", 0, 1, CHECKBOX},
 		{"B", 1, 1, CHECKBOX},
@@ -1156,9 +1316,21 @@ static const std::array<IoRegister, 11> registers7 = {{
 }};
 
 void DebugMenu::ioReg7Window() {
-	static std::array<void *, 11> registerPointers7 = {
+	static std::array<void *, 23> registerPointers7 = {
 		&ortin.nds.ppu.DISPSTAT7,
 		&ortin.nds.ppu.VCOUNT,
+		&ortin.nds.nds7.dma.channel[0].DMASAD,
+		&ortin.nds.nds7.dma.channel[0].DMADAD,
+		&ortin.nds.nds7.dma.channel[0].DMACNT,
+		&ortin.nds.nds7.dma.channel[1].DMASAD,
+		&ortin.nds.nds7.dma.channel[1].DMADAD,
+		&ortin.nds.nds7.dma.channel[1].DMACNT,
+		&ortin.nds.nds7.dma.channel[2].DMASAD,
+		&ortin.nds.nds7.dma.channel[2].DMADAD,
+		&ortin.nds.nds7.dma.channel[2].DMACNT,
+		&ortin.nds.nds7.dma.channel[3].DMASAD,
+		&ortin.nds.nds7.dma.channel[3].DMADAD,
+		&ortin.nds.nds7.dma.channel[3].DMACNT,
 		&ortin.nds.shared.KEYINPUT,
 		&ortin.nds.shared.KEYCNT7,
 		&ortin.nds.shared.EXTKEYIN,
@@ -1234,6 +1406,42 @@ void DebugMenu::ioReg7Window() {
 					fValue = numberInput(((std::string)field.name).c_str(), false, (fValue >> 1) | ((fValue & 1) << 8), mask >> field.startBit);
 					fValue = ((fValue & 0xFF) << 1) | (fValue >> 8);
 					break;
+				case 0x40000B8: // DMA0CNT
+				case 0x40000C4: // DMA1CNT
+				case 0x40000D0: // DMA2CNT
+				case 0x40000DC: { // DMA3CNT
+					const char *items1[] = {"Increment",
+											"Decrement",
+											"Fixed",
+											"Increment/Reload"};
+					const char *items2[] = {"Increment",
+											"Decrement",
+											"Fixed",
+											"Prohibited"};
+					const char *items502[] = {"Start Immediately",
+											  "Start at V-Blank",
+											  "DS Cartridge Slot",
+											  "Wireless interrupt"};
+					const char *items513[] = {"Start Immediately",
+											  "Start at V-Blank",
+											  "DS Cartridge Slot",
+											  "GBA Cartridge Slot"};
+					switch (i) {
+					case 1:
+						ImGui::Combo("combo", (int *)&fValue, items1, 4);
+						break;
+					case 2:
+						ImGui::Combo("combo", (int *)&fValue, items2, 4);
+						break;
+					case 5:
+						if ((address == 0x40000B8) || (address == 0x40000D0)) { // DMA0/DMA2
+							ImGui::Combo("combo", (int *)&fValue, items502, 8);
+						} else {
+							ImGui::Combo("combo", (int *)&fValue, items513, 8);
+						}
+						break;
+					}
+				} break;
 				case 0x4000241: { // WAITSTAT
 					const char *items[] = {"Unmapped/WRAM Mirror", "Bottom 16KB", "Top 16KB", "Full 32KB"};
 					ImGui::Combo("combo", (int *)&fValue, items, 4);

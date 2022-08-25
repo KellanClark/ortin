@@ -9,7 +9,7 @@ static constexpr u32 toAddress(u32 page) {
 	return page << 14;
 }
 
-BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log) : cpu(*this), ipc(ipc), shared(shared), log(log), ppu(ppu) {
+BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log) : cpu(*this), ipc(ipc), shared(shared), log(log), ppu(ppu), dma(shared, log, *this) {
 	wram = new u8[0x10000]; // 64KB
 	memset(wram, 0, 0x10000);
 	bios = new u8[0x4000]; // 16KB
