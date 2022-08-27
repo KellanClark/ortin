@@ -77,6 +77,10 @@ void DebugMenu::logsWindow() {
 		systemLogFileStream.close();
 	}
 
+	ImGui::Checkbox("Log DMA9", &ortin.nds.nds9.dma.logDma);
+	ImGui::SameLine();
+	ImGui::Checkbox("Log DMA7", &ortin.nds.nds7.dma.logDma);
+
 	if (ImGui::TreeNode("ARM9 Disassembler Options")) {
 		ImGui::Checkbox("Show AL Condition", (bool *)&arm9disasm.options.showALCondition);
 		ImGui::Checkbox("Always Show S Bit", (bool *)&arm9disasm.options.alwaysShowSBit);

@@ -2,13 +2,24 @@
 #define ORTIN_DMA_HPP
 
 #include "types.hpp"
-//#include "emulator/nds9/busarm9.hpp"
-//#include "emulator/nds7/busarm7.hpp"
 #include "emulator/busshared.hpp"
 
-// Forward declaration
+// Forward declarations
 class BusARM9;
 class BusARM7;
+
+// These match up with 9 and will need an if chain for 7
+enum DmaStart {
+	DMA_IMMEDIATE = 0,
+	DMA_VBLANK = 1,
+	DMA_HBLANK = 2,
+	DMA_DISPLAY_START = 3,
+	DMA_MAIN_MEMORY_DISPLAY = 4,
+	DMA_DS_SLOT = 5,
+	DMA_GBA_SLOT = 6,
+	DMA_GEOMETRY_FIFO = 7,
+	DMA_WIRELESS
+};
 
 template <bool dma9>
 class DMA {
@@ -19,9 +30,15 @@ public:
 	std::stringstream &log;
 
 	// External Use
+	bool logDma;
+
 	DMA(BusShared &shared, std::stringstream &log, ArchBus &bus);
 	~DMA();
 	void reset();
+	void checkDma(DmaStart event);
+
+	void reloadInternalRegisters(int channel);
+	void doDma(int channel);
 
 	// Memory Interface
 	u8 readIO9(u32 address);
@@ -46,6 +63,11 @@ public:
 			};
 			u32 DMACNT;
 		};
+
+		// Internal registers
+		u32 sourceAddress;
+		u32 destinationAddress;
+		u32 realLength; // What else am I supposed to name this? length is already taken.
 	};
 
 	DmaChannel channel[4]; // 0x40000B0 - 0x40000DF
@@ -55,7 +77,8 @@ public:
 	u32 DMA2FILL; // NDS9 - 40000E8
 	u32 DMA3FILL; // NDS9 - 40000EC
 };
-template class DMA<true>;
-template class DMA<false>;
+
+#include "emulator/nds9/busarm9.hpp"
+#include "emulator/nds7/busarm7.hpp"
 
 #endif //ORTIN_DMA_HPP

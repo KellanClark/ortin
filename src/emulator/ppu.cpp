@@ -103,7 +103,6 @@ void PPU::hBlank() {
 
 	if (currentScanline < 192) {
 		drawLine();
-		//bus.dma.onHBlank();
 	 }
 }
 

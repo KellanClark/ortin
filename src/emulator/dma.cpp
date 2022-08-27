@@ -16,6 +16,139 @@ void DMA<dma9>::reset() {
 }
 
 template <bool dma9>
+void DMA<dma9>::reloadInternalRegisters(int channelNum) {
+	channel[channelNum].sourceAddress = channel[channelNum].DMASAD;
+	channel[channelNum].destinationAddress = channel[channelNum].DMADAD;
+	channel[channelNum].realLength = channel[channelNum].length;
+}
+
+template <bool dma9>
+void DMA<dma9>::checkDma(DmaStart event) {
+	for (int i = 0; i < 4; i++) {
+		if (channel[i].enable) {
+			if constexpr (dma9) {
+				if (channel[i].startTiming == (int)event) {
+					doDma(i);
+				}
+			} else {
+				if (((event == DMA_IMMEDIATE) && (channel[i].startTiming == 0)) ||
+					((event == DMA_VBLANK) && (channel[i].startTiming == 1)) ||
+					((event == DMA_DS_SLOT) && (channel[i].startTiming == 2)) ||
+					((event == DMA_WIRELESS) && (channel[i].startTiming == 3) && !(i & 1)) ||
+					((event == DMA_GBA_SLOT) && (channel[i].startTiming == 3) && (i & 1)))
+					doDma(i);
+			}
+		}
+	}
+}
+
+template <bool dma9>
+void DMA<dma9>::doDma(int channelNum) {
+	DmaChannel& info = channel[channelNum]; // So I don't have to constantly index the array.
+
+	// Adjust length
+	if (info.realLength == 0) {
+		if constexpr (dma9) {
+			info.realLength = 0x200000;
+		} else {
+			if (channelNum == 3) {
+				info.realLength = 0x10000;
+			} else {
+				info.realLength = 0x4000;
+			}
+		}
+	}
+
+	// Log info
+	if (logDma) {
+		log << fmt::format("[NDS{} Bus][DMA] DMA Channel {} from 0x{:0>7X} to 0x{:0>7X} of length 0x{:0>4X} with control = 0x{:0>4X}\n", dma9 ? 9 : 7, channelNum, info.sourceAddress, info.destinationAddress, info.realLength, (info.DMACNT >> 16) & 0xFFE0);
+		log << "Request Interrupt: " << (info.irqEnable ? "True" : "False") << "  Timing: ";
+		if constexpr (dma9) {
+			switch (info.startTiming) {
+			case 0: log << "Immediately"; break;
+			case 1: log << "V-Blank"; break;
+			case 2: log << "H-Blank"; break;
+			case 3: log << "Synchronize to start of display"; break;
+			case 4: log << "Main memory display"; break;
+			case 5: log << "DS Cartridge Slot"; break;
+			case 6: log << "GBA Cartridge Slot"; break;
+			case 7: log << "Geometry Command FIFO"; break;
+			}
+		} else {
+			switch (info.startTiming) {
+			case 0: log << "Immediately"; break;
+			case 1: log << "V-Blank"; break;
+			case 2: log << "DS Cartridge Slot"; break;
+			case 3: log << ((channelNum & 1) ? "GBA Cartridge Slot" : "Wireless interrupt"); break;
+			}
+		}
+		log << "  Chunk Size: " << (16 << info.transferType) << "-bit  Repeat: " << (info.repeat ? "True" : "False") << "\n";
+		log << "Source Adjustment: ";
+		switch (info.sourceAddress) {
+		case 0: log << "Increment"; break;
+		case 1: log << "Decrement"; break;
+		case 2: log << "Fixed"; break;
+		case 3: log << "Prohibeted"; break;
+		}
+		log << "  Destination Adjustment: ";
+		switch (info.destinationAddress) {
+		case 0: log << "Increment"; break;
+		case 1: log << "Decrement"; break;
+		case 2: log << "Fixed"; break;
+		case 3: log << "Increment/Reload"; break;
+		}
+	}
+
+	// Get offsets
+	// TODO: Force increment and extra sequential for GBA cartridge, force non-sequential for Main RAM
+	int sourceOffset;
+	switch (info.sourceControl) {
+	case 0: sourceOffset = 2; break; // Increment
+	case 1: sourceOffset = -2; break; // Decrement
+	case 2: sourceOffset = 0; break; // Fixed
+	case 3: sourceOffset = 0; break; // Prohibited TODO: Is this right?
+	}
+	int destinationOffset;
+	switch (info.destinationControl) {
+	case 0: destinationOffset = 2; break; // Increment
+	case 1: destinationOffset = -2; break; // Decrement
+	case 2: destinationOffset = 0; break; // Fixed
+	case 3: destinationOffset = 2; break; // Increment/Reload
+	}
+	if (info.transferType) { // 32-bit transfer
+		sourceOffset *= 2;
+		destinationOffset *= 2;
+	}
+
+	// Main transfer
+	bool nonsequential = true;
+	for (int i = 0; i < info.realLength; i++) {
+		if (info.transferType) {
+			bus.template write<u32>(info.destinationAddress, bus.template read<u32, false>(info.sourceAddress, !nonsequential), !nonsequential);
+		} else {
+			bus.template write<u16>(info.destinationAddress, bus.template read<u16, false>(info.sourceAddress, !nonsequential), !nonsequential);
+		}
+
+		info.sourceAddress = (info.sourceAddress + sourceOffset) & ((!dma9 && (channelNum == 0)) ? 0x07FFFFFF : 0x0FFFFFFF);
+		info.destinationAddress = (info.destinationAddress + destinationOffset) & ((!dma9 && (channelNum != 3)) ? 0x07FFFFFF : 0x0FFFFFFF);
+		nonsequential = false;
+	}
+
+	// End
+	if (info.destinationControl == 3) // Increment/Reload
+		info.destinationAddress = info.DMADAD;
+
+	if (info.repeat) {
+		info.realLength = info.length;
+	} else {
+		info.enable = false;
+	}
+
+	if (info.irqEnable)
+		bus.requestInterrupt(static_cast<typename ArchBus::InterruptType>(ArchBus::INT_DMA_0 + channelNum));
+}
+
+template <bool dma9>
 u8 DMA<dma9>::readIO9(u32 address) {
 	switch (address) {
 	case 0x40000B0:
@@ -154,6 +287,8 @@ u8 DMA<dma9>::readIO9(u32 address) {
 
 template <bool dma9>
 void DMA<dma9>::writeIO9(u32 address, u8 value) {
+	bool oldEnable;
+
 	switch (address) {
 	case 0x40000B0:
 		channel[0].DMASAD = (channel[0].DMASAD & 0xFFFFFF00) | ((value & 0xFE) << 0);
@@ -189,7 +324,15 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		channel[0].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xFF) << 16);
 		break;
 	case 0x40000BB:
+		oldEnable = channel[0].enable;
 		channel[0].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xFF) << 24);
+
+		if ((value & 0x80) && !oldEnable) {
+			reloadInternalRegisters(0);
+
+			if (channel[0].startTiming == 0) // Immediately
+				checkDma(DMA_IMMEDIATE);
+		}
 		break;
 	case 0x40000BC:
 		channel[1].DMASAD = (channel[1].DMASAD & 0xFFFFFF00) | ((value & 0xFE) << 0);
@@ -225,7 +368,15 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		channel[1].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xFF) << 16);
 		break;
 	case 0x40000C7:
+		oldEnable = channel[1].enable;
 		channel[1].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xFF) << 24);
+
+		if ((value & 0x80) && !oldEnable) {
+			reloadInternalRegisters(1);
+
+			if (channel[1].startTiming == 0) // Immediately
+				checkDma(DMA_IMMEDIATE);
+		}
 		break;
 	case 0x40000C8:
 		channel[2].DMASAD = (channel[2].DMASAD & 0xFFFFFF00) | ((value & 0xFE) << 0);
@@ -261,7 +412,15 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		channel[2].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xFF) << 16);
 		break;
 	case 0x40000D3:
+		oldEnable = channel[2].enable;
 		channel[2].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xFF) << 24);
+
+		if ((value & 0x80) && !oldEnable) {
+			reloadInternalRegisters(2);
+
+			if (channel[2].startTiming == 0) // Immediately
+				checkDma(DMA_IMMEDIATE);
+		}
 		break;
 	case 0x40000D4:
 		channel[3].DMASAD = (channel[3].DMASAD & 0xFFFFFF00) | ((value & 0xFE) << 0);
@@ -297,7 +456,15 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		channel[3].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xFF) << 16);
 		break;
 	case 0x40000DF:
+		oldEnable = channel[3].enable;
 		channel[3].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xFF) << 24);
+
+		if ((value & 0x80) && !oldEnable) {
+			reloadInternalRegisters(3);
+
+			if (channel[3].startTiming == 0) // Immediately
+				checkDma(DMA_IMMEDIATE);
+		}
 		break;
 	case 0x40000E0:
 		DMA0FILL = (DMA0FILL & 0xFFFFFF00) | ((value & 0xFF) << 0);
@@ -460,6 +627,8 @@ u8 DMA<dma9>::readIO7(u32 address) {
 
 template <bool dma9>
 void DMA<dma9>::writeIO7(u32 address, u8 value) {
+	bool oldEnable;
+
 	switch (address) {
 	case 0x40000B0:
 		channel[0].DMASAD = (channel[0].DMASAD & 0xFFFFFF00) | ((value & 0xFE) << 0);
@@ -495,7 +664,15 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		channel[0].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xE0) << 16);
 		break;
 	case 0x40000BB:
+		oldEnable = channel[0].enable;
 		channel[0].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xF7) << 24);
+
+		if ((value & 0x80) && !oldEnable) {
+			reloadInternalRegisters(0);
+
+			if (channel[0].startTiming == 0) // Immediately
+				checkDma(DMA_IMMEDIATE);
+		}
 		break;
 	case 0x40000BC:
 		channel[1].DMASAD = (channel[1].DMASAD & 0xFFFFFF00) | ((value & 0xFE) << 0);
@@ -531,7 +708,15 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		channel[1].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xE0) << 16);
 		break;
 	case 0x40000C7:
+		oldEnable = channel[1].enable;
 		channel[1].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xF7) << 24);
+
+		if ((value & 0x80) && !oldEnable) {
+			reloadInternalRegisters(1);
+
+			if (channel[1].startTiming == 0) // Immediately
+				checkDma(DMA_IMMEDIATE);
+		}
 		break;
 	case 0x40000C8:
 		channel[2].DMASAD = (channel[2].DMASAD & 0xFFFFFF00) | ((value & 0xFE) << 0);
@@ -567,7 +752,15 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		channel[2].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xE0) << 16);
 		break;
 	case 0x40000D3:
+		oldEnable = channel[2].enable;
 		channel[2].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xF7) << 24);
+
+		if ((value & 0x80) && !oldEnable) {
+			reloadInternalRegisters(2);
+
+			if (channel[2].startTiming == 0) // Immediately
+				checkDma(DMA_IMMEDIATE);
+		}
 		break;
 	case 0x40000D4:
 		channel[3].DMASAD = (channel[3].DMASAD & 0xFFFFFF00) | ((value & 0xFE) << 0);
@@ -603,10 +796,21 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		channel[3].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xE0) << 16);
 		break;
 	case 0x40000DF:
+		oldEnable = channel[3].enable;
 		channel[3].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xF7) << 24);
+
+		if ((value & 0x80) && !oldEnable) {
+			reloadInternalRegisters(3);
+
+			if (channel[3].startTiming == 0) // Immediately
+				checkDma(DMA_IMMEDIATE);
+		}
 		break;
 	default:
 		log << fmt::format("[NDS7 Bus][DMA] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }
+
+template class DMA<true>;
+template class DMA<false>;

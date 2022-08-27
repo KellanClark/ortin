@@ -11,6 +11,11 @@
 #include "emulator/dma.hpp"
 #include "arm7tdmi/arm7tdmi.hpp"
 
+// Forward declarations
+//template <bool dma9> class DMA<false>;
+//template class DMA<false>;
+//class DMA<false>;
+
 class BusARM7 {
 public:
 	// Connected components

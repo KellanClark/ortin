@@ -199,6 +199,9 @@ u8 BusARM7::readIO(u32 address, bool final) {
 	case 0x4000004 ... 0x4000007:
 		return ppu.readIO7(address);
 
+	case 0x40000B0 ... 0x40000DF:
+		return dma.readIO7(address);
+
 	case 0x4000208:
 		return (u8)IME;
 	case 0x4000209 ... 0x400020B:
@@ -238,6 +241,10 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 
 	case 0x4000004 ... 0x4000007:
 		ppu.writeIO7(address, value);
+		break;
+
+	case 0x40000B0 ... 0x40000DF:
+		dma.writeIO7(address, value);
 		break;
 
 	case 0x4000208:

@@ -253,6 +253,9 @@ u8 BusARM9::readIO(u32 address, bool final) {
 	case 0x4000304 ... 0x4000307:
 		return ppu.readIO9(address);
 
+	case 0x40000B0 ... 0x40000EF:
+		return dma.readIO9(address);
+
 	case 0x4000280 ... 0x40002BF:
 		return dsmath.readIO9(address, final);
 
@@ -300,6 +303,10 @@ void BusARM9::writeIO(u32 address, u8 value, bool final) {
 	case 0x4000249:
 	case 0x4000304 ... 0x4000307:
 		ppu.writeIO9(address, value);
+		break;
+
+	case 0x40000B0 ... 0x40000EF:
+		dma.writeIO9(address, value);
 		break;
 
 	case 0x4000280 ... 0x40002BF:

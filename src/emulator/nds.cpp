@@ -100,6 +100,11 @@ void NDS::run() {
 					if (ppu.vCounterIrq9) { nds9.requestInterrupt(BusARM9::INT_VCOUNT); ppu.vCounterIrq9 = false; }
 					if (ppu.vCounterIrq7) { nds7.requestInterrupt(BusARM7::INT_VCOUNT); ppu.vCounterIrq7 = false; }
 
+					if (ppu.currentScanline == 192) {
+						nds9.dma.checkDma(DMA_VBLANK);
+						nds7.dma.checkDma(DMA_VBLANK);
+					}
+
 					if (ppu.currentScanline == 0)
 						handleThreadQueue();
 					break;
@@ -108,6 +113,9 @@ void NDS::run() {
 
 					if (ppu.hBlankIrq9) { nds9.requestInterrupt(BusARM9::INT_HBLANK); ppu.hBlankIrq9 = false; }
 					if (ppu.hBlankIrq7) { nds7.requestInterrupt(BusARM7::INT_HBLANK); ppu.hBlankIrq7 = false; }
+
+					if (ppu.currentScanline < 192)
+						nds9.dma.checkDma(DMA_HBLANK);
 					break;
 				case EventType::REFRESH_WRAM_PAGES:
 					nds9.refreshWramPages();

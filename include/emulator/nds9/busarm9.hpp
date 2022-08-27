@@ -12,6 +12,9 @@
 #include "emulator/nds9/dsmath.hpp"
 #include "arm946e/arm946e.hpp"
 
+// Forward declarations
+//template <bool dma9> class DMA<false>;
+
 class BusARM9 {
 public:
 	// Connected components
