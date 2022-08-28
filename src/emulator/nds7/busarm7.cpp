@@ -39,6 +39,7 @@ void BusARM7::reset() {
 	log.str("");
 	delay = 0;
 
+	dma.reset();
 	cpu.resetARM7TDMI();
 }
 

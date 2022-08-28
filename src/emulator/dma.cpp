@@ -3,16 +3,21 @@
 
 template <bool dma9>
 DMA<dma9>::DMA(BusShared &shared, std::stringstream &log, ArchBus &bus) : shared(shared), log(log), bus(bus) {
-	//
+	logDma = true;
 }
 
 template <bool dma9>
 DMA<dma9>::~DMA() {
 	//
 }
+
 template <bool dma9>
 void DMA<dma9>::reset() {
-	//
+	for (int i = 0; i < 4; i++)
+		channel[i].DMASAD = channel[i].DMADAD = channel[i].DMACNT = channel[i].sourceAddress = channel[i].destinationAddress = channel[i].realLength = 0;
+
+	if constexpr (dma9)
+		DMA0FILL = DMA1FILL = DMA2FILL = DMA3FILL = 0;
 }
 
 template <bool dma9>
@@ -84,19 +89,20 @@ void DMA<dma9>::doDma(int channelNum) {
 		}
 		log << "  Chunk Size: " << (16 << info.transferType) << "-bit  Repeat: " << (info.repeat ? "True" : "False") << "\n";
 		log << "Source Adjustment: ";
-		switch (info.sourceAddress) {
+		switch (info.sourceControl) {
 		case 0: log << "Increment"; break;
 		case 1: log << "Decrement"; break;
 		case 2: log << "Fixed"; break;
 		case 3: log << "Prohibeted"; break;
 		}
 		log << "  Destination Adjustment: ";
-		switch (info.destinationAddress) {
+		switch (info.destinationControl) {
 		case 0: log << "Increment"; break;
 		case 1: log << "Decrement"; break;
 		case 2: log << "Fixed"; break;
 		case 3: log << "Increment/Reload"; break;
 		}
+		log << "\n";
 	}
 
 	// Get offsets
@@ -315,17 +321,17 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		channel[0].DMADAD = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0x0F) << 24);
 		break;
 	case 0x40000B8:
-		channel[0].DMACNT = (channel[0].DMADAD & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		channel[0].DMACNT = (channel[0].DMACNT & 0xFFFFFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x40000B9:
-		channel[0].DMACNT = (channel[0].DMADAD & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		channel[0].DMACNT = (channel[0].DMACNT & 0xFFFF00FF) | ((value & 0xFF) << 8);
 		break;
 	case 0x40000BA:
-		channel[0].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		channel[0].DMACNT = (channel[0].DMACNT & 0xFF00FFFF) | ((value & 0xFF) << 16);
 		break;
 	case 0x40000BB:
 		oldEnable = channel[0].enable;
-		channel[0].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xFF) << 24);
+		channel[0].DMACNT = (channel[0].DMACNT & 0x00FFFFFF) | ((value & 0xFF) << 24);
 
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(0);
@@ -359,17 +365,17 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		channel[1].DMADAD = (channel[1].DMADAD & 0x00FFFFFF) | ((value & 0x0F) << 24);
 		break;
 	case 0x40000C4:
-		channel[1].DMACNT = (channel[0].DMADAD & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		channel[1].DMACNT = (channel[1].DMACNT & 0xFFFFFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x40000C5:
-		channel[1].DMACNT = (channel[0].DMADAD & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		channel[1].DMACNT = (channel[1].DMACNT & 0xFFFF00FF) | ((value & 0xFF) << 8);
 		break;
 	case 0x40000C6:
-		channel[1].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		channel[1].DMACNT = (channel[1].DMACNT & 0xFF00FFFF) | ((value & 0xFF) << 16);
 		break;
 	case 0x40000C7:
 		oldEnable = channel[1].enable;
-		channel[1].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xFF) << 24);
+		channel[1].DMACNT = (channel[1].DMACNT & 0x00FFFFFF) | ((value & 0xFF) << 24);
 
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(1);
@@ -403,17 +409,17 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		channel[2].DMADAD = (channel[2].DMADAD & 0x00FFFFFF) | ((value & 0x0F) << 24);
 		break;
 	case 0x40000D0:
-		channel[2].DMACNT = (channel[0].DMADAD & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		channel[2].DMACNT = (channel[2].DMACNT & 0xFFFFFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x40000D1:
-		channel[2].DMACNT = (channel[0].DMADAD & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		channel[2].DMACNT = (channel[2].DMACNT & 0xFFFF00FF) | ((value & 0xFF) << 8);
 		break;
 	case 0x40000D2:
-		channel[2].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		channel[2].DMACNT = (channel[2].DMACNT & 0xFF00FFFF) | ((value & 0xFF) << 16);
 		break;
 	case 0x40000D3:
 		oldEnable = channel[2].enable;
-		channel[2].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xFF) << 24);
+		channel[2].DMACNT = (channel[2].DMACNT & 0x00FFFFFF) | ((value & 0xFF) << 24);
 
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(2);
@@ -447,17 +453,17 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		channel[3].DMADAD = (channel[3].DMADAD & 0x00FFFFFF) | ((value & 0x0F) << 24);
 		break;
 	case 0x40000DC:
-		channel[3].DMACNT = (channel[0].DMADAD & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		channel[3].DMACNT = (channel[3].DMACNT & 0xFFFFFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x40000DD:
-		channel[3].DMACNT = (channel[0].DMADAD & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		channel[3].DMACNT = (channel[3].DMACNT & 0xFFFF00FF) | ((value & 0xFF) << 8);
 		break;
 	case 0x40000DE:
-		channel[3].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		channel[3].DMACNT = (channel[3].DMACNT & 0xFF00FFFF) | ((value & 0xFF) << 16);
 		break;
 	case 0x40000DF:
 		oldEnable = channel[3].enable;
-		channel[3].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xFF) << 24);
+		channel[3].DMACNT = (channel[3].DMACNT & 0x00FFFFFF) | ((value & 0xFF) << 24);
 
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(3);
@@ -655,17 +661,17 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		channel[0].DMADAD = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0x07) << 24);
 		break;
 	case 0x40000B8:
-		channel[0].DMACNT = (channel[0].DMADAD & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		channel[0].DMACNT = (channel[0].DMACNT & 0xFFFFFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x40000B9:
-		channel[0].DMACNT = (channel[0].DMADAD & 0xFFFF00FF) | ((value & 0x3F) << 8);
+		channel[0].DMACNT = (channel[0].DMACNT & 0xFFFF00FF) | ((value & 0x3F) << 8);
 		break;
 	case 0x40000BA:
-		channel[0].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xE0) << 16);
+		channel[0].DMACNT = (channel[0].DMACNT & 0xFF00FFFF) | ((value & 0xE0) << 16);
 		break;
 	case 0x40000BB:
 		oldEnable = channel[0].enable;
-		channel[0].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xF7) << 24);
+		channel[0].DMACNT = (channel[0].DMACNT & 0x00FFFFFF) | ((value & 0xF7) << 24);
 
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(0);
@@ -699,17 +705,17 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		channel[1].DMADAD = (channel[1].DMADAD & 0x00FFFFFF) | ((value & 0x07) << 24);
 		break;
 	case 0x40000C4:
-		channel[1].DMACNT = (channel[0].DMADAD & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		channel[1].DMACNT = (channel[1].DMACNT & 0xFFFFFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x40000C5:
-		channel[1].DMACNT = (channel[0].DMADAD & 0xFFFF00FF) | ((value & 0x3F) << 8);
+		channel[1].DMACNT = (channel[1].DMACNT & 0xFFFF00FF) | ((value & 0x3F) << 8);
 		break;
 	case 0x40000C6:
-		channel[1].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xE0) << 16);
+		channel[1].DMACNT = (channel[1].DMACNT & 0xFF00FFFF) | ((value & 0xE0) << 16);
 		break;
 	case 0x40000C7:
 		oldEnable = channel[1].enable;
-		channel[1].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xF7) << 24);
+		channel[1].DMACNT = (channel[1].DMACNT & 0x00FFFFFF) | ((value & 0xF7) << 24);
 
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(1);
@@ -743,17 +749,17 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		channel[2].DMADAD = (channel[2].DMADAD & 0x00FFFFFF) | ((value & 0x07) << 24);
 		break;
 	case 0x40000D0:
-		channel[2].DMACNT = (channel[0].DMADAD & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		channel[2].DMACNT = (channel[2].DMACNT & 0xFFFFFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x40000D1:
-		channel[2].DMACNT = (channel[0].DMADAD & 0xFFFF00FF) | ((value & 0x3F) << 8);
+		channel[2].DMACNT = (channel[2].DMACNT & 0xFFFF00FF) | ((value & 0x3F) << 8);
 		break;
 	case 0x40000D2:
-		channel[2].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xE0) << 16);
+		channel[2].DMACNT = (channel[2].DMACNT & 0xFF00FFFF) | ((value & 0xE0) << 16);
 		break;
 	case 0x40000D3:
 		oldEnable = channel[2].enable;
-		channel[2].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xF7) << 24);
+		channel[2].DMACNT = (channel[2].DMACNT & 0x00FFFFFF) | ((value & 0xF7) << 24);
 
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(2);
@@ -787,17 +793,17 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		channel[3].DMADAD = (channel[3].DMADAD & 0x00FFFFFF) | ((value & 0x0F) << 24);
 		break;
 	case 0x40000DC:
-		channel[3].DMACNT = (channel[0].DMADAD & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		channel[3].DMACNT = (channel[3].DMACNT & 0xFFFFFF00) | ((value & 0xFF) << 0);
 		break;
 	case 0x40000DD:
-		channel[3].DMACNT = (channel[0].DMADAD & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		channel[3].DMACNT = (channel[3].DMACNT & 0xFFFF00FF) | ((value & 0xFF) << 8);
 		break;
 	case 0x40000DE:
-		channel[3].DMACNT = (channel[0].DMADAD & 0xFF00FFFF) | ((value & 0xE0) << 16);
+		channel[3].DMACNT = (channel[3].DMACNT & 0xFF00FFFF) | ((value & 0xE0) << 16);
 		break;
 	case 0x40000DF:
 		oldEnable = channel[3].enable;
-		channel[3].DMACNT = (channel[0].DMADAD & 0x00FFFFFF) | ((value & 0xF7) << 24);
+		channel[3].DMACNT = (channel[3].DMACNT & 0x00FFFFFF) | ((value & 0xF7) << 24);
 
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(3);

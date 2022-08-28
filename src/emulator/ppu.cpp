@@ -151,7 +151,7 @@ u8 PPU::readIO9(u32 address) {
 	case 0x4000307:
 		return 0;
 	default:
-		log << fmt::format("[ARM9 Bus][PPU] Read from unknown IO register 0x{:0>8X}\n", address);
+		log << fmt::format("[ARM9 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -243,7 +243,7 @@ void PPU::writeIO9(u32 address, u8 value) {
 	case 0x4000307:
 		break;
 	default:
-		log << fmt::format("[ARM9 Bus][PPU] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
+		log << fmt::format("[ARM9 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>8X}\n", address, value);
 		break;
 	}
 }
@@ -259,7 +259,7 @@ u8 PPU::readIO7(u32 address) {
 	case 0x4000007:
 		return (u8)(VCOUNT >> 8);
 	default:
-		log << fmt::format("[ARM7 Bus][PPU] Read from unknown IO register 0x{:0>8X}\n", address);
+		log << fmt::format("[ARM7 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -273,7 +273,7 @@ void PPU::writeIO7(u32 address, u8 value) {
 		DISPSTAT7 = (DISPSTAT7 & 0x00FF) | ((value & 0xFF) << 8);
 		break;
 	default:
-		log << fmt::format("[ARM7 Bus][PPU] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
+		log << fmt::format("[ARM7 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>8X}\n", address, value);
 		break;
 	}
 }

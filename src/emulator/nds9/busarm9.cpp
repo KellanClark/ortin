@@ -32,6 +32,7 @@ void BusARM9::reset() {
 	log.str("");
 	delay = 0;
 
+	dma.reset();
 	dsmath.reset();
 	cpu.resetARM946E();
 }
