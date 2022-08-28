@@ -39,6 +39,10 @@ void BusARM7::reset() {
 	log.str("");
 	delay = 0;
 
+	IME = false;
+	IE = IF = 0;
+	HALTCNT = 0;
+
 	dma.reset();
 	cpu.resetARM7TDMI();
 }
@@ -223,6 +227,8 @@ u8 BusARM7::readIO(u32 address, bool final) {
 		return (u8)(IF >> 16);
 	case 0x4000217:
 		return (u8)(IF >> 24);
+	case 0x4000301: // TODO: Is this only allowed in BIOS?
+		return HALTCNT;
 
 	default:
 		log << fmt::format("[NDS7 Bus] Read from unknown IO register 0x{:0>7X}\n", address);
@@ -285,6 +291,17 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 	case 0x4000217:
 		IF &= ~(value << 24);
 		refreshInterrupts();
+		break;
+	case 0x4000301: // TODO: Is this only allowed in BIOS?
+		HALTCNT = value & 0xC0;
+
+		if (HALTCNT == 0x40) { [[unlikely]]
+			log << "[NDS7 Bus] Attempt to switch to GBA mode\n";
+			hacf();
+		} else if (HALTCNT == 0xC0) { [[unlikely]]
+			log << "[NDS7 Bus] Attempt to switch to Sleep mode\n";
+			hacf();
+		}
 		break;
 
 	default:

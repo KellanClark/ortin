@@ -63,6 +63,7 @@ public:
 	bool IME; // NDS7 - 0x4000208
 	u32 IE; // NDS7 - 0x4000210
 	u32 IF; // NDS7 - 0x4000214
+	u8 HALTCNT; // NDS7 - 0x4000301
 
 	void requestInterrupt(InterruptType type);
 	void refreshInterrupts();

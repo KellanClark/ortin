@@ -76,6 +76,7 @@ void NDS::run() {
 				nds7.cpu.cycle();
 			}
 
+			check_scheduler:
 			while (shared.eventQueue.top().timeStamp <= shared.currentTime) {
 				auto type = shared.eventQueue.top().type;
 				shared.eventQueue.pop();
@@ -127,7 +128,25 @@ void NDS::run() {
 				}
 			}
 
-			++shared.currentTime;
+			if (nds9.cpu.cp15.halted && (nds7.HALTCNT == 0x80)) { [[unlikely]]
+				if (nds9.cpu.processIrq || (nds7.IE & nds7.IF)) {
+					if (nds7.IE & nds7.IF)
+						nds7.HALTCNT = 0;
+
+					if (nds9.delay < 1) nds9.delay = 1;
+					if (nds7.delay < 1) nds7.delay = 1;
+					break;
+				} else {
+					auto difference = shared.eventQueue.top().timeStamp - shared.currentTime;
+					shared.currentTime -= difference;
+					nds9.delay -= difference;
+					nds7.delay -= difference;
+
+					goto check_scheduler;
+				}
+			} else {
+				++shared.currentTime;
+			}
 		}
 
 		handleThreadQueue();

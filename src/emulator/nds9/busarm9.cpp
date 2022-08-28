@@ -32,6 +32,9 @@ void BusARM9::reset() {
 	log.str("");
 	delay = 0;
 
+	IME = false;
+	IE = IF = 0;
+
 	dma.reset();
 	dsmath.reset();
 	cpu.resetARM946E();
@@ -431,8 +434,12 @@ void BusARM9::coprocessorWrite(u32 copNum, u32 copOpc, u32 copSrcDestReg, u32 co
 	case 2:
 	case 3:
 	case 5:
-	case 6:
-	case 7: return; // I hate crt0
+	case 6: return; // I hate crt0
+	case 7:
+		if (((copOpReg == 0) && (copOpcType == 4)) || ((copOpReg == 8) && (copOpcType == 2))) {
+			cpu.cp15.halted = true;
+		}
+		return;
 	case 9:
 		if (copOpReg == 1) {
 			if (copOpcType == 0) {

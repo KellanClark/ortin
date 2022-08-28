@@ -1159,7 +1159,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
-static const std::array<IoRegister, 23> registers7 = {{
+static const std::array<IoRegister, 24> registers7 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -1317,10 +1317,12 @@ static const std::array<IoRegister, 23> registers7 = {{
 		{"Wifi", 24, 1, CHECKBOX}}},
 	{"WRAMSTAT", "WRAM Bank Status", 0x4000241, 1, true, false, 1, (IoField[]){
 		{"Mapping", 0, 2, SPECIAL}}},
+	{"HALTCNT", "Low Power Mode Control", 0x4000301, 1, true, true, 1, (IoField[]){
+		{"Power Down Mode", 6, 2, SPECIAL}}},
 }};
 
 void DebugMenu::ioReg7Window() {
-	static std::array<void *, 23> registerPointers7 = {
+	static std::array<void *, 24> registerPointers7 = {
 		&ortin.nds.ppu.DISPSTAT7,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.nds7.dma.channel[0].DMASAD,
@@ -1343,7 +1345,8 @@ void DebugMenu::ioReg7Window() {
 		&ortin.nds.nds7.IME,
 		&ortin.nds.nds7.IE,
 		&ortin.nds.nds7.IF,
-		&ortin.nds.shared.WRAMCNT
+		&ortin.nds.shared.WRAMCNT,
+		&ortin.nds.nds7.HALTCNT
 	};
 
 	static int selected = 0;
@@ -1447,11 +1450,20 @@ void DebugMenu::ioReg7Window() {
 					}
 				} break;
 				case 0x4000241: { // WAITSTAT
-					const char *items[] = {"Unmapped/WRAM Mirror", "Bottom 16KB", "Top 16KB", "Full 32KB"};
+					const char *items[] = {"Unmapped/WRAM Mirror",
+										   "Bottom 16KB",
+										   "Top 16KB",
+										   "Full 32KB"};
 					ImGui::Combo("combo", (int *)&fValue, items, 4);
 					} break;
-				}
-				break;
+				case 0x4000301: { // HALTCNT
+					const char *items[] = {"No function",
+										   "Enter GBA Mode",
+										   "Halt",
+										   "Sleep"};
+					ImGui::Combo("combo", (int *)&fValue, items, 4);
+					} break;
+				} break;
 			}
 
 			value = (value & ~mask) | (fValue << field.startBit);
