@@ -741,6 +741,7 @@ enum InputType {
 	TEXT_BOX,
 	TEXT_BOX_HEX,
 	CHECKBOX,
+	COMBO,
 	SPECIAL
 };
 
@@ -749,6 +750,7 @@ struct IoField {
 	int startBit;
 	int length;
 	InputType type;
+	const char *comboText;
 };
 
 struct IoRegister {
@@ -762,7 +764,38 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 38> registers9 = {{
+static const std::array<IoRegister, 66> registers9 = {{
+	{"(A) DISPCNT", "LCD Control", 0x4000000, 4, true, true, 23, (IoField[]){
+		{"BG Mode", 0, 3, TEXT_BOX},
+		{"BG0 2D/3D Selection", 3, 1, COMBO, "2D\0"
+											 "3D\0\0"},
+		{"Tile OBJ Mapping", 4, 1, COMBO, "2D\0"
+										  "1D\0\0"},
+		{"Bitmap OBJ 2D-Dimension", 5, 1, COMBO, "128x512 dots\0"
+												 "256x256 dots\0\0"},
+		{"Bitmap OBJ Mapping", 6, 1, COMBO, "2D\0"
+											"1D\0\0"},
+		{"Forced Blank", 7, 1, CHECKBOX},
+		{"Screen Display BG0", 8, 1, CHECKBOX},
+		{"Screen Display BG1", 9, 1, CHECKBOX},
+		{"Screen Display BG2", 10, 1, CHECKBOX},
+		{"Screen Display BG3", 11, 1, CHECKBOX},
+		{"Screen Display OBJ", 12, 1, CHECKBOX},
+		{"Window 0 Display Flag", 13, 1, CHECKBOX},
+		{"Window 1 Display Flag", 14, 1, CHECKBOX},
+		{"OBJ Window Display Flag", 15, 1, CHECKBOX},
+		{"Display Mode", 16, 2, COMBO, "Display off\0"
+									   "Graphics Display\0"
+									   "VRAM Display\0"
+									   "Main Memory Display\0\0"},
+		{"VRAM block", 18, 2, TEXT_BOX},
+		{"Tile OBJ 1D-Boundary", 20, 2, TEXT_BOX}, // ?
+		{"Bitmap OBJ 1D-Boundary", 22, 1, TEXT_BOX}, // ?
+		{"OBJ Processing during H-Blank", 23, 1, CHECKBOX},
+		{"Character Base", 24, 3, TEXT_BOX},
+		{"Screen Base", 27, 3, TEXT_BOX},
+		{"BG Extended Palettes", 30, 1, CHECKBOX},
+		{"OBJ Extended Palettes", 31, 1, CHECKBOX}}},
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -771,19 +804,94 @@ static const std::array<IoRegister, 38> registers9 = {{
 		{"H-Blank IRQ", 4, 1, CHECKBOX},
 		{"VCOUNT Compare IRQ", 5, 1, CHECKBOX},
 		{"VCOUNT Compare Value", 7, 9, SPECIAL}}},
-	{"VCOUNT", "Shows the Current Scanline", 0x4000006, 2, true, false, 1, (IoField[]){
-		{"Current Scanline", 0, 9, TEXT_BOX}}},
+	{"VCOUNT", "Vertical Counter", 0x4000006, 2, true, false, 1, (IoField[]){
+		{"Current Scanline (LY)", 0, 9, TEXT_BOX}}},
+	{"(A) BG0CNT", "BG0 Control", 0x4000008, 2, true, true, 7, (IoField[]){
+		{"BG Priority", 0, 2, TEXT_BOX},
+		{"Character Base Block", 2, 4, TEXT_BOX},
+		{"Mosaic", 6, 1, CHECKBOX},
+		{"Colors/Palettes", 7, 1, COMBO, "16/16\0"
+										 "256/1\0\0"},
+		{"Screen Base Block", 8, 5, TEXT_BOX},
+		{"Ext Palette Slot", 13, 1, COMBO, "Slot 0\0"
+										   "Slot2\0\0"},
+		{"Screen Size", 14, 2, TEXT_BOX}}},
+	{"(A) BG1CNT", "BG1 Control", 0x400000A, 2, true, true, 7, (IoField[]){
+		{"BG Priority", 0, 2, TEXT_BOX},
+		{"Character Base Block", 2, 4, TEXT_BOX},
+		{"Mosaic", 6, 1, CHECKBOX},
+		{"Colors/Palettes", 7, 1, COMBO, "16/16\0"
+										 "256/1\0\0"},
+		{"Screen Base Block", 8, 5, TEXT_BOX},
+		{"Ext Palette Slot", 13, 1, COMBO, "Slot 1\0"
+										   "Slot3\0\0"},
+		{"Screen Size", 14, 2, TEXT_BOX}}},
+	{"(A) BG2CNT", "BG2 Control", 0x400000C, 2, true, true, 7, (IoField[]){
+		{"BG Priority", 0, 2, TEXT_BOX},
+		{"Character Base Block", 2, 4, TEXT_BOX},
+		{"Mosaic", 6, 1, CHECKBOX},
+		{"Colors/Palettes", 7, 1, COMBO, "16/16\0"
+										 "256/1\0\0"},
+		{"Screen Base Block", 8, 5, TEXT_BOX},
+		{"Display Area Overflow", 13, 1, COMBO, "Transparent\0"
+												"Wraparound\0\0"},
+		{"Screen Size", 14, 2, TEXT_BOX}}},
+	{"(A) BG3CNT", "BG3 Control", 0x400000E, 2, true, true, 7, (IoField[]){
+		{"BG Priority", 0, 2, TEXT_BOX},
+		{"Character Base Block", 2, 4, TEXT_BOX},
+		{"Mosaic", 6, 1, CHECKBOX},
+		{"Colors/Palettes", 7, 1, COMBO, "16/16\0"
+										 "256/1\0\0"},
+		{"Screen Base Block", 8, 5, TEXT_BOX},
+		{"Display Area Overflow", 13, 1, COMBO, "Transparent\0"
+												"Wraparound\0\0"},
+		{"Screen Size", 14, 2, TEXT_BOX}}},
+	{"(A) BG0HOFS", "BG0 X-Offset", 0x4000010, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(A) BG0VOFS", "BG0 Y-Offset", 0x4000012, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(A) BG1HOFS", "BG1 X-Offset", 0x4000014, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(A) BG1VOFS", "BG1 Y-Offset", 0x4000016, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(A) BG2HOFS", "BG2 X-Offset", 0x4000018, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(A) BG2VOFS", "BG2 Y-Offset", 0x400001A, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(A) BG3HOFS", "BG3 X-Offset", 0x400001C, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(A) BG3VOFS", "BG3 Y-Offset", 0x400001E, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(A) MASTER_BRIGHT", "Master Brightness Up/Down", 0x400006C, 2, true, true, 2, (IoField[]){
+		{"Factor used for 6bit R,G,B Intensities", 0, 5, TEXT_BOX},
+		{"Mode", 14, 2, COMBO, "Disable\0"
+							   "Up\0"
+							   "Down\0"
+							   "Reserved\0\0"}}},
 	{"DMA0SAD", "DMA 0 Source Address", 0x40000B0, 4, true, true, 1, (IoField[]){
 		{"DMA 0 Source Address", 0, 28, TEXT_BOX_HEX}}},
 	{"DMA0DAD", "DMA 0 Destination Address", 0x40000B4, 4, true, true, 1, (IoField[]){
 		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
 	{"DMA0CNT", "DMA 0 Control", 0x40000B8, 4, true, true, 8, (IoField[]){
 		{"Word Count", 0, 21, TEXT_BOX_HEX},
-		{"Dest Addr Control", 21, 2, SPECIAL},
-		{"Source Adr Control", 23, 2, SPECIAL},
+		{"Dest Addr Control", 21, 2, COMBO, "Increment\0"
+											"Decrement\0"
+											"Fixed\0"
+											"Increment/Reload\0\0"},
+		{"Source Adr Control", 23, 2, COMBO, "Increment\0"
+											 "Decrement\0"
+											 "Fixed\0"
+											 "Prohibited\0\0"},
 		{"DMA Repeat", 25, 1, CHECKBOX},
 		{"DMA Transfer Type", 26, 1, CHECKBOX},
-		{"DMA Start Timing", 27, 3, SPECIAL},
+		{"DMA Start Timing", 27, 3, COMBO, "Start Immediately\0"
+										   "Start at V-Blank\0"
+										   "Start at H-Blank\0"
+										   "Synchronize to start of display\0"
+										   "Main memory display\0"
+										   "DS Cartridge Slot\0"
+										   "GBA Cartridge Slot\0"
+										   "Geometry Command FIFO\0\0"},
 		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
 		{"DMA Enable", 31, 1, CHECKBOX}}},
 	{"DMA1SAD", "DMA 1 Source Address", 0x40000BC, 4, true, true, 1, (IoField[]){
@@ -792,11 +900,24 @@ static const std::array<IoRegister, 38> registers9 = {{
 		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
 	{"DMA1CNT", "DMA 1 Control", 0x40000C4, 4, true, true, 8, (IoField[]){
 		{"Word Count", 0, 21, TEXT_BOX_HEX},
-		{"Dest Addr Control", 21, 2, SPECIAL},
-		{"Source Adr Control", 23, 2, SPECIAL},
+		{"Dest Addr Control", 21, 2, COMBO, "Increment\0"
+											"Decrement\0"
+											"Fixed\0"
+											"Increment/Reload\0\0"},
+		{"Source Adr Control", 23, 2, COMBO, "Increment\0"
+											 "Decrement\0"
+											 "Fixed\0"
+											 "Prohibited\0\0"},
 		{"DMA Repeat", 25, 1, CHECKBOX},
 		{"DMA Transfer Type", 26, 1, CHECKBOX},
-		{"DMA Start Timing", 27, 3, SPECIAL},
+		{"DMA Start Timing", 27, 3, COMBO, "Start Immediately\0"
+										   "Start at V-Blank\0"
+										   "Start at H-Blank\0"
+										   "Synchronize to start of display\0"
+										   "Main memory display\0"
+										   "DS Cartridge Slot\0"
+										   "GBA Cartridge Slot\0"
+										   "Geometry Command FIFO\0\0"},
 		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
 		{"DMA Enable", 31, 1, CHECKBOX}}},
 	{"DMA2SAD", "DMA 2 Source Address", 0x40000C8, 4, true, true, 1, (IoField[]){
@@ -805,11 +926,24 @@ static const std::array<IoRegister, 38> registers9 = {{
 		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
 	{"DMA2CNT", "DMA 2 Control", 0x40000D0, 4, true, true, 8, (IoField[]){
 		{"Word Count", 0, 21, TEXT_BOX_HEX},
-		{"Dest Addr Control", 21, 2, SPECIAL},
-		{"Source Adr Control", 23, 2, SPECIAL},
+		{"Dest Addr Control", 21, 2, COMBO, "Increment\0"
+											"Decrement\0"
+											"Fixed\0"
+											"Increment/Reload\0\0"},
+		{"Source Adr Control", 23, 2, COMBO, "Increment\0"
+											 "Decrement\0"
+											 "Fixed\0"
+											 "Prohibited\0\0"},
 		{"DMA Repeat", 25, 1, CHECKBOX},
 		{"DMA Transfer Type", 26, 1, CHECKBOX},
-		{"DMA Start Timing", 27, 3, SPECIAL},
+		{"DMA Start Timing", 27, 3, COMBO, "Start Immediately\0"
+										   "Start at V-Blank\0"
+										   "Start at H-Blank\0"
+										   "Synchronize to start of display\0"
+										   "Main memory display\0"
+										   "DS Cartridge Slot\0"
+										   "GBA Cartridge Slot\0"
+										   "Geometry Command FIFO\0\0"},
 		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
 		{"DMA Enable", 31, 1, CHECKBOX}}},
 	{"DMA3SAD", "DMA 3 Source Address", 0x40000D4, 4, true, true, 1, (IoField[]){
@@ -818,11 +952,24 @@ static const std::array<IoRegister, 38> registers9 = {{
 		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
 	{"DMA3CNT", "DMA 3 Control", 0x40000DC, 4, true, true, 8, (IoField[]){
 		{"Word Count", 0, 21, TEXT_BOX_HEX},
-		{"Dest Addr Control", 21, 2, SPECIAL},
-		{"Source Adr Control", 23, 2, SPECIAL},
+		{"Dest Addr Control", 21, 2, COMBO, "Increment\0"
+											"Decrement\0"
+											"Fixed\0"
+											"Increment/Reload\0\0"},
+		{"Source Adr Control", 23, 2, COMBO, "Increment\0"
+											 "Decrement\0"
+											 "Fixed\0"
+											 "Prohibited\0\0"},
 		{"DMA Repeat", 25, 1, CHECKBOX},
 		{"DMA Transfer Type", 26, 1, CHECKBOX},
-		{"DMA Start Timing", 27, 3, SPECIAL},
+		{"DMA Start Timing", 27, 3, COMBO, "Start Immediately\0"
+										   "Start at V-Blank\0"
+										   "Start at H-Blank\0"
+										   "Synchronize to start of display\0"
+										   "Main memory display\0"
+										   "DS Cartridge Slot\0"
+										   "GBA Cartridge Slot\0"
+										   "Geometry Command FIFO\0\0"},
 		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
 		{"DMA Enable", 31, 1, CHECKBOX}}},
 	{"DMA0FILL", "DMA 0 Filldata", 0x40000E0, 4, true, true, 1, (IoField[]){
@@ -856,7 +1003,8 @@ static const std::array<IoRegister, 38> registers9 = {{
 		{"R", 8, 1, CHECKBOX},
 		{"L", 9, 1, CHECKBOX},
 		{"IRQ Enable", 14, 1, CHECKBOX},
-		{"Condition", 15, 1, SPECIAL}}},
+		{"Condition", 15, 1, COMBO, "OR Mode\0"
+									"AND Mode\0\0"}}},
 	{"IPCSYNC", "IPC Synchronize Register", 0x4000180, 2, true, true, 4, (IoField[]){
 		{"Data input from IPCSYNC of remote CPU", 0, 4, TEXT_BOX_HEX},
 		{"Data output to IPCSYNC of remote CPU", 8, 4, TEXT_BOX_HEX},
@@ -942,7 +1090,10 @@ static const std::array<IoRegister, 38> registers9 = {{
 		{"Offset", 3, 2, TEXT_BOX},
 		{"Enable", 7, 1, CHECKBOX}}},
 	{"WRAMCNT",	"WRAM Bank Control", 0x4000247, 1, true, true, 1, (IoField[]){
-		{"Mapping", 0, 2, SPECIAL}}},
+		{"Mapping", 0, 2, COMBO, "Full 32KB\0"
+								 "Top 16KB\0"
+								 "Bottom 16KB\0"
+								 "Unmapped\0\0"}}},
 	{"VRAMCNT_H", "VRAM Bank D Control", 0x4000248, 1, false, true, 2, (IoField[]){
 		{"MST", 0, 2, TEXT_BOX},
 		{"Enable", 7, 1, CHECKBOX}}},
@@ -950,20 +1101,123 @@ static const std::array<IoRegister, 38> registers9 = {{
 		{"MST", 0, 2, TEXT_BOX},
 		{"Enable", 7, 1, CHECKBOX}}},
 	{"DIVCNT", "Division Control", 0x4000280, 2, true, true, 3, (IoField[]){
-		{"Division Mode", 0, 2, SPECIAL},
+		{"Division Mode", 0, 2, COMBO, "32bit / 32bit = 32bit , 32bit\0"
+									   "64bit / 32bit = 64bit , 32bit\0"
+									   "64bit / 64bit = 64bit , 64bit\0"
+									   "Reserved; same as Mode 1\0\0"},
 		{"Division by zero", 14, 1, CHECKBOX},
 		{"Busy", 15, 1, CHECKBOX}}},
 	{"SQRTCNT", "Square Root Control", 0x40002B0, 2, true, true, 2, (IoField[]){
-		{"Mode", 0, 1, SPECIAL},
+		{"Mode", 0, 1, COMBO, "32bit input\0"
+							  "64bit input\0\0"},
 		{"Busy", 15, 1, CHECKBOX}}},
 	{"SQRT_RESULT", "Square Root Result", 0x40002B4, 4, true, false, 1, (IoField[]){
 		{"Square Root Result", 0, 32, TEXT_BOX}}},
+	{"(B) DISPCNT", "LCD Control", 0x4001000, 4, true, true, 18, (IoField[]){
+		{"BG Mode", 0, 3, TEXT_BOX},
+		{"Tile OBJ Mapping", 4, 1, COMBO, "2D\0"
+										  "1D\0\0"},
+		{"Bitmap OBJ 2D-Dimension", 5, 1, COMBO, "128x512 dots\0"
+												 "256x256 dots\0\0"},
+		{"Bitmap OBJ Mapping", 6, 1, COMBO, "2D\0"
+											"1D\0\0"},
+		{"Forced Blank", 7, 1, CHECKBOX},
+		{"Screen Display BG0", 8, 1, CHECKBOX},
+		{"Screen Display BG1", 9, 1, CHECKBOX},
+		{"Screen Display BG2", 10, 1, CHECKBOX},
+		{"Screen Display BG3", 11, 1, CHECKBOX},
+		{"Screen Display OBJ", 12, 1, CHECKBOX},
+		{"Window 0 Display Flag", 13, 1, CHECKBOX},
+		{"Window 1 Display Flag", 14, 1, CHECKBOX},
+		{"OBJ Window Display Flag", 15, 1, CHECKBOX},
+		{"Display Mode", 16, 1, COMBO, "Display off\0"
+									   "Graphics Display\0\0"},
+		{"Tile OBJ 1D-Boundary", 20, 2, TEXT_BOX}, // ?
+		{"OBJ Processing during H-Blank", 23, 1, CHECKBOX},
+		{"BG Extended Palettes", 30, 1, CHECKBOX},
+		{"OBJ Extended Palettes", 31, 1, CHECKBOX}}},
+	{"(B) BG0CNT", "BG0 Control", 0x4001008, 2, true, true, 7, (IoField[]){
+		{"BG Priority", 0, 2, TEXT_BOX},
+		{"Character Base Block", 2, 4, TEXT_BOX},
+		{"Mosaic", 6, 1, CHECKBOX},
+		{"Colors/Palettes", 7, 1, COMBO, "16/16\0"
+										 "256/1\0\0"},
+		{"Screen Base Block", 8, 5, TEXT_BOX},
+		{"Ext Palette Slot", 13, 1, COMBO, "Slot 0\0"
+										   "Slot2\0\0"},
+		{"Screen Size", 14, 2, TEXT_BOX}}},
+	{"(B) BG1CNT", "BG1 Control", 0x400100A, 2, true, true, 7, (IoField[]){
+		{"BG Priority", 0, 2, TEXT_BOX},
+		{"Character Base Block", 2, 4, TEXT_BOX},
+		{"Mosaic", 6, 1, CHECKBOX},
+		{"Colors/Palettes", 7, 1, COMBO, "16/16\0"
+										 "256/1\0\0"},
+		{"Screen Base Block", 8, 5, TEXT_BOX},
+		{"Ext Palette Slot", 13, 1, COMBO, "Slot 1\0"
+										   "Slot3\0\0"},
+		{"Screen Size", 14, 2, TEXT_BOX}}},
+	{"(B) BG2CNT", "BG2 Control", 0x400100C, 2, true, true, 7, (IoField[]){
+		{"BG Priority", 0, 2, TEXT_BOX},
+		{"Character Base Block", 2, 4, TEXT_BOX},
+		{"Mosaic", 6, 1, CHECKBOX},
+		{"Colors/Palettes", 7, 1, COMBO, "16/16\0"
+										 "256/1\0\0"},
+		{"Screen Base Block", 8, 5, TEXT_BOX},
+		{"Display Area Overflow", 13, 1, COMBO, "Transparent\0"
+												"Wraparound\0\0"},
+		{"Screen Size", 14, 2, TEXT_BOX}}},
+	{"(B) BG3CNT", "BG3 Control", 0x400100E, 2, true, true, 7, (IoField[]){
+		{"BG Priority", 0, 2, TEXT_BOX},
+		{"Character Base Block", 2, 4, TEXT_BOX},
+		{"Mosaic", 6, 1, CHECKBOX},
+		{"Colors/Palettes", 7, 1, COMBO, "16/16\0"
+										 "256/1\0\0"},
+		{"Screen Base Block", 8, 5, TEXT_BOX},
+		{"Display Area Overflow", 13, 1, COMBO, "Transparent\0"
+												"Wraparound\0\0"},
+		{"Screen Size", 14, 2, TEXT_BOX}}},
+	{"(B) BG0HOFS", "BG0 X-Offset", 0x4001010, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(B) BG0VOFS", "BG0 Y-Offset", 0x4001012, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(B) BG1HOFS", "BG1 X-Offset", 0x4001014, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(B) BG1VOFS", "BG1 Y-Offset", 0x4001016, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(B) BG2HOFS", "BG2 X-Offset", 0x4001018, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(B) BG2VOFS", "BG2 Y-Offset", 0x400101A, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(B) BG3HOFS", "BG3 X-Offset", 0x400101C, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(B) BG3VOFS", "BG3 Y-Offset", 0x400101E, 2, false, true, 1, (IoField[]){
+		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(B) MASTER_BRIGHT", "Master Brightness Up/Down", 0x400106C, 2, true, true, 2, (IoField[]){
+		{"Factor used for 6bit R,G,B Intensities", 0, 5, TEXT_BOX},
+		{"Mode", 14, 2, COMBO, "Disable\0"
+							   "Up\0"
+							   "Down\0"
+							   "Reserved\0\0"}}},
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 38> registerPointers9 = {
+	static std::array<void *, 66> registerPointers9 = {
+		&ortin.nds.ppu.engineA.DISPCNT,
 		&ortin.nds.ppu.DISPSTAT9,
 		&ortin.nds.ppu.VCOUNT,
+		&ortin.nds.ppu.engineA.bg[0].BGCNT,
+		&ortin.nds.ppu.engineA.bg[1].BGCNT,
+		&ortin.nds.ppu.engineA.bg[2].BGCNT,
+		&ortin.nds.ppu.engineA.bg[3].BGCNT,
+		&ortin.nds.ppu.engineA.bg[0].BGHOFS,
+		&ortin.nds.ppu.engineA.bg[0].BGVOFS,
+		&ortin.nds.ppu.engineA.bg[1].BGHOFS,
+		&ortin.nds.ppu.engineA.bg[1].BGVOFS,
+		&ortin.nds.ppu.engineA.bg[2].BGHOFS,
+		&ortin.nds.ppu.engineA.bg[2].BGVOFS,
+		&ortin.nds.ppu.engineA.bg[3].BGHOFS,
+		&ortin.nds.ppu.engineA.bg[3].BGVOFS,
+		&ortin.nds.ppu.engineA.MASTER_BRIGHT,
 		&ortin.nds.nds9.dma.channel[0].DMASAD,
 		&ortin.nds.nds9.dma.channel[0].DMADAD,
 		&ortin.nds.nds9.dma.channel[0].DMACNT,
@@ -1000,6 +1254,20 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 		&ortin.nds.nds9.dsmath.DIVCNT,
 		&ortin.nds.nds9.dsmath.SQRTCNT,
 		&ortin.nds.nds9.dsmath.SQRT_RESULT,
+		&ortin.nds.ppu.engineB.DISPCNT,
+		&ortin.nds.ppu.engineB.bg[0].BGCNT,
+		&ortin.nds.ppu.engineB.bg[1].BGCNT,
+		&ortin.nds.ppu.engineB.bg[2].BGCNT,
+		&ortin.nds.ppu.engineB.bg[3].BGCNT,
+		&ortin.nds.ppu.engineB.bg[0].BGHOFS,
+		&ortin.nds.ppu.engineB.bg[0].BGVOFS,
+		&ortin.nds.ppu.engineB.bg[1].BGHOFS,
+		&ortin.nds.ppu.engineB.bg[1].BGVOFS,
+		&ortin.nds.ppu.engineB.bg[2].BGHOFS,
+		&ortin.nds.ppu.engineB.bg[2].BGVOFS,
+		&ortin.nds.ppu.engineB.bg[3].BGHOFS,
+		&ortin.nds.ppu.engineB.bg[3].BGVOFS,
+		&ortin.nds.ppu.engineB.MASTER_BRIGHT,
 	};
 
 	static int selected = 0;
@@ -1060,68 +1328,15 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 			case CHECKBOX:
 				ImGui::Checkbox(((std::string)field.name).c_str(), (bool *)&fValue);
 				break;
+			case COMBO:
+				ImGui::Combo(((std::string)field.name).c_str(), (int *)&fValue, field.comboText);
+				break;
 			case SPECIAL:
 				switch (address) {
-				case 0x4000004: // DISPCNT
+				case 0x4000004: // DISPSTAT
 					fValue = numberInput(((std::string)field.name).c_str(), false, (fValue >> 1) | ((fValue & 1) << 8), mask >> field.startBit);
 					fValue = ((fValue & 0xFF) << 1) | (fValue >> 8);
 					break;
-				case 0x40000B8: // DMA0CNT
-				case 0x40000C4: // DMA1CNT
-				case 0x40000D0: // DMA2CNT
-				case 0x40000DC: { // DMA3CNT
-					const char *items1[] = {"Increment",
-										   "Decrement",
-										   "Fixed",
-										   "Increment/Reload"};
-					const char *items2[] = {"Increment",
-											"Decrement",
-											"Fixed",
-											"Prohibited"};
-					const char *items5[] = {"Start Immediately",
-										    "Start at V-Blank",
-											"Start at H-Blank",
-											"Synchronize to start of display",
-											"Main memory display",
-											"DS Cartridge Slot",
-											"GBA Cartridge Slot",
-											"Geometry Command FIFO"};
-					switch (i) {
-					case 1:
-						ImGui::Combo("combo", (int *)&fValue, items1, 4);
-						break;
-					case 2:
-						ImGui::Combo("combo", (int *)&fValue, items2, 4);
-						break;
-					case 5:
-						ImGui::Combo("combo", (int *)&fValue, items5, 8);
-						break;
-					}
-					} break;
-				case 0x4000132: { // KEYCNT
-					const char *items[] = {"OR Mode",
-										   "AND Mode"};
-					ImGui::Combo("combo", (int *)&fValue, items, 2);
-					} break;
-				case 0x4000247: { // WAITCNT
-					const char *items[] = {"Full 32KB",
-										   "Top 16KB",
-										   "Bottom 16KB",
-										   "Unmapped"};
-					ImGui::Combo("combo", (int *)&fValue, items, 4);
-					} break;
-				case 0x4000280: { // DIVCNT
-					const char *items[] = {"32bit / 32bit = 32bit , 32bit",
-										   "64bit / 32bit = 64bit , 32bit",
-										   "64bit / 64bit = 64bit , 64bit",
-										   "Reserved; same as Mode 1"};
-					ImGui::Combo("combo", (int *)&fValue, items, 4);
-					} break;
-				case 0x40002B0: { // SQRTCNT
-					const char *items[] = {"32bit input",
-										   "64bit input"};
-					ImGui::Combo("combo", (int *)&fValue, items, 2);
-				} break;
 				}
 				break;
 			}
@@ -1159,7 +1374,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
-static const std::array<IoRegister, 24> registers7 = {{
+static const std::array<IoRegister, 27> registers7 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -1168,19 +1383,28 @@ static const std::array<IoRegister, 24> registers7 = {{
 		{"H-Blank IRQ", 4, 1, CHECKBOX},
 		{"VCOUNT Compare IRQ", 5, 1, CHECKBOX},
 		{"VCOUNT Compare Value", 7, 9, SPECIAL}}},
-	{"VCOUNT", "Shows the Current Scanline", 0x4000006, 2, true, false, 1, (IoField[]){
-		{"Current Scanline", 0, 9}}},
+	{"VCOUNT", "Vertical Counter", 0x4000006, 2, true, false, 1, (IoField[]){
+		{"Current Scanline (LY)", 0, 9}}},
 	{"DMA0SAD", "DMA 0 Source Address", 0x40000B0, 4, true, true, 1, (IoField[]){
 		{"DMA 0 Source Address", 0, 27, TEXT_BOX_HEX}}},
 	{"DMA0DAD", "DMA 0 Destination Address", 0x40000B4, 4, true, true, 1, (IoField[]){
 		{"DMA 0 Destination Address", 0, 27, TEXT_BOX_HEX}}},
 	{"DMA0CNT", "DMA 0 Control", 0x40000B8, 4, true, true, 8, (IoField[]){
 		{"Word Count", 0, 14, TEXT_BOX_HEX},
-		{"Dest Addr Control", 21, 2, SPECIAL},
-		{"Source Adr Control", 23, 2, SPECIAL},
+		{"Dest Addr Control", 21, 2, COMBO, "Increment\0"
+											"Decrement\0"
+											"Fixed\0"
+											"Increment/Reload\0\0"},
+		{"Source Adr Control", 23, 2, COMBO, "Increment\0"
+											 "Decrement\0"
+											 "Fixed\0"
+											 "Prohibited\0\0"},
 		{"DMA Repeat", 25, 1, CHECKBOX},
 		{"DMA Transfer Type", 26, 1, CHECKBOX},
-		{"DMA Start Timing", 28, 2, SPECIAL},
+		{"DMA Start Timing", 28, 2, COMBO, "Start Immediately\0"
+										   "Start at V-Blank\0"
+										   "DS Cartridge Slot\0"
+										   "Wireless interrupt\0\0"},
 		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
 		{"DMA Enable", 31, 1, CHECKBOX}}},
 	{"DMA1SAD", "DMA 1 Source Address", 0x40000BC, 4, true, true, 1, (IoField[]){
@@ -1189,11 +1413,20 @@ static const std::array<IoRegister, 24> registers7 = {{
 		{"DMA 0 Destination Address", 0, 27, TEXT_BOX_HEX}}},
 	{"DMA1CNT", "DMA 1 Control", 0x40000C4, 4, true, true, 8, (IoField[]){
 		{"Word Count", 0, 14, TEXT_BOX_HEX},
-		{"Dest Addr Control", 21, 2, SPECIAL},
-		{"Source Adr Control", 23, 2, SPECIAL},
+		{"Dest Addr Control", 21, 2, COMBO, "Increment\0"
+											"Decrement\0"
+											"Fixed\0"
+											"Increment/Reload\0\0"},
+		{"Source Adr Control", 23, 2, COMBO, "Increment\0"
+											 "Decrement\0"
+											 "Fixed\0"
+											 "Prohibited\0\0"},
 		{"DMA Repeat", 25, 1, CHECKBOX},
 		{"DMA Transfer Type", 26, 1, CHECKBOX},
-		{"DMA Start Timing", 28, 2, SPECIAL},
+		{"DMA Start Timing", 28, 2, COMBO, "Start Immediately\0"
+										   "Start at V-Blank\0"
+										   "DS Cartridge Slot\0"
+										   "GBA Cartridge Slot\0\0"},
 		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
 		{"DMA Enable", 31, 1, CHECKBOX}}},
 	{"DMA2SAD", "DMA 2 Source Address", 0x40000C8, 4, true, true, 1, (IoField[]){
@@ -1202,11 +1435,20 @@ static const std::array<IoRegister, 24> registers7 = {{
 		{"DMA 0 Destination Address", 0, 27, TEXT_BOX_HEX}}},
 	{"DMA2CNT", "DMA 2 Control", 0x40000D0, 4, true, true, 8, (IoField[]){
 		{"Word Count", 0, 14, TEXT_BOX_HEX},
-		{"Dest Addr Control", 21, 2, SPECIAL},
-		{"Source Adr Control", 23, 2, SPECIAL},
+		{"Dest Addr Control", 21, 2, COMBO, "Increment\0"
+											"Decrement\0"
+											"Fixed\0"
+											"Increment/Reload\0\0"},
+		{"Source Adr Control", 23, 2, COMBO, "Increment\0"
+											 "Decrement\0"
+											 "Fixed\0"
+											 "Prohibited\0\0"},
 		{"DMA Repeat", 25, 1, CHECKBOX},
 		{"DMA Transfer Type", 26, 1, CHECKBOX},
-		{"DMA Start Timing", 28, 2, SPECIAL},
+		{"DMA Start Timing", 28, 2, COMBO, "Start Immediately\0"
+										   "Start at V-Blank\0"
+										   "DS Cartridge Slot\0"
+										   "Wireless interrupt\0\0"},
 		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
 		{"DMA Enable", 31, 1, CHECKBOX}}},
 	{"DMA3SAD", "DMA 3 Source Address", 0x40000D4, 4, true, true, 1, (IoField[]){
@@ -1215,11 +1457,20 @@ static const std::array<IoRegister, 24> registers7 = {{
 		{"DMA 0 Destination Address", 0, 28, TEXT_BOX_HEX}}},
 	{"DMA3CNT", "DMA 3 Control", 0x40000DC, 4, true, true, 8, (IoField[]){
 		{"Word Count", 0, 16, TEXT_BOX_HEX},
-		{"Dest Addr Control", 21, 2, SPECIAL},
-		{"Source Adr Control", 23, 2, SPECIAL},
+		{"Dest Addr Control", 21, 2, COMBO, "Increment\0"
+											"Decrement\0"
+											"Fixed\0"
+											"Increment/Reload\0\0"},
+		{"Source Adr Control", 23, 2, COMBO, "Increment\0"
+											 "Decrement\0"
+											 "Fixed\0"
+											 "Prohibited\0\0"},
 		{"DMA Repeat", 25, 1, CHECKBOX},
 		{"DMA Transfer Type", 26, 1, CHECKBOX},
-		{"DMA Start Timing", 28, 2, SPECIAL},
+		{"DMA Start Timing", 28, 2, COMBO, "Start Immediately\0"
+										   "Start at V-Blank\0"
+										   "DS Cartridge Slot\0"
+										   "GBA Cartridge Slot\0\0"},
 		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
 		{"DMA Enable", 31, 1, CHECKBOX}}},
 	{"KEYINPUT", "Key Status (Inverted)", 0x4000130, 2, true, false, 10, (IoField[]){
@@ -1245,7 +1496,8 @@ static const std::array<IoRegister, 24> registers7 = {{
 		{"R", 8, 1, CHECKBOX},
 		{"L", 9, 1, CHECKBOX},
 		{"IRQ Enable", 14, 1, CHECKBOX},
-		{"Condition", 15, 1, SPECIAL}}},
+		{"Condition", 15, 1, COMBO, "OR Mode\0"
+									"AND Mode\0\0"}}},
 	{"EXTKEYIN", "Key X/Y Input (Inverted)", 0x4000136, 2, true, false, 5, (IoField[]){
 		{"X", 0, 1, CHECKBOX},
 		{"Y", 1, 1, CHECKBOX},
@@ -1267,6 +1519,23 @@ static const std::array<IoRegister, 24> registers7 = {{
 		{"Receive Fifo Not Empty IRQ", 10, 1, CHECKBOX},
 		{"Error, Read Empty/Send Full", 14, 1, CHECKBOX},
 		{"Enable Send/Receive Fifo", 15, 1, CHECKBOX}}},
+	{"SPICNT", "SPI Bus Control/Status Register", 0x40001C0, 2, true, true, 7, (IoField[]){
+		{"Baudrate", 0, 2, COMBO, "4MHz/Firmware\0"
+								  "2MHz/Touchscr\0"
+								  "1MHz/Powerman.\0"
+								  "512KHz\0\0"},
+		{"Busy Flag", 7, 1, CHECKBOX},
+		{"Device Select", 8, 2, COMBO, "Powerman.\0"
+									   "Firmware\0"
+									   "Touchscr\0"
+									   "Reserved\0\0"},
+		{"Transfer Size", 10, 1, COMBO, "8bit/Normal\0"
+										"16bit/Bugged\0\0"},
+		{"Chipselect Hold", 11, 1, CHECKBOX},
+		{"Interrupt Request", 14, 1, CHECKBOX},
+		{"SPI Bus Enable", 15, 1, CHECKBOX}}},
+	{"SPIDATA", "SPI Bus Data/Strobe Register", 0x40001C2, 2, true, true, 1, (IoField[]){
+		{"Data", 0, 8, TEXT_BOX_HEX}}},
 	{"IME", "Interrupt Master Enable", 0x4000208, 4, true, true, 1, (IoField[]){
 		{"Enable Interrupts", 0, 1, CHECKBOX}}},
 	{"IE", "Interrupt Enable", 0x4000210, 4, true, true, 22, (IoField[]){
@@ -1315,14 +1584,23 @@ static const std::array<IoRegister, 24> registers7 = {{
 		{"Screens unfolding", 22, 1, CHECKBOX},
 		{"SPI bus", 23, 1, CHECKBOX},
 		{"Wifi", 24, 1, CHECKBOX}}},
+	{"VRAMSTAT", "WRAM Bank Status", 0x4000240, 1, true, false, 2, (IoField[]){
+		{"VRAM C enabled and allocated to NDS7", 0, 1, CHECKBOX},
+		{"VRAM D enabled and allocated to NDS7", 1, 1, CHECKBOX}}},
 	{"WRAMSTAT", "WRAM Bank Status", 0x4000241, 1, true, false, 1, (IoField[]){
-		{"Mapping", 0, 2, SPECIAL}}},
+		{"Mapping", 0, 2, COMBO, "Unmapped/WRAM Mirror\0"
+								 "Bottom 16KB\0"
+								 "Top 16KB\0"
+								 "Full 32KB\0\0"}}},
 	{"HALTCNT", "Low Power Mode Control", 0x4000301, 1, true, true, 1, (IoField[]){
-		{"Power Down Mode", 6, 2, SPECIAL}}},
+		{"Power Down Mode", 6, 2, COMBO, "No function\0"
+										 "Enter GBA Mode\0"
+										 "Halt\0"
+										 "Sleep\0\0"}}},
 }};
 
 void DebugMenu::ioReg7Window() {
-	static std::array<void *, 24> registerPointers7 = {
+	static std::array<void *, 25> registerPointers7 = {
 		&ortin.nds.ppu.DISPSTAT7,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.nds7.dma.channel[0].DMASAD,
@@ -1345,6 +1623,7 @@ void DebugMenu::ioReg7Window() {
 		&ortin.nds.nds7.IME,
 		&ortin.nds.nds7.IE,
 		&ortin.nds.nds7.IF,
+		&ortin.nds.ppu.VRAMSTAT,
 		&ortin.nds.shared.WRAMCNT,
 		&ortin.nds.nds7.HALTCNT
 	};
@@ -1407,63 +1686,17 @@ void DebugMenu::ioReg7Window() {
 			case CHECKBOX:
 				ImGui::Checkbox(((std::string)field.name).c_str(), (bool *)&fValue);
 				break;
+			case COMBO:
+				ImGui::Combo(((std::string)field.name).c_str(), (int *)&fValue, field.comboText);
+				break;
 			case SPECIAL:
 				switch (address) {
-				case 0x4000004: // DISPCNT
+				case 0x4000004: // DISPSTAT
 					fValue = numberInput(((std::string)field.name).c_str(), false, (fValue >> 1) | ((fValue & 1) << 8), mask >> field.startBit);
 					fValue = ((fValue & 0xFF) << 1) | (fValue >> 8);
 					break;
-				case 0x40000B8: // DMA0CNT
-				case 0x40000C4: // DMA1CNT
-				case 0x40000D0: // DMA2CNT
-				case 0x40000DC: { // DMA3CNT
-					const char *items1[] = {"Increment",
-											"Decrement",
-											"Fixed",
-											"Increment/Reload"};
-					const char *items2[] = {"Increment",
-											"Decrement",
-											"Fixed",
-											"Prohibited"};
-					const char *items502[] = {"Start Immediately",
-											  "Start at V-Blank",
-											  "DS Cartridge Slot",
-											  "Wireless interrupt"};
-					const char *items513[] = {"Start Immediately",
-											  "Start at V-Blank",
-											  "DS Cartridge Slot",
-											  "GBA Cartridge Slot"};
-					switch (i) {
-					case 1:
-						ImGui::Combo("combo", (int *)&fValue, items1, 4);
-						break;
-					case 2:
-						ImGui::Combo("combo", (int *)&fValue, items2, 4);
-						break;
-					case 5:
-						if ((address == 0x40000B8) || (address == 0x40000D0)) { // DMA0/DMA2
-							ImGui::Combo("combo", (int *)&fValue, items502, 8);
-						} else {
-							ImGui::Combo("combo", (int *)&fValue, items513, 8);
-						}
-						break;
-					}
-				} break;
-				case 0x4000241: { // WAITSTAT
-					const char *items[] = {"Unmapped/WRAM Mirror",
-										   "Bottom 16KB",
-										   "Top 16KB",
-										   "Full 32KB"};
-					ImGui::Combo("combo", (int *)&fValue, items, 4);
-					} break;
-				case 0x4000301: { // HALTCNT
-					const char *items[] = {"No function",
-										   "Enter GBA Mode",
-										   "Halt",
-										   "Sleep"};
-					ImGui::Combo("combo", (int *)&fValue, items, 4);
-					} break;
-				} break;
+				}
+				break;
 			}
 
 			value = (value & ~mask) | (fValue << field.startBit);

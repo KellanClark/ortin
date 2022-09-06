@@ -126,6 +126,9 @@ void BusARM9::refreshVramPages() {
 	for (int i = toPage(0x6800000); i < toPage(0x7000000); i++)
 		readTable[i] = readTable[toPage(toAddress(i) & ~0x0700000)];
 
+	// The PPU's already done the bad stuff for us
+	memcpy(&readTable[toPage(0x6000000)], ppu.vramPageTable, sizeof(ppu.vramPageTable));
+
 	// readTable and writeTable will always be the same for VRAM
 	for (int i = toPage(0x6000000); i < toPage(0x7000000); i++)
 		writeTable[i] = readTable[i];
@@ -162,7 +165,7 @@ T BusARM9::read(u32 address, bool sequential) {
 		memcpy(&val, ptr + offset, sizeof(T));
 	} else {
 		switch (address) {
-		case 0x4000000 ... 0x4FFFFFF: // ARM9-I/O Ports
+		case 0x4000000 ... 0x4FFFFFF: // ARM9 I/O Ports
 			if constexpr (sizeof(T) == 4) {
 				val |= (readIO(alignedAddress | 0, false) << 0);
 				val |= (readIO(alignedAddress | 1, false) << 8);
@@ -175,6 +178,23 @@ T BusARM9::read(u32 address, bool sequential) {
 				val = readIO(alignedAddress, true);
 			}
 			break;
+		case 0x5000000 ... 0x5FFFFFF: // PRAM
+			memcpy(&val, ppu.pram + (alignedAddress & 0x7FF), sizeof(T));
+			break;
+		case 0x6000000 ... 0x67FFFFF: { // VRAM fallback
+			PPU::VramInfoEntry entry = ppu.vramInfoTable[toPage(alignedAddress - 0x6000000)];
+			T tmpVal = 0;
+
+			if (entry.enableA) { memcpy(&tmpVal, ppu.vramA + (entry.bankA * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+			if (entry.enableB) { memcpy(&tmpVal, ppu.vramB + (entry.bankB * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+			if (entry.enableC) { memcpy(&tmpVal, ppu.vramC + (entry.bankC * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+			if (entry.enableD) { memcpy(&tmpVal, ppu.vramD + (entry.bankD * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+			if (entry.enableE) { memcpy(&tmpVal, ppu.vramE + (entry.bankE * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+			if (entry.enableF) { memcpy(&tmpVal, ppu.vramF + offset, sizeof(T)); val |= tmpVal; }
+			if (entry.enableG) { memcpy(&tmpVal, ppu.vramG + offset, sizeof(T)); val |= tmpVal; }
+			if (entry.enableH) { memcpy(&tmpVal, ppu.vramH + (entry.bankH * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+			if (entry.enableI) { memcpy(&tmpVal, ppu.vramI + offset, sizeof(T)); val |= tmpVal; }
+			} break;
 		case 0xFFFF0000 ... 0xFFFFFFFF: // ARM9-BIOS
 			memcpy(&val, bios + (alignedAddress - 0xFFFF0000), sizeof(T));
 			break;
@@ -212,7 +232,7 @@ void BusARM9::write(u32 address, T value, bool sequential) {
 		memcpy(ptr + offset, &value, sizeof(T));
 	} else {
 		switch (address) {
-		case 0x4000000 ... 0x4FFFFFF:
+		case 0x4000000 ... 0x4FFFFFF: // NDS9 I/O Ports
 			if constexpr (sizeof(T) == 4) {
 				writeIO(alignedAddress | 0, (u8)(value >> 0), false);
 				writeIO(alignedAddress | 1, (u8)(value >> 8), false);
@@ -224,6 +244,25 @@ void BusARM9::write(u32 address, T value, bool sequential) {
 			} else {
 				writeIO(alignedAddress, value, true);
 			}
+			break;
+		case 0x5000000 ... 0x5FFFFFF: // PRAM
+			memcpy(ppu.pram + (alignedAddress & 0x7FF), &value, sizeof(T));
+			break;
+		case 0x6800000 ... 0x6FFFFFF: { // VRAM fallback
+			PPU::VramInfoEntry entry = ppu.vramInfoTable[toPage(alignedAddress - 0x6800000)];
+
+			if (entry.enableA) memcpy(ppu.vramA + (entry.bankA * 0x4000) + offset, &value, sizeof(T));
+			if (entry.enableB) memcpy(ppu.vramB + (entry.bankB * 0x4000) + offset, &value, sizeof(T));
+			if (entry.enableC) memcpy(ppu.vramC + (entry.bankC * 0x4000) + offset, &value, sizeof(T));
+			if (entry.enableD) memcpy(ppu.vramD + (entry.bankD * 0x4000) + offset, &value, sizeof(T));
+			if (entry.enableE) memcpy(ppu.vramE + (entry.bankE * 0x4000) + offset, &value, sizeof(T));
+			if (entry.enableF) memcpy(ppu.vramF + offset, &value, sizeof(T));
+			if (entry.enableG) memcpy(ppu.vramG + offset, &value, sizeof(T));
+			if (entry.enableH) memcpy(ppu.vramH + (entry.bankH * 0x4000) + offset, &value, sizeof(T));
+			if (entry.enableI) memcpy(ppu.vramI + offset, &value, sizeof(T));
+			} break;
+		case 0x7000000 ... 0x7FFFFFF: // OAM
+			memcpy(ppu.oam + (alignedAddress & 0x7FF), &value, sizeof(T));
 			break;
 		default:
 			log << fmt::format("[NDS9 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
@@ -255,6 +294,7 @@ u8 BusARM9::readIO(u32 address, bool final) {
 
 	case 0x4000000 ... 0x400006F:
 	case 0x4000304 ... 0x4000307:
+	case 0x4001000 ... 0x400106F:
 		return ppu.readIO9(address);
 
 	case 0x40000B0 ... 0x40000EF:
@@ -306,6 +346,7 @@ void BusARM9::writeIO(u32 address, u8 value, bool final) {
 	case 0x4000248:
 	case 0x4000249:
 	case 0x4000304 ... 0x4000307:
+	case 0x4001000 ... 0x400106F:
 		ppu.writeIO9(address, value);
 		break;
 

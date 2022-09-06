@@ -9,12 +9,8 @@
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
 #include "emulator/dma.hpp"
+#include "emulator/nds7/spi.hpp"
 #include "arm7tdmi/arm7tdmi.hpp"
-
-// Forward declarations
-//template <bool dma9> class DMA<false>;
-//template class DMA<false>;
-//class DMA<false>;
 
 class BusARM7 {
 public:
@@ -24,6 +20,7 @@ public:
 	IPC& ipc;
 	PPU& ppu;
 	DMA<false> dma;
+	SPI spi;
 	u8 *wram;
 	u8 *bios;
 

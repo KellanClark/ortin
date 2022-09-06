@@ -3,6 +3,10 @@
 
 #define convertColor(x) ((x) | 0x8000)
 
+static constexpr u32 toPage(u32 address) {
+	return address >> 14; // Pages are 16KB
+}
+
 PPU::PPU(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
 	vramA = new u8[0x20000]; // 128KB
 	vramB = new u8[0x20000]; // 128KB
@@ -34,6 +38,9 @@ void PPU::reset() {
 	memset(framebufferA, 0xFF, sizeof(framebufferA));
 	memset(framebufferB, 0xFF, sizeof(framebufferB));
 
+	memset(vramInfoTable, 0, sizeof(vramInfoTable));
+	memset(vramPageTable, 0, sizeof(vramPageTable));
+	memset(pram, 0, 0x800);
 	memset(vramA, 0, 0x20000);
 	memset(vramB, 0, 0x20000);
 	memset(vramC, 0, 0x20000);
@@ -43,9 +50,20 @@ void PPU::reset() {
 	memset(vramG, 0, 0x4000);
 	memset(vramH, 0, 0x8000);
 	memset(vramI, 0, 0x4000);
+	memset(oam, 0, 0x800);
 
-	engineA.DISPCNT = 0;
-	engineB.DISPCNT = 0;
+	engineA.DISPCNT = engineB.DISPCNT = 0;
+	DISPSTAT9 = DISPSTAT7 = 0;
+	VCOUNT = 0;
+	engineA.screenBase = engineB.screenBase = 0;
+	engineA.charBase = engineB.charBase = 0;
+	engineA.bg[0].BGCNT = engineA.bg[1].BGCNT = engineA.bg[2].BGCNT = engineA.bg[3].BGCNT = engineB.bg[0].BGCNT = engineB.bg[1].BGCNT = engineB.bg[2].BGCNT = engineB.bg[3].BGCNT = 0;
+	engineA.bg[0].BGHOFS = engineA.bg[1].BGHOFS = engineA.bg[2].BGHOFS = engineA.bg[3].BGHOFS = engineB.bg[0].BGHOFS = engineB.bg[1].BGHOFS = engineB.bg[2].BGHOFS = engineB.bg[3].BGHOFS = 0;
+	engineA.bg[0].BGVOFS = engineA.bg[1].BGVOFS = engineA.bg[2].BGVOFS = engineA.bg[3].BGVOFS = engineB.bg[0].BGVOFS = engineB.bg[1].BGVOFS = engineB.bg[2].BGVOFS = engineB.bg[3].BGVOFS = 0;
+	engineA.MASTER_BRIGHT = engineB.MASTER_BRIGHT = 0;
+
+	VRAMSTAT = 0;
+	VRAMCNT_A = VRAMCNT_B = VRAMCNT_C = VRAMCNT_D = VRAMCNT_E = VRAMCNT_F = VRAMCNT_G = VRAMCNT_H = VRAMCNT_I = 0;
 
 	POWCNT1 = 0;
 
@@ -103,16 +121,35 @@ void PPU::hBlank() {
 
 	if (currentScanline < 192) {
 		drawLine();
-	 }
+	}
 }
 
 void PPU::drawLine() {
+	/* Engine A */
 	switch (engineA.displayMode) {
-	default:
+	case 3: // Main Memory Display
 		printf("shit\n");
 	case 0: // Display off
 		for (int i = 0; i < 256; i++)
 			framebufferA[currentScanline][i] = 0xFFFF;
+		break;
+	case 1: // Graphics Display
+		// Clear buffers
+		for (int i = 0; i < 256; i++)
+			engineA.bg[0].drawBuf[i].raw = engineA.bg[1].drawBuf[i].raw = engineA.bg[2].drawBuf[i].raw = engineA.bg[3].drawBuf[i].raw = 0;
+
+		// BG modes
+		switch (engineA.bgMode) {
+		case 0:
+			if (engineA.displayBg0) draw2D<true, 0, false>();
+			if (engineA.displayBg1) draw2D<true, 1, false>();
+			if (engineA.displayBg2) draw2D<true, 2, false>();
+			if (engineA.displayBg3) draw2D<true, 3, false>();
+			break;
+		}
+
+		// Combine everything
+		combineLayers<true>();
 		break;
 	case 2: // VRAM Display
 		u16 *bank;
@@ -128,13 +165,350 @@ void PPU::drawLine() {
 		break;
 	}
 
+	/* Engine B */
 	// It's your fault if you think I'm going to write another graphics engine right now.
-	for (int i = 0; i < 256; i++)
-		framebufferB[currentScanline][i] = 0xFFFF;
+	if (engineB.displayMode == 1) { // Graphics Display
+		// Clear buffers
+		for (int i = 0; i < 256; i++) {
+			engineB.bg[0].drawBuf[i].raw = 0;
+			engineB.bg[1].drawBuf[i].raw = 0;
+			engineB.bg[2].drawBuf[i].raw = 0;
+			engineB.bg[3].drawBuf[i].raw = 0;
+		}
+
+		// BG modes
+		switch (engineB.bgMode) {
+		case 0:
+			if (engineB.displayBg0) draw2D<false, 0, false>();
+			if (engineB.displayBg1) draw2D<false, 1, false>();
+			if (engineB.displayBg2) draw2D<false, 2, false>();
+			if (engineB.displayBg3) draw2D<false, 3, false>();
+			break;
+		}
+
+		// Combine everything
+		combineLayers<false>();
+	} else { // Display off
+		for (int i = 0; i < 256; i++)
+			framebufferB[currentScanline][i] = 0xFFFF;
+	}
+
+	/* Master Bright Pass */
+	if (engineA.brightnessMode == 1) { // Up
+		float multiplier = (float)((engineA.brightnessFactor > 16) ? 16 : engineA.brightnessFactor) / 16;
+		for (int i = 0; i < 256; i++) {
+			Pixel &pix = *(Pixel *)&framebufferA[currentScanline][i];
+
+			pix.r = pix.r + ((63 - pix.r) * multiplier);
+			pix.g = pix.g + ((63 - pix.g) * multiplier);
+			pix.b = pix.b + ((63 - pix.b) * multiplier);
+		}
+	} else if (engineA.brightnessMode == 2) { // Down
+		float multiplier = (float)((engineA.brightnessFactor > 16) ? 16 : engineA.brightnessFactor) / 16;
+		for (int i = 0; i < 256; i++) {
+			Pixel &pix = *(Pixel *)&framebufferA[currentScanline][i];
+
+			pix.r = pix.r - (pix.r * multiplier);
+			pix.g = pix.g - (pix.g * multiplier);
+			pix.b = pix.b - (pix.b * multiplier);
+		}
+	}
+
+	if (engineB.brightnessMode == 1) { // Up
+		float multiplier = (float)((engineB.brightnessFactor > 16) ? 16 : engineB.brightnessFactor) / 16;
+		for (int i = 0; i < 256; i++) {
+			Pixel &pix = *(Pixel *)&framebufferB[currentScanline][i];
+
+			pix.r = pix.r + ((63 - pix.r) * multiplier);
+			pix.g = pix.g + ((63 - pix.g) * multiplier);
+			pix.b = pix.b + ((63 - pix.b) * multiplier);
+		}
+	} else if (engineB.brightnessMode == 2) { // Down
+		float multiplier = (float)((engineB.brightnessFactor > 16) ? 16 : engineB.brightnessFactor) / 16;
+		for (int i = 0; i < 256; i++) {
+			Pixel &pix = *(Pixel *)&framebufferB[currentScanline][i];
+
+			pix.r = pix.r - (pix.r * multiplier);
+			pix.g = pix.g - (pix.g * multiplier);
+			pix.b = pix.b - (pix.b * multiplier);
+		}
+	}
+}
+
+template <bool useEngineA, int layer, bool affine>
+void PPU::draw2D() {
+	GraphicsEngine& engine = useEngineA ? engineA : engineB;
+	auto& bg = engine.bg[layer];
+
+	u8 y = currentScanline + bg.BGVOFS;
+
+	for (int column = 0; column < 256; column++) {
+		u32 x = column + bg.BGHOFS;
+
+		u32 tileAddress;
+		switch (bg.screenSize) {
+		case 0: // 256x256
+			tileAddress = bg.screenBlockBaseAddress + (((y % 256) / 8) * 64) + (((x % 256) / 8) * 2);
+			break;
+		case 1: // 512x256
+			tileAddress = bg.screenBlockBaseAddress + ((x & 0x100) << 3) + (((y % 256) / 8) * 64) + (((x % 256) / 8) * 2);
+			break;
+		case 2: // 256x512
+			tileAddress = bg.screenBlockBaseAddress + (((y % 512) / 8) * 64) + (((x % 256) / 8) * 2);
+			break;
+		case 3: // 512x512
+			tileAddress = bg.screenBlockBaseAddress + ((x & 0x100) << 3) + (16 * (y & 0x100)) + (((y % 256) / 8) * 64) + (((x % 256) / 8) * 2);
+			break;
+		}
+
+		TileInfo tile;
+		tile.raw = readVram<u16, useEngineA, false>(tileAddress);
+
+		int xMod = tile.horizontalFlip ? (7 - (x % 8)) : (x % 8);
+		int yMod = tile.verticalFlip ? (7 - (y % 8)) : (y % 8);
+		u8 tileData;
+		if (bg.eightBitColor) { // 8 bits per pixel
+			tileData = readVram<u8, useEngineA, false>(bg.charBlockBaseAddress + (tile.tileIndex * 64) + (yMod * 8) + xMod);
+		} else { // 4 bits per pixel
+			tileData = readVram<u8, useEngineA, false>(bg.charBlockBaseAddress + (tile.tileIndex * 32) + (yMod * 4) + (xMod / 2));
+
+			if (xMod & 1) {
+				tileData >>= 4;
+			} else {
+				tileData &= 0xF;
+			}
+		}
+
+		if (tileData != 0) {
+			bg.drawBuf[column] = engineBBgPalette[((tile.paletteBank << 4) * !bg.eightBitColor) | tileData];
+			bg.drawBuf[column].solid = true;
+		}
+	}
+}
+
+template <bool useEngineA>
+void PPU::combineLayers() {
+	GraphicsEngine& engine = useEngineA ? engineA : engineB;
+
+	// TODO: Window
+
+	// TODO: Blending
+
+	// This can probably be optimized into some godforsaken mess of AVX
+	for (int i = 0; i < 256; i++) {
+		Pixel final = (useEngineA ? engineABgPalette : engineBBgPalette)[0];
+		final.solid = true; // Just in case the graphics API needs it.
+
+		for (int priority = 3; priority >= 0; priority--) {
+			if ((engine.bg[3].priority == priority) && engine.bg[3].drawBuf[i].solid) final = engine.bg[3].drawBuf[i];
+			if ((engine.bg[2].priority == priority) && engine.bg[2].drawBuf[i].solid) final = engine.bg[2].drawBuf[i];
+			if ((engine.bg[1].priority == priority) && engine.bg[1].drawBuf[i].solid) final = engine.bg[1].drawBuf[i];
+			if ((engine.bg[0].priority == priority) && engine.bg[0].drawBuf[i].solid) final = engine.bg[0].drawBuf[i];
+		}
+
+		(useEngineA ? framebufferA : framebufferB)[currentScanline][i] = final.raw;
+	}
+}
+
+void PPU::refreshVramPages() {
+	// Clear the temp VRAM table
+	for (int i = 0; i < 0x200; i++)
+		vramInfoTable[i].raw = 0;
+
+	// TODO: Mirroring
+	if (vramAEnable) {
+		switch (vramAMst) {
+		case 1: // 6000000h+(20000h*OFS)
+			for (int i = 0; i < 8; i++) {
+				vramInfoTable[(vramAOffset << 3) + i].enableA = true;
+				vramInfoTable[(vramAOffset << 3) + i].bankA = i;
+			}
+			break;
+		case 2: // 6400000h+(20000h*OFS.0)
+			for (int i = 0; i < 8; i++) {
+				vramInfoTable[toPage(0x400000) + ((vramAOffset & 1) << 3) + i].enableA = true;
+				vramInfoTable[toPage(0x400000) + ((vramAOffset & 1) << 3) + i].bankA = i;
+			}
+			break;
+		}
+	}
+	if (vramBEnable) {
+		switch (vramBMst) {
+		case 1: // 6000000h+(20000h*OFS)
+			for (int i = 0; i < 8; i++) {
+				vramInfoTable[(vramBOffset << 3) + i].enableB = true;
+				vramInfoTable[(vramBOffset << 3) + i].bankB = i;
+			}
+			break;
+		case 2: // 6400000h+(20000h*OFS.0)
+			for (int i = 0; i < 8; i++) {
+				vramInfoTable[toPage(0x400000) + ((vramBOffset & 1) << 3) + i].enableB = true;
+				vramInfoTable[toPage(0x400000) + ((vramBOffset & 1) << 3) + i].bankB = i;
+			}
+			break;
+		}
+	}
+	if (vramCEnable) {
+		switch (vramCMst) {
+		case 1: // 6000000h+(20000h*OFS)
+			for (int i = 0; i < 8; i++) {
+				vramInfoTable[(vramCOffset << 3) + i].enableC = true;
+				vramInfoTable[(vramCOffset << 3) + i].bankC = i;
+			}
+			break;
+		case 4: // 6200000h
+			for (int i = 0; i < 8; i++) {
+				vramInfoTable[toPage(0x200000) + i].enableC = true;
+				vramInfoTable[toPage(0x200000) + i].bankC = i;
+			}
+			break;
+		}
+	}
+	if (vramDEnable) {
+		switch (vramDMst) {
+		case 1: // 6000000h+(20000h*OFS)
+			for (int i = 0; i < 8; i++) {
+				vramInfoTable[(vramDOffset << 3) + i].enableD = true;
+				vramInfoTable[(vramDOffset << 3) + i].bankD = i;
+			}
+			break;
+		case 4: // 6600000h
+			for (int i = 0; i < 8; i++) {
+				vramInfoTable[toPage(0x600000) + i].enableD = true;
+				vramInfoTable[toPage(0x600000) + i].bankD = i;
+			}
+			break;
+		}
+	}
+	if (vramEEnable) {
+		switch (vramEMst) {
+		case 1: // 6000000h
+			for (int i = 0; i < 4; i++) {
+				vramInfoTable[i].enableE = true;
+				vramInfoTable[i].bankE = i;
+			}
+			break;
+		case 2: // 6400000h
+			for (int i = 0; i < 4; i++) {
+				vramInfoTable[toPage(0x400000) + i].enableE = true;
+				vramInfoTable[toPage(0x400000) + i].bankE = i;
+			}
+			break;
+		}
+	}
+	if (vramFEnable) {
+		switch (vramFMst) {
+		case 1: // 6000000h+(4000h*OFS.0)+(10000h*OFS.1)
+			vramInfoTable[(vramFOffset & 1) + ((vramFOffset & 2) << 2)].enableF = true;
+			vramInfoTable[(vramFOffset & 1) + ((vramFOffset & 2) << 2) | 2].enableF = true;
+			break;
+		case 2: // 6400000h+(4000h*OFS.0)+(10000h*OFS.1)
+			vramInfoTable[toPage(0x400000) + (vramFOffset & 1) + ((vramFOffset & 2) << 2)].enableF = true;
+			vramInfoTable[toPage(0x400000) + (vramFOffset & 1) + ((vramFOffset & 2) << 2) | 2].enableF = true;
+			break;
+		}
+	}
+	if (vramGEnable) {
+		switch (vramGMst) {
+		case 1: // 6000000h+(4000h*OFS.0)+(10000h*OFS.1)
+			vramInfoTable[(vramGOffset & 1) + ((vramGOffset & 2) << 2)].enableG = true;
+			vramInfoTable[(vramGOffset & 1) + ((vramGOffset & 2) << 2) | 2].enableG = true;
+			break;
+		case 2: // 6400000h+(4000h*OFS.0)+(10000h*OFS.1)
+			vramInfoTable[toPage(0x400000) + (vramGOffset & 1) + ((vramGOffset & 2) << 2)].enableG = true;
+			vramInfoTable[toPage(0x400000) + (vramGOffset & 1) + ((vramGOffset & 2) << 2) | 2].enableG = true;
+			break;
+		}
+	}
+	if (vramHEnable) {
+		switch (vramHMst) {
+		case 1: // 6200000h
+			vramInfoTable[toPage(0x200000) + 0].enableH = true;
+			vramInfoTable[toPage(0x200000) + 0].bankH = 0;
+			vramInfoTable[toPage(0x200000) + 1].enableH = true;
+			vramInfoTable[toPage(0x200000) + 1].bankH = 1;
+			vramInfoTable[toPage(0x200000) + 4].enableH = true;
+			vramInfoTable[toPage(0x200000) + 4].bankH = 0;
+			vramInfoTable[toPage(0x200000) + 5].enableH = true;
+			vramInfoTable[toPage(0x200000) + 5].bankH = 1;
+			break;
+		}
+	}
+	if (vramIEnable) {
+		switch (vramIMst) {
+		case 1: // 6208000h
+			vramInfoTable[toPage(0x200000) + 2].enableI = true;
+			vramInfoTable[toPage(0x200000) + 3].enableI = true;
+			vramInfoTable[toPage(0x200000) + 6].enableI = true;
+			vramInfoTable[toPage(0x200000) + 7].enableI = true;
+			break;
+		case 2: // 6600000h
+			for (int i = 0; i < 8; i++)
+				vramInfoTable[toPage(0x600000) + i].enableI = true;
+			break;
+		}
+	}
+
+	// Translate non-overlapping banks into pages
+	for (int i = 0; i < 0x200; i++) {
+		VramInfoEntry entry = vramInfoTable[i];
+		if (std::popcount(entry.raw & 0x1FF) == 1) {
+			if (entry.enableA) vramPageTable[i] = vramA + (entry.bankA * 0x4000);
+			if (entry.enableB) vramPageTable[i] = vramB + (entry.bankB * 0x4000);
+			if (entry.enableC) vramPageTable[i] = vramC + (entry.bankC * 0x4000);
+			if (entry.enableD) vramPageTable[i] = vramD + (entry.bankD * 0x4000);
+			if (entry.enableE) vramPageTable[i] = vramE + (entry.bankE * 0x4000);
+			if (entry.enableF) vramPageTable[i] = vramF;
+			if (entry.enableG) vramPageTable[i] = vramG;
+			if (entry.enableH) vramPageTable[i] = vramH + (entry.bankH * 0x4000);
+			if (entry.enableI) vramPageTable[i] = vramI;
+		}
+	}
+}
+
+template <typename T, bool useEngineA, bool useObj>
+T PPU::readVram(u32 address) {
+	u32 alignedAddress = address & ~(sizeof(T) - 1);
+	if constexpr (!useEngineA)
+		alignedAddress += 0x200000;
+	if constexpr (useObj)
+		alignedAddress += 0x400000;
+
+	u32 page = toPage(alignedAddress);
+	u32 offset = alignedAddress & 0x3FFF;
+	T val = 0;
+	u8 *ptr = vramPageTable[page];
+
+	if (ptr != NULL) { [[likely]]
+		memcpy(&val, ptr + offset, sizeof(T));
+	} else {
+		VramInfoEntry entry = vramInfoTable[toPage(alignedAddress - 0x6000000)];
+		T tmpVal = 0;
+
+		if (entry.enableA) { memcpy(&tmpVal, vramA + (entry.bankA * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+		if (entry.enableB) { memcpy(&tmpVal, vramB + (entry.bankB * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+		if (entry.enableC) { memcpy(&tmpVal, vramC + (entry.bankC * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+		if (entry.enableD) { memcpy(&tmpVal, vramD + (entry.bankD * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+		if (entry.enableE) { memcpy(&tmpVal, vramE + (entry.bankE * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+		if (entry.enableF) { memcpy(&tmpVal, vramF + offset, sizeof(T)); val |= tmpVal; }
+		if (entry.enableG) { memcpy(&tmpVal, vramG + offset, sizeof(T)); val |= tmpVal; }
+		if (entry.enableH) { memcpy(&tmpVal, vramH + (entry.bankH * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
+		if (entry.enableI) { memcpy(&tmpVal, vramI + offset, sizeof(T)); val |= tmpVal; }
+	}
+
+	return val;
 }
 
 u8 PPU::readIO9(u32 address) {
 	switch (address) {
+	case 0x4000000:
+		return (u8)engineA.DISPCNT;
+	case 0x4000001:
+		return (u8)(engineA.DISPCNT >> 8);
+	case 0x4000002:
+		return (u8)(engineA.DISPCNT >> 16);
+	case 0x4000003:
+		return (u8)(engineA.DISPCNT >> 24);
 	case 0x4000004:
 		return (u8)DISPSTAT9;
 	case 0x4000005:
@@ -143,12 +517,66 @@ u8 PPU::readIO9(u32 address) {
 		return (u8)VCOUNT;
 	case 0x4000007:
 		return (u8)(VCOUNT >> 8);
+	case 0x4000008:
+		return (u8)engineA.bg[0].BGCNT;
+	case 0x4000009:
+		return (u8)(engineA.bg[0].BGCNT >> 8);
+	case 0x400000A:
+		return (u8)engineA.bg[1].BGCNT;
+	case 0x400000B:
+		return (u8)(engineA.bg[1].BGCNT >> 8);
+	case 0x400000C:
+		return (u8)engineA.bg[2].BGCNT;
+	case 0x400000D:
+		return (u8)(engineA.bg[2].BGCNT >> 8);
+	case 0x400000E:
+		return (u8)engineA.bg[3].BGCNT;
+	case 0x400000F:
+		return (u8)(engineA.bg[3].BGCNT >> 8);
+	case 0x400006C:
+		return (u8)engineA.MASTER_BRIGHT;
+	case 0x400006D:
+		return (u8)(engineA.MASTER_BRIGHT >> 8);
+	case 0x400006E:
+	case 0x400006F:
+		return 0;
 	case 0x4000304:
 		return (u8)POWCNT1;
 	case 0x4000305:
 		return (u8)(POWCNT1 >> 8);
 	case 0x4000306:
 	case 0x4000307:
+		return 0;
+	case 0x4001000:
+		return (u8)engineB.DISPCNT;
+	case 0x4001001:
+		return (u8)(engineB.DISPCNT >> 8);
+	case 0x4001002:
+		return (u8)(engineB.DISPCNT >> 16);
+	case 0x4001003:
+		return (u8)(engineB.DISPCNT >> 24);
+	case 0x4001008:
+		return (u8)engineB.bg[0].BGCNT;
+	case 0x4001009:
+		return (u8)(engineB.bg[0].BGCNT >> 8);
+	case 0x400100A:
+		return (u8)engineB.bg[1].BGCNT;
+	case 0x400100B:
+		return (u8)(engineB.bg[1].BGCNT >> 8);
+	case 0x400100C:
+		return (u8)engineB.bg[2].BGCNT;
+	case 0x400100D:
+		return (u8)(engineB.bg[2].BGCNT >> 8);
+	case 0x400100E:
+		return (u8)engineB.bg[3].BGCNT;
+	case 0x400100F:
+		return (u8)(engineB.bg[3].BGCNT >> 8);
+	case 0x400106C:
+		return (u8)engineB.MASTER_BRIGHT;
+	case 0x400106D:
+		return (u8)(engineB.MASTER_BRIGHT >> 8);
+	case 0x400106E:
+	case 0x400106F:
 		return 0;
 	default:
 		log << fmt::format("[ARM9 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
@@ -169,12 +597,109 @@ void PPU::writeIO9(u32 address, u8 value) {
 		break;
 	case 0x4000003:
 		engineA.DISPCNT = (engineA.DISPCNT & 0x00FFFFFF) | ((value & 0xFF) << 24);
+		engineA.bg[0].charBlockBaseAddress = (16384 * engineA.bg[0].charBlock) + (65536 * engineA.charBase);
+		engineA.bg[1].charBlockBaseAddress = (16384 * engineA.bg[1].charBlock) + (65536 * engineA.charBase);
+		engineA.bg[2].charBlockBaseAddress = (16384 * engineA.bg[2].charBlock) + (65536 * engineA.charBase);
+		engineA.bg[3].charBlockBaseAddress = (16384 * engineA.bg[3].charBlock) + (65536 * engineA.charBase);
+		engineA.bg[0].screenBlockBaseAddress = (2048 * engineA.bg[0].screenBlock) + (65536 * engineA.charBase);
+		engineA.bg[1].screenBlockBaseAddress = (2048 * engineA.bg[1].screenBlock) + (65536 * engineA.charBase);
+		engineA.bg[2].screenBlockBaseAddress = (2048 * engineA.bg[2].screenBlock) + (65536 * engineA.charBase);
+		engineA.bg[3].screenBlockBaseAddress = (2048 * engineA.bg[3].screenBlock) + (65536 * engineA.charBase);
 		break;
 	case 0x4000004:
 		DISPSTAT9 = (DISPSTAT9 & 0xFF47) | ((value & 0xB8) << 0);
 		break;
 	case 0x4000005:
 		DISPSTAT9 = (DISPSTAT9 & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4000008:
+		engineA.bg[0].BGCNT = (engineA.bg[0].BGCNT & 0xFF00) | ((value & 0xFF) << 0);
+		engineA.bg[0].charBlockBaseAddress = (16384 * engineA.bg[0].charBlock) + (65536 * engineA.charBase);
+		break;
+	case 0x4000009:
+		engineA.bg[0].BGCNT = (engineA.bg[0].BGCNT & 0x00FF) | ((value & 0xFF) << 8);
+		engineA.bg[0].screenBlockBaseAddress = (2048 * engineA.bg[0].screenBlock) + (65536 * engineA.screenBase);
+		break;
+	case 0x400000A:
+		engineA.bg[1].BGCNT = (engineA.bg[1].BGCNT & 0xFF00) | ((value & 0xFF) << 0);
+		engineA.bg[1].charBlockBaseAddress = (16384 * engineA.bg[1].charBlock) + (65536 * engineA.charBase);
+		break;
+	case 0x400000B:
+		engineA.bg[1].BGCNT = (engineA.bg[1].BGCNT & 0x00FF) | ((value & 0xFF) << 8);
+		engineA.bg[1].screenBlockBaseAddress = (2048 * engineA.bg[1].screenBlock) + (65536 * engineA.screenBase);
+		break;
+	case 0x400000C:
+		engineA.bg[2].BGCNT = (engineA.bg[2].BGCNT & 0xFF00) | ((value & 0xFF) << 0);
+		engineA.bg[2].charBlockBaseAddress = (16384 * engineA.bg[2].charBlock) + (65536 * engineA.charBase);
+		break;
+	case 0x400000D:
+		engineA.bg[2].BGCNT = (engineA.bg[2].BGCNT & 0x00FF) | ((value & 0xFF) << 8);
+		engineA.bg[2].screenBlockBaseAddress = (2048 * engineA.bg[2].screenBlock) + (65536 * engineA.screenBase);
+		break;
+	case 0x400000E:
+		engineA.bg[3].BGCNT = (engineA.bg[3].BGCNT & 0xFF00) | ((value & 0xFF) << 0);
+		engineA.bg[3].charBlockBaseAddress = (16384 * engineA.bg[3].charBlock) + (65536 * engineA.charBase);
+		break;
+	case 0x400000F:
+		engineA.bg[3].BGCNT = (engineA.bg[3].BGCNT & 0x00FF) | ((value & 0xFF) << 8);
+		engineA.bg[3].screenBlockBaseAddress = (2048 * engineA.bg[3].screenBlock) + (65536 * engineA.screenBase);
+		break;
+	case 0x4000010:
+		engineA.bg[0].BGHOFS = (engineA.bg[0].BGHOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000011:
+		engineA.bg[0].BGHOFS = (engineA.bg[0].BGHOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x4000012:
+		engineA.bg[0].BGVOFS = (engineA.bg[0].BGVOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000013:
+		engineA.bg[0].BGVOFS = (engineA.bg[0].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x4000014:
+		engineA.bg[1].BGHOFS = (engineA.bg[1].BGHOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000015:
+		engineA.bg[1].BGHOFS = (engineA.bg[1].BGHOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x4000016:
+		engineA.bg[1].BGVOFS = (engineA.bg[1].BGVOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000017:
+		engineA.bg[1].BGVOFS = (engineA.bg[1].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x4000018:
+		engineA.bg[2].BGHOFS = (engineA.bg[2].BGHOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000019:
+		engineA.bg[2].BGHOFS = (engineA.bg[2].BGHOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x400001A:
+		engineA.bg[2].BGVOFS = (engineA.bg[2].BGVOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400001B:
+		engineA.bg[2].BGVOFS = (engineA.bg[2].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x400001C:
+		engineA.bg[3].BGHOFS = (engineA.bg[3].BGHOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400001D:
+		engineA.bg[3].BGHOFS = (engineA.bg[3].BGHOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x400001E:
+		engineA.bg[3].BGVOFS = (engineA.bg[3].BGVOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400001F:
+		engineA.bg[3].BGVOFS = (engineA.bg[3].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x400006C:
+		engineA.MASTER_BRIGHT = (engineA.MASTER_BRIGHT & 0xFF00) | ((engineA.MASTER_BRIGHT & 0x1F) << 0);
+		break;
+	case 0x400006D:
+		engineA.MASTER_BRIGHT = (engineA.MASTER_BRIGHT & 0x00FF) | ((engineA.MASTER_BRIGHT & 0xC0) << 8);
+		break;
+	case 0x400006E:
+	case 0x400006F:
 		break;
 	case 0x4000240:
 		VRAMCNT_A = value & 0x9B;
@@ -188,11 +713,13 @@ void PPU::writeIO9(u32 address, u8 value) {
 		break;
 	case 0x4000242:
 		VRAMCNT_C = value & 0x9F;
+		vramCMapped7 = vramCEnable && (vramCMst == 2);
 
 		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000243:
 		VRAMCNT_D = value & 0x9F;
+		vramDMapped7 = vramDEnable && (vramDMst == 2);
 
 		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
@@ -221,6 +748,15 @@ void PPU::writeIO9(u32 address, u8 value) {
 
 		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
+	case 0x4000304:
+		POWCNT1 = (POWCNT1 & 0xFF00) | ((value & 0x0F) << 0);
+		break;
+	case 0x4000305:
+		POWCNT1 = (POWCNT1 & 0x00FF) | ((value & 0x82) << 8);
+		break;
+	case 0x4000306:
+	case 0x4000307:
+		break;
 	case 0x4001000:
 		engineB.DISPCNT = (engineB.DISPCNT & 0xFFFFFF00) | ((value & 0xF7) << 0);
 		break;
@@ -233,14 +769,94 @@ void PPU::writeIO9(u32 address, u8 value) {
 	case 0x4001003:
 		engineB.DISPCNT = (engineB.DISPCNT & 0x00FFFFFF) | ((value & 0xC0) << 24);
 		break;
-	case 0x4000304:
-		POWCNT1 = (POWCNT1 & 0xFF00) | ((value & 0x0F) << 0);
+	case 0x4001008:
+		engineB.bg[0].BGCNT = (engineB.bg[0].BGCNT & 0xFF00) | ((value & 0xFF) << 0);
+		engineB.bg[0].charBlockBaseAddress = 16384 * engineB.bg[0].charBlock;
 		break;
-	case 0x4000305:
-		POWCNT1 = (POWCNT1 & 0x00FF) | ((value & 0x82) << 8);
+	case 0x4001009:
+		engineB.bg[0].BGCNT = (engineB.bg[0].BGCNT & 0x00FF) | ((value & 0xFF) << 8);
+		engineB.bg[0].screenBlockBaseAddress = 2048 * engineB.bg[0].screenBlock;
 		break;
-	case 0x4000306:
-	case 0x4000307:
+	case 0x400100A:
+		engineB.bg[1].BGCNT = (engineB.bg[1].BGCNT & 0xFF00) | ((value & 0xFF) << 0);
+		engineB.bg[1].charBlockBaseAddress = 16384 * engineB.bg[1].charBlock;
+		break;
+	case 0x400100B:
+		engineB.bg[1].BGCNT = (engineB.bg[1].BGCNT & 0x00FF) | ((value & 0xFF) << 8);
+		engineB.bg[1].screenBlockBaseAddress = 2048 * engineB.bg[1].screenBlock;
+		break;
+	case 0x400100C:
+		engineB.bg[2].BGCNT = (engineB.bg[2].BGCNT & 0xFF00) | ((value & 0xFF) << 0);
+		engineB.bg[2].charBlockBaseAddress = 16384 * engineB.bg[2].charBlock;
+		break;
+	case 0x400100D:
+		engineB.bg[2].BGCNT = (engineB.bg[2].BGCNT & 0x00FF) | ((value & 0xFF) << 8);
+		engineB.bg[2].screenBlockBaseAddress = 2048 * engineB.bg[2].screenBlock;
+		break;
+	case 0x400100E:
+		engineB.bg[3].BGCNT = (engineB.bg[3].BGCNT & 0xFF00) | ((value & 0xFF) << 0);
+		engineB.bg[3].charBlockBaseAddress = 16384 * engineB.bg[3].charBlock;
+		break;
+	case 0x400100F:
+		engineB.bg[3].BGCNT = (engineB.bg[3].BGCNT & 0x00FF) | ((value & 0xFF) << 8);
+		engineB.bg[3].screenBlockBaseAddress = 2048 * engineB.bg[3].screenBlock;
+		break;
+	case 0x4001010:
+		engineB.bg[0].BGHOFS = (engineB.bg[0].BGHOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001011:
+		engineB.bg[0].BGHOFS = (engineB.bg[0].BGHOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x4001012:
+		engineB.bg[0].BGVOFS = (engineB.bg[0].BGVOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001013:
+		engineB.bg[0].BGVOFS = (engineB.bg[0].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x4001014:
+		engineB.bg[1].BGHOFS = (engineB.bg[1].BGHOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001015:
+		engineB.bg[1].BGHOFS = (engineB.bg[1].BGHOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x4001016:
+		engineB.bg[1].BGVOFS = (engineB.bg[1].BGVOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001017:
+		engineB.bg[1].BGVOFS = (engineB.bg[1].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x4001018:
+		engineB.bg[2].BGHOFS = (engineB.bg[2].BGHOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001019:
+		engineB.bg[2].BGHOFS = (engineB.bg[2].BGHOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x400101A:
+		engineB.bg[2].BGVOFS = (engineB.bg[2].BGVOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400101B:
+		engineB.bg[2].BGVOFS = (engineB.bg[2].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x400101C:
+		engineB.bg[3].BGHOFS = (engineB.bg[3].BGHOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400101D:
+		engineB.bg[3].BGHOFS = (engineB.bg[3].BGHOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x400101E:
+		engineB.bg[3].BGVOFS = (engineB.bg[3].BGVOFS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400101F:
+		engineB.bg[3].BGVOFS = (engineB.bg[3].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
+		break;
+	case 0x400106C:
+		engineB.MASTER_BRIGHT = (engineB.MASTER_BRIGHT & 0xFF00) | ((engineB.MASTER_BRIGHT & 0x1F) << 0);
+		break;
+	case 0x400106D:
+		engineB.MASTER_BRIGHT = (engineB.MASTER_BRIGHT & 0x00FF) | ((engineB.MASTER_BRIGHT & 0xC0) << 8);
+		break;
+	case 0x400106E:
+	case 0x400106F:
 		break;
 	default:
 		log << fmt::format("[ARM9 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>8X}\n", address, value);
@@ -258,6 +874,8 @@ u8 PPU::readIO7(u32 address) {
 		return (u8)VCOUNT;
 	case 0x4000007:
 		return (u8)(VCOUNT >> 8);
+	case 0x4000240:
+		return VRAMSTAT;
 	default:
 		log << fmt::format("[ARM7 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;

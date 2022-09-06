@@ -37,6 +37,7 @@ add_executable(Ortin
 	src/main.cpp
 	src/menus/file.cpp
 	src/menus/debug.cpp
+	src/menus/graphics.cpp
 	src/menus/dev.cpp
 
 	src/emulator/nds.cpp
@@ -47,6 +48,7 @@ add_executable(Ortin
 	src/emulator/nds9/busarm9.cpp
 	src/emulator/nds9/dsmath.cpp
 	src/emulator/nds7/busarm7.cpp
+	src/emulator/nds7/spi.cpp
 )
 
 target_compile_definitions(fmt PUBLIC FMT_EXCEPTIONS=0)

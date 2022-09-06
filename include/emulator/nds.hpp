@@ -81,6 +81,8 @@ public:
 	void addThreadEvent(threadEventType type, u64 intArg, void *ptrArg);
 
 	bool running;
+	bool stepArm9;
+	bool stepArm7;
 	mio::mmap_source romMap;
 	mio::mmap_source bios9Map;
 	mio::mmap_source bios7Map;

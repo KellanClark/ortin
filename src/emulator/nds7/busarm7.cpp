@@ -9,7 +9,7 @@ static constexpr u32 toAddress(u32 page) {
 	return page << 14;
 }
 
-BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log) : cpu(*this), ipc(ipc), shared(shared), log(log), ppu(ppu), dma(shared, log, *this) {
+BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log) : cpu(*this), ipc(ipc), shared(shared), log(log), ppu(ppu), dma(shared, log, *this), spi(shared, log) {
 	wram = new u8[0x10000]; // 64KB
 	memset(wram, 0, 0x10000);
 	bios = new u8[0x4000]; // 16KB
@@ -54,6 +54,9 @@ void BusARM7::requestInterrupt(InterruptType type) {
 }
 
 void BusARM7::refreshInterrupts() {
+	if (IE & IF)
+		HALTCNT = 0;
+
 	if (IME && (IE & IF)) {
 		cpu.processIrq = true;
 	} else {
@@ -133,6 +136,14 @@ T BusARM7::read(u32 address, bool sequential) {
 				val = readIO(alignedAddress, true);
 			}
 			break;
+		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap ... unless I don't feel like doing the page table
+			offset = alignedAddress & 0x1FFFF;
+
+			if (ppu.vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu.vramCOffset & 1)))
+				memcpy(&val, ppu.vramC + offset, sizeof(T));
+			if (ppu.vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu.vramDOffset & 1)))
+				memcpy(&val, ppu.vramD + offset, sizeof(T));
+			break;
 		default:
 			log << fmt::format("[NDS7 Bus] Read from unknown location 0x{:0>8X}\n", address);
 			break;
@@ -173,6 +184,14 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 				writeIO(alignedAddress, value, true);
 			}
 			break;
+		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap ... unless I don't feel like doing the page table
+			offset = alignedAddress & 0x1FFFF;
+
+			if (ppu.vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu.vramCOffset & 1)))
+				memcpy(ppu.vramC + offset, &value, sizeof(T));
+			if (ppu.vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu.vramDOffset & 1)))
+				memcpy(ppu.vramD + offset, &value, sizeof(T));
+			break;
 		default:
 			log << fmt::format("[NDS7 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
 			break;
@@ -202,10 +221,14 @@ u8 BusARM7::readIO(u32 address, bool final) {
 		return ipc.readIO7(address, final);
 
 	case 0x4000004 ... 0x4000007:
+	case 0x4000240:
 		return ppu.readIO7(address);
 
 	case 0x40000B0 ... 0x40000DF:
 		return dma.readIO7(address);
+
+	case 0x40001C0 ... 0x40001C3:
+		return spi.readIO7(address);
 
 	case 0x4000208:
 		return (u8)IME;
@@ -252,6 +275,10 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 
 	case 0x40000B0 ... 0x40000DF:
 		dma.writeIO7(address, value);
+		break;
+
+	case 0x40001C0 ... 0x40001C3:
+		spi.writeIO7(address, value);
 		break;
 
 	case 0x4000208:

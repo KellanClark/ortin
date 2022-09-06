@@ -3,6 +3,8 @@
 
 NDS::NDS() : shared(log), ipc(shared, log), ppu(shared, log), nds9(shared, log, ipc, ppu), nds7(shared, ipc, ppu, log) {
 	romInfo.romLoaded = romInfo.bios9Loaded = romInfo.bios7Loaded = false;
+	running = false;
+	stepArm9 = stepArm7 = 0;
 
 	disassembler9.defaultSettings();
 	disassembler7.defaultSettings();
@@ -47,12 +49,17 @@ void NDS::reset() {
 	nds7.cpu.reg.R[13] = 0x300FD80;
 	nds7.cpu.reg.R13_irq = 0x300FF80;
 	nds7.cpu.reg.R13_svc = 0x300FFC0;
+
+	nds9.delay = 0;
+	nds7.delay = 0;
 }
 
 void NDS::run() {
+	static u64 nds9timestamp = 0;
+	static u64 nds7timestamp = 0;
 	while (true) {
 		while (running) { [[likely]]
-			if (--nds9.delay <= 0) {
+			if (nds9timestamp <= shared.currentTime) {
 				/*if (nds9.cpu.reg.thumbMode) {
 					std::string disasm = disassembler9.disassemble(nds9.cpu.reg.R[15] - 4, nds9.cpu.pipelineOpcode3, true);
 					log << fmt::format("0x{:0>7X} |     0x{:0>4X} | {}\n", nds9.cpu.reg.R[15] - 4, nds9.cpu.pipelineOpcode3, disasm);
@@ -61,10 +68,15 @@ void NDS::run() {
 					log << fmt::format("0x{:0>7X} | 0x{:0>8X} | {}\n", nds9.cpu.reg.R[15] - 8, nds9.cpu.pipelineOpcode3, disasm);
 				}*/
 
+				nds9.delay = 0;
 				nds9.cpu.cycle();
 				nds9.delay = 1;
+				nds9timestamp = shared.currentTime + nds9.delay;
+
+				if (stepArm9 && !nds9.cpu.cp15.halted) [[unlikely]]
+					running = stepArm9 = false;
 			}
-			if (--nds7.delay <= 0) {
+			if ((nds7timestamp <= shared.currentTime) && !nds7.HALTCNT) {
 				/*if (nds7.cpu.reg.thumbMode) {
 					std::string disasm = disassembler7.disassemble(nds7.cpu.reg.R[15] - 4, nds7.cpu.pipelineOpcode3, true);
 					log << fmt::format("0x{:0>7X} |     0x{:0>4X} | {}\n", nds7.cpu.reg.R[15] - 4, nds7.cpu.pipelineOpcode3, disasm);
@@ -73,10 +85,14 @@ void NDS::run() {
 					log << fmt::format("0x{:0>7X} | 0x{:0>8X} | {}\n", nds7.cpu.reg.R[15] - 8, nds7.cpu.pipelineOpcode3, disasm);
 				}*/
 
+				nds7.delay = 0;
 				nds7.cpu.cycle();
+				nds7timestamp = shared.currentTime + nds7.delay;
+
+				if (stepArm7) [[unlikely]]
+					running = stepArm7 = false;
 			}
 
-			check_scheduler:
 			while (shared.eventQueue.top().timeStamp <= shared.currentTime) {
 				auto type = shared.eventQueue.top().type;
 				shared.eventQueue.pop();
@@ -123,30 +139,13 @@ void NDS::run() {
 					nds7.refreshWramPages();
 					break;
 				case EventType::REFRESH_VRAM_PAGES:
+					ppu.refreshVramPages();
 					nds9.refreshVramPages();
 					break;
 				}
 			}
 
-			if (nds9.cpu.cp15.halted && (nds7.HALTCNT == 0x80)) { [[unlikely]]
-				if (nds9.cpu.processIrq || (nds7.IE & nds7.IF)) {
-					if (nds7.IE & nds7.IF)
-						nds7.HALTCNT = 0;
-
-					if (nds9.delay < 1) nds9.delay = 1;
-					if (nds7.delay < 1) nds7.delay = 1;
-					break;
-				} else {
-					auto difference = shared.eventQueue.top().timeStamp - shared.currentTime;
-					shared.currentTime -= difference;
-					nds9.delay -= difference;
-					nds7.delay -= difference;
-
-					goto check_scheduler;
-				}
-			} else {
-				++shared.currentTime;
-			}
+			shared.currentTime += std::min((u64)std::min((nds7.HALTCNT == 0x80) ? LLONG_MAX : nds7.delay, (nds9.cpu.cp15.halted && !nds9.cpu.processIrq) ? LLONG_MAX : nds9.delay), shared.eventQueue.top().timeStamp - shared.currentTime);
 		}
 
 		handleThreadQueue();
@@ -176,11 +175,13 @@ void NDS::handleThreadQueue() {
 			break;
 		case STEP_ARM9:
 			running = true;
-			shared.addEvent(nds9.delay - 1, EventType::STOP);
+			stepArm9 = true;
+			//shared.addEvent(nds9.delay - 1, EventType::STOP);
 			break;
 		case STEP_ARM7:
 			running = true;
-			shared.addEvent(nds7.delay - 1, EventType::STOP);
+			stepArm7 = true;
+			//shared.addEvent(nds7.delay - 1, EventType::STOP);
 			break;
 		case LOAD_ROM:
 			if (loadRom(*(std::filesystem::path *)currentEvent.ptrArg)) {
