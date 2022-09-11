@@ -3,6 +3,7 @@
 
 Ortin::Ortin() : emuThread(&NDS::run, std::ref(nds)) {
 	error = false;
+	penDown = false;
 
 	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
 		printf("Error: %s\n", SDL_GetError());
@@ -106,7 +107,22 @@ void Ortin::drawScreens() {
 	ImGui::Begin("DS Screen");
 
 	ImGui::Image((void*)(intptr_t)(nds.ppu.displaySwap ? ortin.engineATexture : ortin.engineBTexture), ImVec2(256 * 1, 192 * 1));
-	ImGui::Image((void*)(intptr_t)(nds.ppu.displaySwap ? ortin.engineBTexture : ortin.engineATexture), ImVec2(256 * 1, 192 * 1));
+	ImGui::ImageButton((void*)(intptr_t)(nds.ppu.displaySwap ? ortin.engineBTexture : ortin.engineATexture), ImVec2(256 * 1, 192 * 1), ImVec2(0, 0), ImVec2(1, 1), 0);
+
+	if (ImGui::IsItemActive() && ImGui::IsItemHovered()) { // Touchscreen
+		auto mousePos = ImGui::GetMousePos();
+		auto topLeft = ImGui::GetItemRectMin();
+		auto size = ImGui::GetItemRectSize();
+
+		nds.nds7.spi.touchscreen.xPosition = ((mousePos.x - topLeft.x) / size.x) * 0x0FF0;
+		nds.nds7.spi.touchscreen.yPosition = ((mousePos.y - topLeft.y) / size.y) * 0x0BF0;
+		penDown = true;
+		//printf("%03X  %03X\n", nds.nds7.spi.touchscreen.xPosition, nds.nds7.spi.touchscreen.yPosition);
+	} else {
+		nds.nds7.spi.touchscreen.xPosition = 0;
+		nds.nds7.spi.touchscreen.yPosition = 0;
+		penDown = false;
+	}
 
 	ImGui::End();
 }

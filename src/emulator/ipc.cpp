@@ -15,6 +15,7 @@ void IPC::reset() {
 	IPCFIFOSEND9 = IPCFIFOSEND7 = 0;
 	IPCFIFORECV9 = IPCFIFORECV7 = 0;
 
+	sendIrq9Status = recvIrq9Status = sendIrq7Status = recvIrq7Status = false;
 	sendMask9 = sendMask7 = 0;
 	fifo9to7 = {};
 	fifo7to9 = {};
@@ -56,6 +57,8 @@ u8 IPC::readIO9(u32 address, bool final) {
 
 	// Pop value off the recieve FIFO
 	if (final && fifoEnable9) {
+		sendIrq7Status = sendFifoEmptyIrq7 && sendFifoEmpty7;
+
 		bool wasEmpty = true;
 		if (fifo7to9.empty()) {
 			fifoError9 = true;
@@ -71,9 +74,6 @@ u8 IPC::readIO9(u32 address, bool final) {
 			receiveFifoFull9 = false;
 
 			//IPCFIFORECV9 = 0;
-
-			if (!wasEmpty && sendFifoEmptyIrq7)
-				shared.addEvent(0, EventType::IPC_SEND_FIFO7);
 		} else {
 			sendFifoEmpty7 = false;
 			sendFifoFull7 = false;
@@ -82,6 +82,10 @@ u8 IPC::readIO9(u32 address, bool final) {
 
 			IPCFIFORECV9 = fifo7to9.front();
 		}
+
+		if (!sendIrq7Status && sendFifoEmptyIrq7 && sendFifoEmpty7)
+			shared.addEvent(0, EventType::IPC_SEND_FIFO7);
+		sendIrq7Status = sendFifoEmptyIrq7 && sendFifoEmpty7;
 	}
 
 	return val;
@@ -106,6 +110,8 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 	case 0x4000183:
 		return;
 	case 0x4000184:
+		sendIrq9Status = sendFifoEmptyIrq9 && sendFifoEmpty9;
+
 		IPCFIFOCNT9 = (IPCFIFOCNT9 & 0xFF03) | ((value & 0x0C) << 0);
 
 		if (sendFifoClear9) {
@@ -117,16 +123,22 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 			receiveFifoFull7 = false;
 
 			IPCFIFORECV7 = 0;
-
-			if (!fifo9to7.empty() && sendFifoEmptyIrq9)
-				shared.addEvent(0, EventType::IPC_SEND_FIFO9);
-
 			fifo9to7 = {};
 		}
+
+		if (!sendIrq9Status && sendFifoEmptyIrq9 && sendFifoEmpty9)
+			shared.addEvent(0, EventType::IPC_SEND_FIFO9);
+		sendIrq9Status = sendFifoEmptyIrq9 && sendFifoEmpty9;
 		return;
 	case 0x4000185:
+		recvIrq9Status = receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9;
+
 		IPCFIFOCNT9 &= ~((value & 0x40) << 8); // Error acknowledge
 		IPCFIFOCNT9 = (IPCFIFOCNT9 & 0x43FF) | ((value & 0x84) << 8);
+
+		if (!recvIrq9Status && receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9)
+			shared.addEvent(0, EventType::IPC_RECV_FIFO9);
+		recvIrq9Status = receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9;
 		return;
 	case 0x4000186:
 	case 0x4000187:
@@ -155,6 +167,8 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 	// Push value into FIFO
 	if (final) {
 		if (fifoEnable9) {
+			recvIrq7Status = receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7;
+
 			// Mirror value if write is 8 or 16 bits
 			IPCFIFOSEND9 >>= std::countr_zero(sendMask9);
 			sendMask9 >>= std::countr_zero(sendMask9);
@@ -177,10 +191,11 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 				sendFifoFull9 = full;
 				receiveFifoEmpty7 = false;
 				receiveFifoFull7 = full;
-
-				if (wasEmpty && receiveFifoNotEmptyIrq7)
-					shared.addEvent(0, EventType::IPC_RECV_FIFO7);
 			}
+
+			if (!recvIrq7Status && receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7)
+				shared.addEvent(0, EventType::IPC_RECV_FIFO7);
+			recvIrq7Status = receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7;
 		}
 
 		IPCFIFOSEND9 = 0;
@@ -224,6 +239,8 @@ u8 IPC::readIO7(u32 address, bool final) {
 
 	// Pop value off the recieve FIFO
 	if (final && fifoEnable7) {
+		sendIrq9Status = sendFifoEmptyIrq9 && sendFifoEmpty9;
+
 		bool wasEmpty = true;
 		if (fifo9to7.empty()) {
 			fifoError7 = true;
@@ -239,9 +256,6 @@ u8 IPC::readIO7(u32 address, bool final) {
 			receiveFifoFull7 = false;
 
 			//IPCFIFORECV7 = 0;
-
-			if (!wasEmpty && sendFifoEmptyIrq9)
-				shared.addEvent(0, EventType::IPC_SEND_FIFO9);
 		} else {
 			sendFifoEmpty9 = false;
 			sendFifoFull9 = false;
@@ -250,6 +264,10 @@ u8 IPC::readIO7(u32 address, bool final) {
 
 			IPCFIFORECV7 = fifo9to7.front();
 		}
+
+		if (!sendIrq9Status && sendFifoEmptyIrq9 && sendFifoEmpty9)
+			shared.addEvent(0, EventType::IPC_SEND_FIFO9);
+		sendIrq9Status = sendFifoEmptyIrq9 && sendFifoEmpty9;
 	}
 
 	return val;
@@ -274,6 +292,8 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 	case 0x4000183:
 		return;
 	case 0x4000184:
+		sendIrq7Status = sendFifoEmptyIrq7 && sendFifoEmpty7;
+
 		IPCFIFOCNT7 = (IPCFIFOCNT7 & 0xFF03) | ((value & 0x0C) << 0);
 
 		if (sendFifoClear7) {
@@ -285,16 +305,22 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 			receiveFifoFull9 = false;
 
 			IPCFIFORECV9 = 0;
-
-			if (!fifo7to9.empty() && sendFifoEmptyIrq7)
-				shared.addEvent(0, EventType::IPC_SEND_FIFO7);
-
 			fifo7to9 = {};
 		}
+
+		if (!sendIrq7Status && sendFifoEmptyIrq7 && sendFifoEmpty7)
+			shared.addEvent(0, EventType::IPC_SEND_FIFO7);
+		sendIrq7Status = sendFifoEmptyIrq7 && sendFifoEmpty7;
 		return;
 	case 0x4000185:
+		recvIrq7Status = receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7;
+
 		IPCFIFOCNT7 &= ~((value & 0x40) << 8); // Error acknowledge
 		IPCFIFOCNT7 = (IPCFIFOCNT7 & 0x43FF) | ((value & 0x84) << 8);
+
+		if (!recvIrq7Status && receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7)
+			shared.addEvent(0, EventType::IPC_RECV_FIFO7);
+		recvIrq7Status = receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7;
 		return;
 	case 0x4000186:
 	case 0x4000187:
@@ -322,6 +348,8 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 
 	// Push value into FIFO
 	if (final) {
+		recvIrq9Status = receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9;
+
 		if (fifoEnable7) {
 			// Mirror value if write is 8 or 16 bits
 			IPCFIFOSEND7 >>= std::countr_zero(sendMask7);
@@ -345,13 +373,14 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 				sendFifoFull7 = full;
 				receiveFifoEmpty9 = false;
 				receiveFifoFull9 = full;
-
-				if (wasEmpty && receiveFifoNotEmptyIrq9)
-					shared.addEvent(0, EventType::IPC_RECV_FIFO9);
 			}
 		}
 
 		IPCFIFOSEND7 = 0;
 		sendMask7 = 0;
+
+		if (!recvIrq9Status && receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9)
+			shared.addEvent(0, EventType::IPC_RECV_FIFO9);
+		recvIrq9Status = receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9;
 	}
 }

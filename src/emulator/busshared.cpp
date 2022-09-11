@@ -36,11 +36,11 @@ u8 BusShared::readIO9(u32 address) {
 	case 0x4000130:
 		return (u8)KEYINPUT;
 	case 0x4000131:
-		return (u8)(KEYINPUT) >> 8;
+		return (u8)(KEYINPUT >> 8);
 	case 0x4000132:
 		return (u8)KEYCNT9;
 	case 0x4000133:
-		return (u8)(KEYCNT9) >> 8;
+		return (u8)(KEYCNT9 >> 8);
 	case 0x4000247:
 		return WRAMCNT;
 	default:
@@ -73,15 +73,15 @@ u8 BusShared::readIO7(u32 address) {
 	case 0x4000130:
 		return (u8)KEYINPUT;
 	case 0x4000131:
-		return (u8)(KEYINPUT) >> 8;
+		return (u8)(KEYINPUT >> 8);
 	case 0x4000132:
 		return (u8)KEYCNT7;
 	case 0x4000133:
-		return (u8)(KEYCNT7) >> 8;
+		return (u8)(KEYCNT7 >> 8);
 	case 0x4000136:
 		return (u8)EXTKEYIN;
 	case 0x4000137:
-		return (u8)(EXTKEYIN) >> 8;
+		return (u8)(EXTKEYIN >> 8);
 	case 0x4000241:
 		return WRAMCNT;
 	default:

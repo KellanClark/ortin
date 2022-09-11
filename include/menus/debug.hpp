@@ -17,16 +17,14 @@ private:
 	bool showLogs;
 	bool showArm9Debug;
 	bool showArm7Debug;
-	bool showMemEditor9;
-	bool showMemEditor7;
+	bool showMemEditor;
 	bool showIoReg9;
 	bool showIoReg7;
 
 	void logsWindow();
 	void arm9DebugWindow();
 	void arm7DebugWindow();
-	void memEditor9Window();
-	void memEditor7Window();
+	void memEditorWindow();
 	void ioReg9Window();
 	void ioReg7Window();
 

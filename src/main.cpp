@@ -19,7 +19,7 @@ SDL_Scancode keymap[12] = {
 	SDL_SCANCODE_S, // Button X
 	SDL_SCANCODE_A // Button Y
 };
-u16 lastJoypad;
+u32 lastJoypad;
 
 int main(int argc, char *argv[]) {
 	if (ortin.error)
@@ -54,11 +54,12 @@ int main(int argc, char *argv[]) {
 		}
 		// Joypad inputs
 		const u8 *currentKeyStates = SDL_GetKeyboardState(nullptr);
-		u16 currentJoypad = 0;
+		u32 currentJoypad = 0;
 		for (int i = 0; i < 12; i++) {
 			if (currentKeyStates[keymap[i]])
 				currentJoypad |= 1 << i;
 		}
+		//currentJoypad |= ortin.penDown << 16;
 		if (currentJoypad != lastJoypad) {
 			ortin.nds.addThreadEvent(NDS::UPDATE_KEYS, currentJoypad);
 			lastJoypad = currentJoypad;

@@ -29,10 +29,11 @@ public:
 	ARM7TDMIDisassembler disassembler7;
 
 	struct {
-		bool romLoaded, bios9Loaded, bios7Loaded;
+		bool romLoaded, bios9Loaded, bios7Loaded, firmwareLoaded;
 		std::filesystem::path filePath;
 		std::filesystem::path bios9FilePath;
 		std::filesystem::path bios7FilePath;
+		std::filesystem::path firmwareFilePath;
 
 		std::string name; // 12 bytes - 0x000
 		u8 version; // 1 byte - 0x01E
@@ -89,6 +90,7 @@ public:
 	int loadRom(std::filesystem::path romFilePath);
 	int loadBios9(std::filesystem::path bios9FilePath);
 	int loadBios7(std::filesystem::path bios7FilePath);
+	int loadFirmware(std::filesystem::path firmwareFilePath);
 };
 
 #endif //ORTIN_NDS_HPP

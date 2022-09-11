@@ -151,7 +151,7 @@ void DMA<dma9>::doDma(int channelNum) {
 	}
 
 	if (info.irqEnable)
-		bus.requestInterrupt(static_cast<typename ArchBus::InterruptType>(ArchBus::INT_DMA_0 + channelNum));
+		bus.requestInterrupt(static_cast<typename ArchBus::InterruptType>(ArchBus::INT_DMA_0 << channelNum));
 }
 
 template <bool dma9>

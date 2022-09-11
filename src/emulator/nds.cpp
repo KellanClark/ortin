@@ -50,6 +50,14 @@ void NDS::reset() {
 	nds7.cpu.reg.R13_irq = 0x300FF80;
 	nds7.cpu.reg.R13_svc = 0x300FFC0;
 
+	// User Settings (normally loaded from firmware)
+	nds9.write<u16>(0x27FFC80 + 0x58, 0x0000, false); // Touch-screen calibration point (adc.x1,y1) 12bit ADC-position
+	nds9.write<u16>(0x27FFC80 + 0x5A, 0x0000, false);
+	nds9.write<u16>(0x27FFC80 + 0x5C, 0x00'00, false); // Touch-screen calibration point (scr.x1,y1) 8bit pixel-position
+	nds9.write<u16>(0x27FFC80 + 0x5E, 0x0FF0, false); // Touch-screen calibration point (adc.x2,y2) 12bit ADC-position
+	nds9.write<u16>(0x27FFC80 + 0x60, 0x0BF0, false);
+	nds9.write<u16>(0x27FFC80 + 0x62, 0xBF'FF, false); // Touch-screen calibration point (scr.x2,y2) 8bit pixel-position
+
 	nds9.delay = 0;
 	nds7.delay = 0;
 }
@@ -109,7 +117,7 @@ void NDS::run() {
 				case IPC_SEND_FIFO7: nds7.requestInterrupt(BusARM7::INT_IPC_SEND_FIFO); break;
 				case IPC_RECV_FIFO9: nds9.requestInterrupt(BusARM9::INT_IPC_RECV_FIFO); break;
 				case IPC_RECV_FIFO7: nds7.requestInterrupt(BusARM7::INT_IPC_RECV_FIFO); break;
-				case EventType::PPU_LINE_START:
+				case PPU_LINE_START:
 					ppu.lineStart();
 
 					if (ppu.vBlankIrq9) { nds9.requestInterrupt(BusARM9::INT_VBLANK); ppu.vBlankIrq9 = false; }
@@ -125,7 +133,7 @@ void NDS::run() {
 					if (ppu.currentScanline == 0)
 						handleThreadQueue();
 					break;
-				case EventType::PPU_HBLANK:
+				case PPU_HBLANK:
 					ppu.hBlank();
 
 					if (ppu.hBlankIrq9) { nds9.requestInterrupt(BusARM9::INT_HBLANK); ppu.hBlankIrq9 = false; }
@@ -134,14 +142,15 @@ void NDS::run() {
 					if (ppu.currentScanline < 192)
 						nds9.dma.checkDma(DMA_HBLANK);
 					break;
-				case EventType::REFRESH_WRAM_PAGES:
+				case REFRESH_WRAM_PAGES:
 					nds9.refreshWramPages();
 					nds7.refreshWramPages();
 					break;
-				case EventType::REFRESH_VRAM_PAGES:
+				case REFRESH_VRAM_PAGES:
 					ppu.refreshVramPages();
 					nds9.refreshVramPages();
 					break;
+				case SPI_FINISHED: nds7.requestInterrupt(BusARM7::INT_SPI); break;
 				}
 			}
 
@@ -209,7 +218,8 @@ void NDS::handleThreadQueue() {
 			break;
 		case UPDATE_KEYS:
 			shared.KEYINPUT = ~currentEvent.intArg & 0x03FF;
-			shared.EXTKEYIN = ((~currentEvent.intArg >> 10) & 0x0003) | 0x007C;
+			shared.EXTKEYIN = ((~currentEvent.intArg >> 10) & 0x0043) | 0x003C;
+			printf("%04X %04X\n", shared.KEYINPUT, shared.EXTKEYIN);
 			break;
 		default:
 			printf("Unknown thread event:  %d\n", currentEvent.type);

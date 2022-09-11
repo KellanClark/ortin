@@ -86,6 +86,10 @@ public:
 	u32 IPCFIFORECV9; // NDS9 - 0x4100000
 	u32 IPCFIFORECV7; // NDS7 - 0x4100000
 
+	bool sendIrq9Status;
+	bool recvIrq9Status;
+	bool sendIrq7Status;
+	bool recvIrq7Status;
 	u32 sendMask9;
 	u32 sendMask7;
 	std::queue<u32> fifo9to7;

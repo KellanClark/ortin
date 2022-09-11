@@ -16,7 +16,8 @@ enum EventType {
 	PPU_LINE_START,
 	PPU_HBLANK,
 	REFRESH_WRAM_PAGES,
-	REFRESH_VRAM_PAGES
+	REFRESH_VRAM_PAGES,
+	SPI_FINISHED,
 };
 
 // This class is not the same as BusARM9 and BusARM7.

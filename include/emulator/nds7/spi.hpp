@@ -21,6 +21,7 @@ public:
 	void writeIO7(u32 address, u8 value);
 
 	// I/O Registers
+	int writeNumber;
 	union {
 		struct {
 			u16 baudrate : 2;
@@ -35,8 +36,24 @@ public:
 		};
 		u16 SPICNT; // NDS7 - 0x40001C0
 	};
-
 	u16 SPIDATA; // NDS7 - 0x40001C2
+
+	// SPI Devices (too simple to make their own classes)
+	struct {
+		union {
+			struct {
+				u8 powerDownMode : 2;
+				u8 referenceSelect : 1;
+				u8 conversionMode : 1;
+				u8 channelSelect : 3;
+				u8 start;
+			};
+			u8 control;
+		};
+
+		u16 xPosition;
+		u16 yPosition;
+	} touchscreen;
 };
 
 #endif //ORTIN_SPI_HPP

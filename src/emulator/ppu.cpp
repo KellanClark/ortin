@@ -280,7 +280,7 @@ void PPU::draw2D() {
 		}
 
 		if (tileData != 0) {
-			bg.drawBuf[column] = engineBBgPalette[((tile.paletteBank << 4) * !bg.eightBitColor) | tileData];
+			bg.drawBuf[column] = (useEngineA ? engineABgPalette : engineBBgPalette)[((tile.paletteBank << 4) * !bg.eightBitColor) | tileData];
 			bg.drawBuf[column].solid = true;
 		}
 	}

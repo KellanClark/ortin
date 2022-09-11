@@ -28,6 +28,7 @@ void GraphicsMenu::drawWindows() {
 
 void GraphicsMenu::paletteWindow() {
 	static u16 *selectedRegion;
+	static u32 memoryOffset;
 	static int selectedIndex;
 
 	ImGui::Begin("Palettes", &showPalette);
@@ -41,10 +42,10 @@ void GraphicsMenu::paletteWindow() {
 		ImGui::Combo("##palette region", &item_current, items, IM_ARRAYSIZE(items));
 
 		switch (item_current) {
-		case 0: selectedRegion = (u16 *)ortin.nds.ppu.engineABgPalette; break;
-		case 1: selectedRegion = (u16 *)ortin.nds.ppu.engineAObjPalette; break;
-		case 2: selectedRegion = (u16 *)ortin.nds.ppu.engineBBgPalette; break;
-		case 3: selectedRegion = (u16 *)ortin.nds.ppu.engineBObjPalette; break;
+		case 0: selectedRegion = (u16 *)ortin.nds.ppu.engineABgPalette; memoryOffset = 0x000; break;
+		case 1: selectedRegion = (u16 *)ortin.nds.ppu.engineAObjPalette; memoryOffset = 0x200; break;
+		case 2: selectedRegion = (u16 *)ortin.nds.ppu.engineBBgPalette; memoryOffset = 0x400; break;
+		case 3: selectedRegion = (u16 *)ortin.nds.ppu.engineBObjPalette; memoryOffset = 0x600; break;
 		}
 	}
 
@@ -68,7 +69,7 @@ void GraphicsMenu::paletteWindow() {
 	u16 color = selectedRegion[selectedIndex];
 	ImGui::Spacing();
 	ImGui::Text("Color Index:  %d", selectedIndex);
-	ImGui::Text("Memory Location:  0x%07X", 0x5000000 + (selectedIndex * 2));
+	ImGui::Text("Memory Location:  0x%07X", 0x5000000 + memoryOffset + (selectedIndex * 2));
 	ImGui::Text("Color Data:  0x%04X", color);
 	ImGui::Text("(r, g, b):  (%d, %d, %d)", color & 0x1F, (color >> 5) & 0x1F, (color >> 10) & 0x1F);
 

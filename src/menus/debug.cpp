@@ -8,8 +8,7 @@ DebugMenu::DebugMenu() {
 	showLogs = false;
 	showArm9Debug = false;
 	showArm7Debug = false;
-	showMemEditor9 = false;
-	showMemEditor7 = false;
+	showMemEditor = false;
 	showIoReg9 = false;
 	showIoReg7 = false;
 
@@ -24,12 +23,11 @@ DebugMenu::~DebugMenu() {
 void DebugMenu::drawMenu() {
 	if (ImGui::BeginMenu("Debug")) {
 		ImGui::MenuItem("Logs", nullptr, &showLogs);
-		ImGui::MenuItem("ARM9 Debug", nullptr, &showArm9Debug);
-		ImGui::MenuItem("ARM7 Debug", nullptr, &showArm7Debug);
-		ImGui::MenuItem("ARM9 Memory", nullptr, &showMemEditor9);
-		ImGui::MenuItem("ARM7 Memory", nullptr, &showMemEditor7);
-		ImGui::MenuItem("ARM9 IO", nullptr, &showIoReg9);
-		ImGui::MenuItem("ARM7 IO", nullptr, &showIoReg7);
+		ImGui::MenuItem("ARM9 CPU Status", nullptr, &showArm9Debug);
+		ImGui::MenuItem("ARM7 CPU Status", nullptr, &showArm7Debug);
+		ImGui::MenuItem("Memory", nullptr, &showMemEditor);
+		ImGui::MenuItem("NDS9 IO", nullptr, &showIoReg9);
+		ImGui::MenuItem("NDS7 IO", nullptr, &showIoReg7);
 
 		ImGui::EndMenu();
 	}
@@ -39,8 +37,7 @@ void DebugMenu::drawWindows() {
 	if (showLogs) logsWindow();
 	if (showArm9Debug) arm9DebugWindow();
 	if (showArm7Debug) arm7DebugWindow();
-	if (showMemEditor9) memEditor9Window();
-	if (showMemEditor7) memEditor7Window();
+	if (showMemEditor) memEditorWindow();
 	if (showIoReg9) ioReg9Window();
 	if (showIoReg7) ioReg7Window();
 }
@@ -52,12 +49,6 @@ u32 numberInput(const char *text, bool hex, u32 currentValue, u32 max) {
 	ImGui::InputText(text, buf, 128, hex ? ImGuiInputTextFlags_CharsHexadecimal : ImGuiInputTextFlags_CharsDecimal);
 	return (u32)std::clamp(strtoull(buf, NULL, hex ? 16 : 0), (unsigned long long)0, (unsigned long long)max);
 }
-
-struct MemoryRegion {
-	std::string name;
-	u8 *pointer;
-	int size;
-};
 
 void DebugMenu::logsWindow() {
 	static bool shouldAutoscroll = true;
@@ -78,8 +69,9 @@ void DebugMenu::logsWindow() {
 	}
 
 	ImGui::Checkbox("Log DMA9", &ortin.nds.nds9.dma.logDma);
-	ImGui::SameLine();
 	ImGui::Checkbox("Log DMA7", &ortin.nds.nds7.dma.logDma);
+	ImGui::SameLine();
+	ImGui::Checkbox("Log SPI", &ortin.nds.nds7.spi.logSpi);
 
 	if (ImGui::TreeNode("ARM9 Disassembler Options")) {
 		ImGui::Checkbox("Show AL Condition", (bool *)&arm9disasm.options.showALCondition);
@@ -122,7 +114,7 @@ void DebugMenu::arm9DebugWindow() {
 	auto& cpu = ortin.nds.nds9.cpu;
 
 	ImGui::SetNextWindowSize(ImVec2(760, 480));
-	ImGui::Begin("ARM9 Debug", &showArm9Debug);
+	ImGui::Begin("ARM9 CPU Status", &showArm9Debug);
 
 	if (ImGui::Button("Reset"))
 		ortin.nds.addThreadEvent(NDS::RESET);
@@ -408,7 +400,7 @@ void DebugMenu::arm7DebugWindow() {
 	auto& cpu = ortin.nds.nds7.cpu;
 
 	ImGui::SetNextWindowSize(ImVec2(760, 480));
-	ImGui::Begin("ARM7 Debug", &showArm7Debug);
+	ImGui::Begin("ARM7 CPU Status", &showArm7Debug);
 
 	if (ImGui::Button("Reset"))
 		ortin.nds.addThreadEvent(NDS::RESET);
@@ -687,52 +679,60 @@ void DebugMenu::arm7DebugWindow() {
 	ImGui::End();
 }
 
-void DebugMenu::memEditor9Window() {
+struct MemoryRegion {
+	std::string name;
+	u8 *pointer;
+	int size;
+	bool fakeEntry;
+};
+
+void DebugMenu::memEditorWindow() {
 	static MemoryEditor memEditor;
 	static int selectedRegion = 0;
-	std::array<MemoryRegion, 1> regions = {{
-		{"PSRAM/Main Memory (4MB mirrored 0x2000000 - 0x3000000)", ortin.nds.shared.psram, 0x400000}
+
+	const static std::array<MemoryRegion, 22> memoryRegions = {{
+		{"--Shared--", NULL, 0, true},
+		{"PSRAM/Main Memory (4MB mirrored 0x2000000 to 0x3000000)", ortin.nds.shared.psram, 0x400000, false},
+		{"Shared WRAM (32KB)", ortin.nds.shared.wram, 0x8000, false},
+
+		{"--ARM9 Only--", NULL, 0, true},
+		{"Instruction TCM (32KB)", ortin.nds.nds9.cpu.cp15.itcm, 0x8000, false},
+		{"Data TCM (16KB)", ortin.nds.nds9.cpu.cp15.dtcm, 0x4000, false},
+		{"Standard Palettes (2KB mirrored 0x5000000 to 0x6000000)", ortin.nds.ppu.pram, 0x800, false},
+		{"ARM9 BIOS (4KB)", ortin.nds.nds9.bios, 0x1000, false},
+
+		{"--ARM7 Only--", NULL, 0, true},
+		{"ARM7 BIOS (16KB 0x0000000 to 0x0004000)", ortin.nds.nds7.bios, 0x4000, false},
+		{"ARM7 WRAM (64KB mirrored 0x3800000 to 0x4000000)", ortin.nds.nds7.wram, 0x10000, false},
+
+		{"--VRAM Banks--", NULL, 0, true},
+		{"VRAM Bank A (128K)", ortin.nds.ppu.vramA, 0x20000},
+		{"VRAM Bank B (128K)", ortin.nds.ppu.vramB, 0x20000},
+		{"VRAM Bank C (128K)", ortin.nds.ppu.vramC, 0x20000},
+		{"VRAM Bank D (128K)", ortin.nds.ppu.vramD, 0x20000},
+		{"VRAM Bank E (64K)", ortin.nds.ppu.vramE, 0x10000},
+		{"VRAM Bank F (16K)", ortin.nds.ppu.vramF, 0x4000},
+		{"VRAM Bank G (16K)", ortin.nds.ppu.vramG, 0x4000},
+		{"VRAM Bank H (32K)", ortin.nds.ppu.vramH, 0x8000},
+		{"VRAM Bank I (16K)", ortin.nds.ppu.vramI, 0x4000},
+
+		{"--Unmapped--", NULL, 0, true},
 	}};
 
 	ImGui::SetNextWindowSize(ImVec2(570, 400), ImGuiCond_FirstUseEver);
-	ImGui::Begin("Memory Editor ARM9", &showMemEditor9);
+	ImGui::Begin("Memory Editor", &showMemEditor);
 
-	if (ImGui::BeginCombo("Location", regions[selectedRegion].name.c_str())) {
-		for (int i = 0; i < regions.size(); i++) {
-			if (ImGui::MenuItem(regions[selectedRegion].name.c_str()))
-				selectedRegion = i;
+	if (ImGui::BeginCombo("Location", memoryRegions[selectedRegion].name.c_str())) {
+		for (int i = 0; i < memoryRegions.size(); i++) {
+			if (ImGui::MenuItem(memoryRegions[i].name.c_str()))
+				if (!memoryRegions[i].fakeEntry)
+					selectedRegion = i;
 		}
 
 		ImGui::EndCombo();
 	}
 
-	memEditor.DrawContents(regions[selectedRegion].pointer, regions[selectedRegion].size);
-
-	ImGui::End();
-}
-
-void DebugMenu::memEditor7Window() {
-	static MemoryEditor memEditor;
-	static int selectedRegion = 0;
-	std::array<MemoryRegion, 3> regions = {{
-		{"PSRAM/Main Memory (4MB mirrored 0x2000000 - 0x3000000)", ortin.nds.shared.psram, 0x400000},
-		{"Shared WRAM (32KB mirrored 0x3000000 - 0x3800000)", ortin.nds.shared.wram, 0x8000},
-		{"ARM7 WRAM (64KB mirrored 0x3800000 - 0x4000000)", ortin.nds.nds7.wram, 0x10000}
-	}};
-
-	ImGui::SetNextWindowSize(ImVec2(570, 400), ImGuiCond_FirstUseEver);
-	ImGui::Begin("Memory Editor ARM7", &showMemEditor7);
-
-	if (ImGui::BeginCombo("Location", regions[selectedRegion].name.c_str())) {
-		for (int i = 0; i < regions.size(); i++) {
-			if (ImGui::MenuItem(regions[i].name.c_str()))
-				selectedRegion = i;
-		}
-
-		ImGui::EndCombo();
-	}
-
-	memEditor.DrawContents(regions[selectedRegion].pointer, regions[selectedRegion].size);
+	memEditor.DrawContents(memoryRegions[selectedRegion].pointer, memoryRegions[selectedRegion].size);
 
 	ImGui::End();
 }
@@ -1275,7 +1275,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	static bool tmpRefresh = false;
 
 	ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_FirstUseEver);
-	ImGui::Begin("ARM9 IO Registers", &showIoReg9);
+	ImGui::Begin("NDS9 IO Registers", &showIoReg9);
 
 	// Left
 	{
@@ -1633,7 +1633,7 @@ void DebugMenu::ioReg7Window() {
 	static bool tmpRefresh = false;
 
 	ImGui::SetNextWindowSize(ImVec2(500, 440), ImGuiCond_FirstUseEver);
-	ImGui::Begin("ARM7 IO Registers", &showIoReg7);
+	ImGui::Begin("NDS7 IO Registers", &showIoReg7);
 
 	// Left
 	{

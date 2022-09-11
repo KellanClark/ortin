@@ -37,6 +37,7 @@ public:
 	void drawScreens();
 
 	bool error;
+	bool penDown;
 
 	SDL_Window* window;
 	SDL_GLContext gl_context;
