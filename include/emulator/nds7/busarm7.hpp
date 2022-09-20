@@ -9,6 +9,7 @@
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
 #include "emulator/dma.hpp"
+#include "emulator/nds7/rtc.hpp"
 #include "emulator/nds7/spi.hpp"
 #include "arm7tdmi/arm7tdmi.hpp"
 
@@ -20,6 +21,7 @@ public:
 	IPC& ipc;
 	PPU& ppu;
 	DMA<false> dma;
+	RTC rtc;
 	SPI spi;
 	u8 *wram;
 	u8 *bios;

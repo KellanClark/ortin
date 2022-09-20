@@ -36,6 +36,7 @@ add_executable(Ortin
 	src/ortin.cpp
 	src/main.cpp
 	src/menus/file.cpp
+	src/menus/emulation.cpp
 	src/menus/debug.cpp
 	src/menus/graphics.cpp
 	src/menus/dev.cpp
@@ -48,6 +49,7 @@ add_executable(Ortin
 	src/emulator/nds9/busarm9.cpp
 	src/emulator/nds9/dsmath.cpp
 	src/emulator/nds7/busarm7.cpp
+	src/emulator/nds7/rtc.cpp
 	src/emulator/nds7/spi.cpp
 )
 
@@ -59,6 +61,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIA
 		/clang:-fconstexpr-depth=20000
 		/clang:-MMD
 		/clang:-MP
+		/clang:-mbmi2
 		#-Wall
 		#-fsanitize=address
 		#-fsanitize=leak
@@ -90,6 +93,7 @@ else()
 		-fconstexpr-depth=20000
 		-MMD
 		-MP
+		-mbmi2
 		#-Wall
 		#-fsanitize=address
 		#-fsanitize=leak

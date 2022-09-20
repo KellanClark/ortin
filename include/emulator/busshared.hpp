@@ -18,6 +18,8 @@ enum EventType {
 	REFRESH_WRAM_PAGES,
 	REFRESH_VRAM_PAGES,
 	SPI_FINISHED,
+	RTC_REFRESH,
+	SERIAL_INTERRUPT,
 };
 
 // This class is not the same as BusARM9 and BusARM7.

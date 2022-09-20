@@ -22,6 +22,7 @@ public:
 };
 
 #include "menus/file.hpp"
+#include "menus/emulation.hpp"
 #include "menus/debug.hpp"
 #include "menus/graphics.hpp"
 #include "menus/dev.hpp"

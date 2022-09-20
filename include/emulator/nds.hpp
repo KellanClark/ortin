@@ -66,7 +66,8 @@ public:
 		LOAD_BIOS9,
 		LOAD_BIOS7,
 		CLEAR_LOG,
-		UPDATE_KEYS
+		UPDATE_KEYS,
+		SET_TIME
 	};
 	struct threadEvent {
 		threadEventType type;

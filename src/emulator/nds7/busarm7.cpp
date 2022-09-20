@@ -9,7 +9,7 @@ static constexpr u32 toAddress(u32 page) {
 	return page << 14;
 }
 
-BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log) : cpu(*this), ipc(ipc), shared(shared), log(log), ppu(ppu), dma(shared, log, *this), spi(shared, log) {
+BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log) : cpu(*this), ipc(ipc), shared(shared), log(log), ppu(ppu), dma(shared, log, *this), rtc(shared, log), spi(shared, log) {
 	wram = new u8[0x10000]; // 64KB
 	memset(wram, 0, 0x10000);
 	bios = new u8[0x4000]; // 16KB
@@ -44,6 +44,8 @@ void BusARM7::reset() {
 	HALTCNT = 0;
 
 	dma.reset();
+	rtc.reset();
+	spi.reset();
 	cpu.resetARM7TDMI();
 }
 
@@ -227,6 +229,9 @@ u8 BusARM7::readIO(u32 address, bool final) {
 	case 0x40000B0 ... 0x40000DF:
 		return dma.readIO7(address);
 
+	case 0x4000138:
+		return rtc.readIO7();
+
 	case 0x40001C0 ... 0x40001C3:
 		return spi.readIO7(address);
 
@@ -275,6 +280,10 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 
 	case 0x40000B0 ... 0x40000DF:
 		dma.writeIO7(address, value);
+		break;
+
+	case 0x4000138:
+		rtc.writeIO7(value);
 		break;
 
 	case 0x40001C0 ... 0x40001C3:

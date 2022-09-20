@@ -151,6 +151,8 @@ void NDS::run() {
 					nds9.refreshVramPages();
 					break;
 				case SPI_FINISHED: nds7.requestInterrupt(BusARM7::INT_SPI); break;
+				case RTC_REFRESH: nds7.rtc.refresh<true>(); break;
+				case SERIAL_INTERRUPT: nds7.requestInterrupt(BusARM7::INT_SERIAL); break;
 				}
 			}
 
@@ -221,6 +223,10 @@ void NDS::handleThreadQueue() {
 			shared.EXTKEYIN = ((~currentEvent.intArg >> 10) & 0x0043) | 0x003C;
 			printf("%04X %04X\n", shared.KEYINPUT, shared.EXTKEYIN);
 			break;
+		case SET_TIME: {
+			auto tt = time(0);
+			nds7.rtc.syncToRealTime(&tt);
+			} break;
 		default:
 			printf("Unknown thread event:  %d\n", currentEvent.type);
 			break;

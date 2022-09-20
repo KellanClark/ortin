@@ -71,6 +71,8 @@ void DebugMenu::logsWindow() {
 	ImGui::Checkbox("Log DMA9", &ortin.nds.nds9.dma.logDma);
 	ImGui::Checkbox("Log DMA7", &ortin.nds.nds7.dma.logDma);
 	ImGui::SameLine();
+	ImGui::Checkbox("Log RTC", &ortin.nds.nds7.rtc.logRtc);
+	ImGui::SameLine();
 	ImGui::Checkbox("Log SPI", &ortin.nds.nds7.spi.logSpi);
 
 	if (ImGui::TreeNode("ARM9 Disassembler Options")) {
@@ -1374,7 +1376,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
-static const std::array<IoRegister, 27> registers7 = {{
+static const std::array<IoRegister, 28> registers7 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -1504,6 +1506,14 @@ static const std::array<IoRegister, 27> registers7 = {{
 		{"DEBUG button", 3, 1, CHECKBOX},
 		{"Pen down", 6, 1, CHECKBOX},
 		{"Hinge open", 7, 1, CHECKBOX}}},
+	{"RTC Realtime Clock Bus", "Real Time Clock Register", 0x4000138, 1, true, true, 6, (IoField[]){
+		{"Data I/O", 0, 1, CHECKBOX},
+		{"Clock Out", 1, 1, CHECKBOX},
+		{"Select Out", 2, 1, CHECKBOX},
+		{"Data Direction", 4, 1, CHECKBOX},
+		{"Clock Direction", 5, 1, CHECKBOX},
+		{"Select Direction", 6, 1, CHECKBOX},
+	}},
 	{"IPCSYNC", "IPC Synchronize Register", 0x4000180, 2, true, true, 4, (IoField[]){
 		{"Data input from IPCSYNC of remote CPU", 0, 4, TEXT_BOX_HEX},
 		{"Data output to IPCSYNC of remote CPU", 8, 4, TEXT_BOX_HEX},
@@ -1600,7 +1610,7 @@ static const std::array<IoRegister, 27> registers7 = {{
 }};
 
 void DebugMenu::ioReg7Window() {
-	static std::array<void *, 25> registerPointers7 = {
+	static std::array<void *, 28> registerPointers7 = {
 		&ortin.nds.ppu.DISPSTAT7,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.nds7.dma.channel[0].DMASAD,
@@ -1618,8 +1628,11 @@ void DebugMenu::ioReg7Window() {
 		&ortin.nds.shared.KEYINPUT,
 		&ortin.nds.shared.KEYCNT7,
 		&ortin.nds.shared.EXTKEYIN,
+		&ortin.nds.nds7.rtc.bus,
 		&ortin.nds.ipc.IPCSYNC7,
 		&ortin.nds.ipc.IPCFIFOCNT7,
+		&ortin.nds.nds7.spi.SPICNT,
+		&ortin.nds.nds7.spi.SPIDATA,
 		&ortin.nds.nds7.IME,
 		&ortin.nds.nds7.IE,
 		&ortin.nds.nds7.IF,
