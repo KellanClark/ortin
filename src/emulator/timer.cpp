@@ -9,7 +9,11 @@ Timer::~Timer() {
 }
 
 void Timer::reset() {
-	//
+	timer[0].reload = timer[1].reload = timer[2].reload = timer[3].reload = 0;
+	timer[0].TIMCNT_L = timer[1].TIMCNT_L = timer[2].TIMCNT_L = timer[3].TIMCNT_L = 0;
+	timer[0].TIMCNT_H = timer[1].TIMCNT_H = timer[2].TIMCNT_H = timer[3].TIMCNT_H = 0;
+	timer[0].lastIncrementTimestamp = timer[1].lastIncrementTimestamp = timer[2].lastIncrementTimestamp = timer[3].lastIncrementTimestamp = 0;
+	timer[0].interruptRequested = timer[1].interruptRequested = timer[2].interruptRequested = timer[3].interruptRequested = false;
 }
 
 const u64 prescalerShifts[4] = { 1, 7, 9, 12 };
