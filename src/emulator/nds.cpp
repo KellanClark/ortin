@@ -1,9 +1,10 @@
 
 #include "emulator/nds.hpp"
 #include "emulator/timer.hpp"
+#include "emulator/nds7/spi.hpp"
 
 NDS::NDS() : shared(log), ipc(shared, log), ppu(shared, log), nds9(shared, log, ipc, ppu), nds7(shared, ipc, ppu, log) {
-	romInfo.romLoaded = romInfo.bios9Loaded = romInfo.bios7Loaded = false;
+	romInfo.romLoaded = romInfo.bios9Loaded = romInfo.bios7Loaded = romInfo.firmwareLoaded = false;
 	running = false;
 	stepArm9 = stepArm7 = 0;
 
@@ -348,11 +349,12 @@ int NDS::loadFirmware(std::filesystem::path firmwareFilePath) {
 
 	firmwareMap.map(firmwareFilePath.c_str(), error);
 	if (error) {
-		log << fmt::format("Failed to load ROM : {}\n", firmwareFilePath.string(), error.message());
+		std::cout << fmt::format("Failed to load Firmware file: {}\n", firmwareFilePath.string(), error.message());
 		return error.value();
 	}
 
+	nds7.spi.firmware.data = firmwareMap.data();
 	romInfo.firmwareFilePath = firmwareFilePath;
-	log << fmt::format("Loaded Firmware {}\n", firmwareFilePath.string());
+	log << fmt::format("Loaded Firmware file: {}\n", firmwareFilePath.string());
 	return 0;
 }

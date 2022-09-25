@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
 		ortin.nds.addThreadEvent(NDS::LOAD_BIOS7, &path);
 	}
 	if (ini["files"]["autoloadfirmware"] == "true") {
-		static std::filesystem::path path = ini["files"]["firmware"];
+		static std::filesystem::path path = ini["files"]["firmwarepath"];
 		ortin.nds.addThreadEvent(NDS::LOAD_FIRMWARE, &path);
 	}
 

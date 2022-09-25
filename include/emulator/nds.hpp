@@ -87,10 +87,10 @@ public:
 	bool running;
 	bool stepArm9;
 	bool stepArm7;
-	mio::mmap_source romMap;
-	mio::mmap_source bios9Map;
-	mio::mmap_source bios7Map;
-	mio::mmap_sink firmwareMap;
+	mio::ummap_source romMap;
+	mio::ummap_source bios9Map;
+	mio::ummap_source bios7Map;
+	mio::ummap_sink firmwareMap;
 	int loadRom(std::filesystem::path romFilePath);
 	int loadBios9(std::filesystem::path bios9FilePath);
 	int loadBios7(std::filesystem::path bios7FilePath);
