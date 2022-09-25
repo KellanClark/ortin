@@ -125,7 +125,7 @@ void Timer::writeIO(u32 address, u8 value) {
 		bool oldStartStop = tim.startStop;
 
 		updateCounter(0);
-		tim.TIMCNT_H = (tim.TIMCNT_H & 0xFF00) | ((value & 0xC7) << 0);
+		tim.TIMCNT_H = (tim.TIMCNT_H & 0xFF00) | ((value & 0xC3) << 0);
 		updateCounter(0);
 
 		if (!oldStartStop && tim.startStop) // Rising edge
