@@ -766,7 +766,7 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 66> registers9 = {{
+static const std::array<IoRegister, 74> registers9 = {{
 	{"(A) DISPCNT", "LCD Control", 0x4000000, 4, true, true, 23, (IoField[]){
 		{"BG Mode", 0, 3, TEXT_BOX},
 		{"BG0 2D/3D Selection", 3, 1, COMBO, "2D\0"
@@ -982,6 +982,45 @@ static const std::array<IoRegister, 66> registers9 = {{
 		{"DMA 2 Filldata", 0, 32, TEXT_BOX_HEX}}},
 	{"DMA3FILL", "DMA 3 Filldata", 0x40000EC, 4, true, true, 1, (IoField[]){
 		{"DMA 3 Filldata", 0, 32, TEXT_BOX_HEX}}},
+	{"TM0CNT_L", "Timer 0 Counter/Reload", 0x4000100, 2, true, true, 1, (IoField[]){
+		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
+	{"TM0CNT_H", "Timer 0 Control", 0x4000102, 2, true, true, 3, (IoField[]){
+		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
+											 "F/64\0"
+											 "F/256\0"
+											 "F/1024\0\0"},
+		{"Timer IRQ Enable", 6, 1, CHECKBOX},
+		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
+	{"TM1CNT_L", "Timer 0 Counter/Reload", 0x4000104, 2, true, true, 1, (IoField[]){
+		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
+	{"TM1CNT_H", "Timer 0 Control", 0x4000106, 2, true, true, 4, (IoField[]){
+		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
+											 "F/64\0"
+											 "F/256\0"
+											 "F/1024\0\0"},
+		{"Count-up Timing", 2, 1, CHECKBOX},
+		{"Timer IRQ Enable", 6, 1, CHECKBOX},
+		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
+	{"TM2CNT_L", "Timer 0 Counter/Reload", 0x4000108, 2, true, true, 1, (IoField[]){
+		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
+	{"TM2CNT_H", "Timer 0 Control", 0x400010A, 2, true, true, 4, (IoField[]){
+		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
+											 "F/64\0"
+											 "F/256\0"
+											 "F/1024\0\0"},
+		{"Count-up Timing", 2, 1, CHECKBOX},
+		{"Timer IRQ Enable", 6, 1, CHECKBOX},
+		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
+	{"TM3CNT_L", "Timer 0 Counter/Reload", 0x400010C, 2, true, true, 1, (IoField[]){
+		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
+	{"TM3CNT_H", "Timer 0 Control", 0x400010E, 2, true, true, 4, (IoField[]){
+		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
+											 "F/64\0"
+											 "F/256\0"
+											 "F/1024\0\0"},
+		{"Count-up Timing", 2, 1, CHECKBOX},
+		{"Timer IRQ Enable", 6, 1, CHECKBOX},
+		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
 	{"KEYINPUT", "Key Status (Inverted)", 0x4000130, 2, true, false, 10, (IoField[]){
 		{"A", 0, 1, CHECKBOX},
 		{"B", 1, 1, CHECKBOX},
@@ -1203,7 +1242,7 @@ static const std::array<IoRegister, 66> registers9 = {{
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 66> registerPointers9 = {
+	static std::array<void *, 74> registerPointers9 = {
 		&ortin.nds.ppu.engineA.DISPCNT,
 		&ortin.nds.ppu.DISPSTAT9,
 		&ortin.nds.ppu.VCOUNT,
@@ -1236,6 +1275,14 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 		&ortin.nds.nds9.dma.DMA1FILL,
 		&ortin.nds.nds9.dma.DMA2FILL,
 		&ortin.nds.nds9.dma.DMA3FILL,
+		&ortin.nds.nds9.timer.timer[0].TIMCNT_L,
+		&ortin.nds.nds9.timer.timer[0].TIMCNT_H,
+		&ortin.nds.nds9.timer.timer[1].TIMCNT_L,
+		&ortin.nds.nds9.timer.timer[1].TIMCNT_H,
+		&ortin.nds.nds9.timer.timer[2].TIMCNT_L,
+		&ortin.nds.nds9.timer.timer[2].TIMCNT_H,
+		&ortin.nds.nds9.timer.timer[3].TIMCNT_L,
+		&ortin.nds.nds9.timer.timer[3].TIMCNT_H,
 		&ortin.nds.shared.KEYINPUT,
 		&ortin.nds.shared.KEYCNT9,
 		&ortin.nds.ipc.IPCSYNC9,
@@ -1376,7 +1423,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
-static const std::array<IoRegister, 28> registers7 = {{
+static const std::array<IoRegister, 36> registers7 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -1475,6 +1522,45 @@ static const std::array<IoRegister, 28> registers7 = {{
 										   "GBA Cartridge Slot\0\0"},
 		{"IRQ upon end of Word Count", 30, 1, CHECKBOX},
 		{"DMA Enable", 31, 1, CHECKBOX}}},
+	{"TM0CNT_L", "Timer 0 Counter/Reload", 0x4000100, 2, true, true, 1, (IoField[]){
+		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
+	{"TM0CNT_H", "Timer 0 Control", 0x4000102, 2, true, true, 3, (IoField[]){
+		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
+											 "F/64\0"
+											 "F/256\0"
+											 "F/1024\0\0"},
+		{"Timer IRQ Enable", 6, 1, CHECKBOX},
+		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
+	{"TM1CNT_L", "Timer 0 Counter/Reload", 0x4000104, 2, true, true, 1, (IoField[]){
+		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
+	{"TM1CNT_H", "Timer 0 Control", 0x4000106, 2, true, true, 4, (IoField[]){
+		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
+											 "F/64\0"
+											 "F/256\0"
+											 "F/1024\0\0"},
+		{"Count-up Timing", 2, 1, CHECKBOX},
+		{"Timer IRQ Enable", 6, 1, CHECKBOX},
+		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
+	{"TM2CNT_L", "Timer 0 Counter/Reload", 0x4000108, 2, true, true, 1, (IoField[]){
+		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
+	{"TM2CNT_H", "Timer 0 Control", 0x400010A, 2, true, true, 4, (IoField[]){
+		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
+											 "F/64\0"
+											 "F/256\0"
+											 "F/1024\0\0"},
+		{"Count-up Timing", 2, 1, CHECKBOX},
+		{"Timer IRQ Enable", 6, 1, CHECKBOX},
+		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
+	{"TM3CNT_L", "Timer 0 Counter/Reload", 0x400010C, 2, true, true, 1, (IoField[]){
+		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
+	{"TM3CNT_H", "Timer 0 Control", 0x400010E, 2, true, true, 4, (IoField[]){
+		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
+											 "F/64\0"
+											 "F/256\0"
+											 "F/1024\0\0"},
+		{"Count-up Timing", 2, 1, CHECKBOX},
+		{"Timer IRQ Enable", 6, 1, CHECKBOX},
+		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
 	{"KEYINPUT", "Key Status (Inverted)", 0x4000130, 2, true, false, 10, (IoField[]){
 		{"A", 0, 1, CHECKBOX},
 		{"B", 1, 1, CHECKBOX},
@@ -1610,7 +1696,7 @@ static const std::array<IoRegister, 28> registers7 = {{
 }};
 
 void DebugMenu::ioReg7Window() {
-	static std::array<void *, 28> registerPointers7 = {
+	static std::array<void *, 36> registerPointers7 = {
 		&ortin.nds.ppu.DISPSTAT7,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.nds7.dma.channel[0].DMASAD,
@@ -1625,6 +1711,14 @@ void DebugMenu::ioReg7Window() {
 		&ortin.nds.nds7.dma.channel[3].DMASAD,
 		&ortin.nds.nds7.dma.channel[3].DMADAD,
 		&ortin.nds.nds7.dma.channel[3].DMACNT,
+		&ortin.nds.nds7.timer.timer[0].TIMCNT_L,
+		&ortin.nds.nds7.timer.timer[0].TIMCNT_H,
+		&ortin.nds.nds7.timer.timer[1].TIMCNT_L,
+		&ortin.nds.nds7.timer.timer[1].TIMCNT_H,
+		&ortin.nds.nds7.timer.timer[2].TIMCNT_L,
+		&ortin.nds.nds7.timer.timer[2].TIMCNT_H,
+		&ortin.nds.nds7.timer.timer[3].TIMCNT_L,
+		&ortin.nds.nds7.timer.timer[3].TIMCNT_H,
 		&ortin.nds.shared.KEYINPUT,
 		&ortin.nds.shared.KEYCNT7,
 		&ortin.nds.shared.EXTKEYIN,

@@ -1,5 +1,6 @@
 
 #include "emulator/nds.hpp"
+#include "emulator/timer.hpp"
 
 NDS::NDS() : shared(log), ipc(shared, log), ppu(shared, log), nds9(shared, log, ipc, ppu), nds7(shared, ipc, ppu, log) {
 	romInfo.romLoaded = romInfo.bios9Loaded = romInfo.bios7Loaded = false;
@@ -153,6 +154,20 @@ void NDS::run() {
 				case SPI_FINISHED: nds7.requestInterrupt(BusARM7::INT_SPI); break;
 				case RTC_REFRESH: nds7.rtc.refresh<true>(); break;
 				case SERIAL_INTERRUPT: nds7.requestInterrupt(BusARM7::INT_SERIAL); break;
+				case TIMER_OVERFLOW_9:
+					nds9.timer.checkOverflow();
+					if (nds9.timer.timer[0].interruptRequested) { nds9.timer.timer[0].interruptRequested = false; nds9.requestInterrupt(BusARM9::INT_TIMER_0); }
+					if (nds9.timer.timer[1].interruptRequested) { nds9.timer.timer[1].interruptRequested = false; nds9.requestInterrupt(BusARM9::INT_TIMER_1); }
+					if (nds9.timer.timer[2].interruptRequested) { nds9.timer.timer[2].interruptRequested = false; nds9.requestInterrupt(BusARM9::INT_TIMER_2); }
+					if (nds9.timer.timer[3].interruptRequested) { nds9.timer.timer[3].interruptRequested = false; nds9.requestInterrupt(BusARM9::INT_TIMER_3); }
+					break;
+				case TIMER_OVERFLOW_7:
+					nds7.timer.checkOverflow();
+					if (nds7.timer.timer[0].interruptRequested) { nds7.timer.timer[0].interruptRequested = false; nds7.requestInterrupt(BusARM7::INT_TIMER_0); }
+					if (nds7.timer.timer[1].interruptRequested) { nds7.timer.timer[1].interruptRequested = false; nds7.requestInterrupt(BusARM7::INT_TIMER_1); }
+					if (nds7.timer.timer[2].interruptRequested) { nds7.timer.timer[2].interruptRequested = false; nds7.requestInterrupt(BusARM7::INT_TIMER_2); }
+					if (nds7.timer.timer[3].interruptRequested) { nds7.timer.timer[3].interruptRequested = false; nds7.requestInterrupt(BusARM7::INT_TIMER_3); }
+					break;
 				}
 			}
 

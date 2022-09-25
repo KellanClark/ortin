@@ -9,7 +9,15 @@ static constexpr u32 toAddress(u32 page) {
 	return page << 14;
 }
 
-BusARM9::BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu) : cpu(*this), ipc(ipc), shared(shared), log(log), ppu(ppu), dsmath(shared, log), dma(shared, log, *this) {
+BusARM9::BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu) :
+	cpu(*this),
+	shared(shared),
+	log(log),
+	ipc(ipc),
+	ppu(ppu),
+	dma(shared, log, *this),
+	timer(true, shared, log),
+	dsmath(shared, log) {
 	bios = new u8[0x8000]; // 32KB
 	memset(bios, 0, 0x8000);
 
@@ -300,6 +308,9 @@ u8 BusARM9::readIO(u32 address, bool final) {
 	case 0x40000B0 ... 0x40000EF:
 		return dma.readIO9(address);
 
+	case 0x4000100 ... 0x400010F:
+		return timer.readIO(address);
+
 	case 0x4000280 ... 0x40002BF:
 		return dsmath.readIO9(address, final);
 
@@ -352,6 +363,10 @@ void BusARM9::writeIO(u32 address, u8 value, bool final) {
 
 	case 0x40000B0 ... 0x40000EF:
 		dma.writeIO9(address, value);
+		break;
+
+	case 0x4000100 ... 0x400010F:
+		timer.writeIO(address, value);
 		break;
 
 	case 0x4000280 ... 0x40002BF:

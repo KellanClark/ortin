@@ -46,6 +46,7 @@ add_executable(Ortin
 	src/emulator/ipc.cpp
 	src/emulator/ppu.cpp
 	src/emulator/dma.cpp
+	src/emulator/timer.cpp
 	src/emulator/nds9/busarm9.cpp
 	src/emulator/nds9/dsmath.cpp
 	src/emulator/nds7/busarm7.cpp

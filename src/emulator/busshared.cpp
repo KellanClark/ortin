@@ -31,6 +31,10 @@ void BusShared::addEvent(u64 cycles, EventType type) {
 	eventQueue.push(Event{currentTime + cycles, type});
 }
 
+void BusShared::addEventAbsolute(u64 time, EventType type) {
+	eventQueue.push(Event{time, type});
+}
+
 u8 BusShared::readIO9(u32 address) {
 	switch (address) {
 	case 0x4000130:

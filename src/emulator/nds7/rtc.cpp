@@ -151,13 +151,13 @@ void RTC::refresh() {
 			interrupt1Flag = true;
 			//u64 temp = _pdep_u64((_pext_u64(rtcTime, ~adjustedFrequency) + (1 << std::countr_zero(adjustedFrequency))) & ~((1 << std::countr_zero(adjustedFrequency)) - 1), ~adjustedFrequency) | adjustedFrequency;
 			u64 temp = (((rtcTime | adjustedFrequency) + (adjustedFrequency & -adjustedFrequency)) | adjustedFrequency) & mask;
-			shared.addEvent(fromRtcTime(temp - rtcTime), RTC_REFRESH);
+			shared.addEventAbsolute(fromRtcTime(temp), RTC_REFRESH);
 			if (scheduled) shared.addEvent(0, SERIAL_INTERRUPT); // Stupid workaround
 			//printf("%02llX  %016llX  %016llX\n", adjustedFrequency, rtcTime, temp);
 		} else {
 			interrupt1Flag = false;
 			u64 temp = (rtcTime | adjustedFrequency) & mask;
-			shared.addEvent(fromRtcTime(temp - rtcTime), RTC_REFRESH);
+			shared.addEventAbsolute(fromRtcTime(temp), RTC_REFRESH);
 			//printf("%02llX  %016llX  %016llX\n", adjustedFrequency, rtcTime, temp);
 		}
 		} break;

@@ -20,6 +20,8 @@ enum EventType {
 	SPI_FINISHED,
 	RTC_REFRESH,
 	SERIAL_INTERRUPT,
+	TIMER_OVERFLOW_9,
+	TIMER_OVERFLOW_7
 };
 
 // This class is not the same as BusARM9 and BusARM7.
@@ -55,6 +57,7 @@ public:
 	};
 
 	void addEvent(u64 cycles, EventType type);
+	void addEventAbsolute(u64 time, EventType type);
 
 	u64 currentTime;
 	std::priority_queue<Event, std::vector<Event>, eventSorter> eventQueue;

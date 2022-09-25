@@ -9,6 +9,7 @@
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
 #include "emulator/dma.hpp"
+#include "emulator/timer.hpp"
 #include "emulator/nds9/dsmath.hpp"
 #include "arm946e/arm946e.hpp"
 
@@ -17,15 +18,15 @@ public:
 	// Connected components
 	ARM946E<BusARM9> cpu;
 	BusShared& shared;
+	std::stringstream& log;
 	IPC& ipc;
 	PPU& ppu;
 	DMA<true> dma;
+	Timer timer;
 	DSMath dsmath;
 	u8 *bios;
 
 	// For normal use
-	std::stringstream& log;
-
 	BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu);
 	~BusARM9();
 	void reset();

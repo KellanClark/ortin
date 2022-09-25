@@ -9,6 +9,7 @@
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
 #include "emulator/dma.hpp"
+#include "emulator/timer.hpp"
 #include "emulator/nds7/rtc.hpp"
 #include "emulator/nds7/spi.hpp"
 #include "arm7tdmi/arm7tdmi.hpp"
@@ -18,17 +19,17 @@ public:
 	// Connected components
 	ARM7TDMI<BusARM7> cpu;
 	BusShared& shared;
+	std::stringstream& log;
 	IPC& ipc;
 	PPU& ppu;
 	DMA<false> dma;
+	Timer timer;
 	RTC rtc;
 	SPI spi;
 	u8 *wram;
 	u8 *bios;
 
 	// For normal use
-	std::stringstream& log;
-
 	BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log);
 	~BusARM7();
 	void reset();
