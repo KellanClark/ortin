@@ -2,6 +2,8 @@
 
 SPI::SPI(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
 	logSpi = true;
+
+	firmware.data = nullptr;
 }
 
 SPI::~SPI() {
