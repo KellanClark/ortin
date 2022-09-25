@@ -53,6 +53,7 @@ public:
 	NDS();
 	~NDS();
 	void reset();
+	void directBoot();
 	void run();
 
 	// Thread-safe queue
@@ -65,6 +66,7 @@ public:
 		LOAD_ROM,
 		LOAD_BIOS9,
 		LOAD_BIOS7,
+		LOAD_FIRMWARE,
 		CLEAR_LOG,
 		UPDATE_KEYS,
 		SET_TIME
@@ -88,6 +90,7 @@ public:
 	mio::mmap_source romMap;
 	mio::mmap_source bios9Map;
 	mio::mmap_source bios7Map;
+	mio::mmap_sink firmwareMap;
 	int loadRom(std::filesystem::path romFilePath);
 	int loadBios9(std::filesystem::path bios9FilePath);
 	int loadBios7(std::filesystem::path bios7FilePath);

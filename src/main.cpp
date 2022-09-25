@@ -37,6 +37,10 @@ int main(int argc, char *argv[]) {
 		static std::filesystem::path path = ini["files"]["bios7path"];
 		ortin.nds.addThreadEvent(NDS::LOAD_BIOS7, &path);
 	}
+	if (ini["files"]["autoloadfirmware"] == "true") {
+		static std::filesystem::path path = ini["files"]["firmware"];
+		ortin.nds.addThreadEvent(NDS::LOAD_FIRMWARE, &path);
+	}
 
 	int emuThreadFps = 0;
 	u32 lastFpsPoll = 0;
@@ -59,7 +63,7 @@ int main(int argc, char *argv[]) {
 			if (currentKeyStates[keymap[i]])
 				currentJoypad |= 1 << i;
 		}
-		//currentJoypad |= ortin.penDown << 16;
+		currentJoypad |= ortin.penDown << 16;
 		if (currentJoypad != lastJoypad) {
 			ortin.nds.addThreadEvent(NDS::UPDATE_KEYS, currentJoypad);
 			lastJoypad = currentJoypad;
