@@ -1,9 +1,10 @@
 
 #include "emulator/nds.hpp"
 #include "emulator/timer.hpp"
+#include "emulator/nds7/spi.hpp"
 
 NDS::NDS() : shared(log), ipc(shared, log), ppu(shared, log), nds9(shared, log, ipc, ppu), nds7(shared, ipc, ppu, log) {
-	romInfo.romLoaded = romInfo.bios9Loaded = romInfo.bios7Loaded = false;
+	romInfo.romLoaded = romInfo.bios9Loaded = romInfo.bios7Loaded = romInfo.firmwareLoaded = false;
 	running = false;
 	stepArm9 = stepArm7 = 0;
 
@@ -28,6 +29,13 @@ void NDS::reset() {
 	nds7.refreshWramPages();
 	nds9.refreshVramPages();
 
+	directBoot();
+
+	nds9.delay = 0;
+	nds7.delay = 0;
+}
+
+void NDS::directBoot() {
 	// Copy entry points into memory
 	for (int i = 0; i < romInfo.arm9CopySize; i++)
 		nds9.write<u8>(romInfo.arm9CopyDestination + i, romMap[romInfo.arm9RomOffset + i], false);
@@ -58,9 +66,6 @@ void NDS::reset() {
 	nds9.write<u16>(0x27FFC80 + 0x5E, 0x0FF0, false); // Touch-screen calibration point (adc.x2,y2) 12bit ADC-position
 	nds9.write<u16>(0x27FFC80 + 0x60, 0x0BF0, false);
 	nds9.write<u16>(0x27FFC80 + 0x62, 0xBF'FF, false); // Touch-screen calibration point (scr.x2,y2) 8bit pixel-position
-
-	nds9.delay = 0;
-	nds7.delay = 0;
 }
 
 void NDS::run() {
@@ -187,7 +192,7 @@ void NDS::handleThreadQueue() {
 
 		switch (currentEvent.type) {
 		case START:
-			if (romInfo.romLoaded && romInfo.bios9Loaded && romInfo.bios7Loaded) {
+			if (romInfo.romLoaded && romInfo.bios9Loaded && romInfo.bios7Loaded && romInfo.firmwareLoaded) {
 				running = true;
 			} else {
 				threadQueue = {};
@@ -230,13 +235,19 @@ void NDS::handleThreadQueue() {
 				romInfo.bios7Loaded = true;
 			}
 			break;
+		case LOAD_FIRMWARE:
+			if (loadFirmware(*(std::filesystem::path *)currentEvent.ptrArg)) {
+				threadQueue = {};
+			} else {
+				romInfo.firmwareLoaded = true;
+			}
+			break;
 		case CLEAR_LOG:
 			log.str("");
 			break;
 		case UPDATE_KEYS:
 			shared.KEYINPUT = ~currentEvent.intArg & 0x03FF;
 			shared.EXTKEYIN = ((~currentEvent.intArg >> 10) & 0x0043) | 0x003C;
-			printf("%04X %04X\n", shared.KEYINPUT, shared.EXTKEYIN);
 			break;
 		case SET_TIME: {
 			auto tt = time(0);
@@ -300,7 +311,7 @@ int NDS::loadBios9(std::filesystem::path bios9FilePath) {
 
 	bios9Map.map(bios9FilePath.c_str(), error);
 	if (error) {
-		log << fmt::format("Failed to load NDS9 BIOS : {}\n", bios9FilePath.string(), error.message());
+		log << fmt::format("Failed to load NDS9 BIOS: {}\n", bios9FilePath.string(), error.message());
 		return error.value();
 	}
 	romInfo.bios9FilePath = bios9FilePath;
@@ -319,7 +330,7 @@ int NDS::loadBios7(std::filesystem::path bios7FilePath) {
 
 	bios7Map.map(bios7FilePath.c_str(), error);
 	if (error) {
-		log << fmt::format("Failed to load NDS7 BIOS : {}\n", bios7FilePath.string(), error.message());
+		log << fmt::format("Failed to load NDS7 BIOS: {}\n", bios7FilePath.string(), error.message());
 		return error.value();
 	}
 	romInfo.bios7FilePath = bios7FilePath;
@@ -330,5 +341,20 @@ int NDS::loadBios7(std::filesystem::path bios7FilePath) {
 		nds7.bios[i] = bios7Map[i];
 
 	log << fmt::format("Loaded NDS7 BIOS {}\n", bios7FilePath.string());
+	return 0;
+}
+
+int NDS::loadFirmware(std::filesystem::path firmwareFilePath) {
+	std::error_code error;
+
+	firmwareMap.map(firmwareFilePath.c_str(), error);
+	if (error) {
+		std::cout << fmt::format("Failed to load Firmware file: {}\n", firmwareFilePath.string(), error.message());
+		return error.value();
+	}
+
+	nds7.spi.firmware.data = firmwareMap.data();
+	romInfo.firmwareFilePath = firmwareFilePath;
+	log << fmt::format("Loaded Firmware file: {}\n", firmwareFilePath.string());
 	return 0;
 }

@@ -15,6 +15,7 @@ void FileMenu::drawMenu() {
 		if (ImGui::MenuItem("Load ROM")) { romFileDialog(); }
 		if (ImGui::MenuItem("Load NDS9 BIOS")) { bios9FileDialog(); }
 		if (ImGui::MenuItem("Load NDS7 BIOS")) { bios7FileDialog(); }
+		if (ImGui::MenuItem("Load Firmware")) { firmwareFileDialog(); }
 		ImGui::Separator();
 
 		ImGui::MenuItem("ROM Info", nullptr, &showRomInfo);
@@ -81,14 +82,33 @@ void FileMenu::bios7FileDialog() {
 	}
 }
 
+void FileMenu::firmwareFileDialog() {
+	NFD::UniquePath outPath;
+	nfdfilteritem_t filterItem[1] = {{"NDS Firmware", "bin, rom"}};
+
+	nfdresult_t result = NFD::OpenDialog(outPath, filterItem, 1);
+	if (result == NFD_OKAY) {
+		firmwareFilePath = outPath.get();
+		std::cout << "Selected " << outPath.get() << std::endl;
+
+		ortin.nds.addThreadEvent(NDS::STOP);
+		ortin.nds.addThreadEvent(NDS::LOAD_FIRMWARE, &firmwareFilePath);
+		ortin.nds.addThreadEvent(NDS::RESET);
+		ortin.nds.addThreadEvent(NDS::START);
+	} else if (result != NFD_CANCEL) {
+		std::cout << "Error: " << NFD::GetError() << std::endl;
+	}
+}
+
 void FileMenu::romInfoWindow() {
-	auto romInfo = ortin.nds.romInfo;
+	auto& romInfo = ortin.nds.romInfo;
 
 	ImGui::Begin("ROM Info", &showRomInfo);
 
 	ImGui::Text("Path:  %s", romInfo.filePath.string().c_str());
 	ImGui::Text("BIOS9 Path:  %s", romInfo.bios9FilePath.string().c_str());
 	ImGui::Text("BIOS7 Path:  %s", romInfo.bios7FilePath.string().c_str());
+	ImGui::Text("Firmware Path:  %s", romInfo.firmwareFilePath.string().c_str());
 	ImGui::Separator();
 
 	ImGui::Text("Name:  %s", romInfo.name.c_str());

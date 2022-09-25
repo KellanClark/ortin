@@ -54,6 +54,12 @@ public:
 		u16 xPosition;
 		u16 yPosition;
 	} touchscreen;
+
+	struct {
+		//
+
+		u8 *data;
+	} firmware;
 };
 
 #endif //ORTIN_SPI_HPP

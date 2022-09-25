@@ -2,6 +2,8 @@
 
 SPI::SPI(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
 	logSpi = true;
+
+	firmware.data = nullptr;
 }
 
 SPI::~SPI() {
@@ -24,7 +26,7 @@ u8 SPI::readIO7(u32 address) {
 	case 0x40001C1:
 		return (u8)(SPICNT >> 8);
 	case 0x40001C2:
-		return (u8)SPICNT;
+		return (u8)SPIDATA;
 	case 0x40001C3:
 		return 0;
 	default:
@@ -67,25 +69,24 @@ void SPI::writeIO7(u32 address, u8 value) {
 
 				switch (touchscreen.channelSelect) {
 				case 1: // Touchscreen Y-Position
-					if (!(writeNumber & 1)) {
-						SPIDATA = touchscreen.yPosition & 0xFF;
+					// Thanks to NooDS because the GBATEK section on this is unreadable
+					if (writeNumber & 1) {
+						SPIDATA = touchscreen.yPosition >> 5;
 					} else {
-						SPIDATA = (touchscreen.yPosition >> 8) & 0x0F;
+						SPIDATA = touchscreen.yPosition << 3;
 					}
 					break;
 				case 5: // Touchscreen X-Position
-					if (!(writeNumber & 1)) {
-						SPIDATA = touchscreen.xPosition & 0xFF;
+					if (writeNumber & 1) {
+						SPIDATA = touchscreen.xPosition >> 5;
 					} else {
-						SPIDATA = (touchscreen.xPosition >> 8) & 0x0F;
+						SPIDATA = touchscreen.xPosition << 3;
 					}
 					break;
 				default:
 					SPIDATA = 0;
 					break;
 				}
-
-				//printf("%02X %03X %03X %02X %d %d\n", SPIDATA, touchscreen.xPosition, touchscreen.yPosition, touchscreen.control, touchscreen.channelSelect, writeNumber);
 				break;
 			}
 

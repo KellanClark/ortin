@@ -11,6 +11,7 @@ public:
 	std::filesystem::path romFilePath;
 	std::filesystem::path bios9FilePath;
 	std::filesystem::path bios7FilePath;
+	std::filesystem::path firmwareFilePath;
 
 	FileMenu();
 	~FileMenu();
@@ -23,6 +24,7 @@ private:
 	void romFileDialog();
 	void bios9FileDialog();
 	void bios7FileDialog();
+	void firmwareFileDialog();
 	void romInfoWindow();
 };
 

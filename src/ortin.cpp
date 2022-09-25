@@ -116,8 +116,8 @@ void Ortin::drawScreens() {
 		auto topLeft = ImGui::GetItemRectMin();
 		auto size = ImGui::GetItemRectSize();
 
-		nds.nds7.spi.touchscreen.xPosition = ((mousePos.x - topLeft.x) / size.x) * 0x0FF0;
-		nds.nds7.spi.touchscreen.yPosition = ((mousePos.y - topLeft.y) / size.y) * 0x0BF0;
+		nds.nds7.spi.touchscreen.xPosition = (u8)(((mousePos.x - topLeft.x) / size.x) * 0x100) << 4;
+		nds.nds7.spi.touchscreen.yPosition = (u8)(((mousePos.y - topLeft.y) / size.y) * 0xC0) << 4;
 		penDown = true;
 		//printf("%03X  %03X\n", nds.nds7.spi.touchscreen.xPosition, nds.nds7.spi.touchscreen.yPosition);
 	} else {
