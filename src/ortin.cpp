@@ -43,10 +43,10 @@ Ortin::Ortin() : emuThread(&NDS::run, std::ref(nds)) {
 
 	FileMenu *fileMenuPtr = new FileMenu();
 	submenus.push_back(fileMenuPtr);
-	DebugMenu *debugMenuPtr = new DebugMenu();
-	submenus.push_back(debugMenuPtr);
 	EmulationMenu *emulationMenuPtr = new EmulationMenu();
 	submenus.push_back(emulationMenuPtr);
+	DebugMenu *debugMenuPtr = new DebugMenu();
+	submenus.push_back(debugMenuPtr);
 	GraphicsMenu *graphicsMenuPtr = new GraphicsMenu();
 	submenus.push_back(graphicsMenuPtr);
 	DevMenu *devMenuPtr = new DevMenu();
