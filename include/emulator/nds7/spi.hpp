@@ -16,6 +16,8 @@ public:
 
 	bool logSpi;
 
+	void chipSelectLow();
+
 	// Memory Interface
 	u8 readIO7(u32 address);
 	void writeIO7(u32 address, u8 value);
@@ -56,8 +58,23 @@ public:
 	} touchscreen;
 
 	struct {
-		//
+		union {
+			struct {
+				u8 writeBusy : 1;
+				u8 writeEnableLatch : 1;
+				u8 : 6;
+			};
+			u8 status;
+		};
 
+		u8 currentCommand;
+		u32 address;
+		bool deepPowerDown;
+		bool powerDownPending;
+		bool powerUpPending;
+
+		bool logFirmware;
+		u8 writeProtect;
 		u8 *data;
 	} firmware;
 };

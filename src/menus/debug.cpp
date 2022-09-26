@@ -74,6 +74,8 @@ void DebugMenu::logsWindow() {
 	ImGui::Checkbox("Log RTC", &ortin.nds.nds7.rtc.logRtc);
 	ImGui::SameLine();
 	ImGui::Checkbox("Log SPI", &ortin.nds.nds7.spi.logSpi);
+	ImGui::SameLine();
+	ImGui::Checkbox("Log Firmware", &ortin.nds.nds7.spi.firmware.logFirmware);
 
 	if (ImGui::TreeNode("ARM9 Disassembler Options")) {
 		ImGui::Checkbox("Show AL Condition", (bool *)&arm9disasm.options.showALCondition);
