@@ -647,11 +647,11 @@ void PPU::refreshVramPages() {
 	}
 
 	// Mirroring
-	for (int i = toPage(0x000000); i < toPage(0x200000); i += toPage(0x20000)) // A BG
-		memcpy(&vramInfoTable[i], &vramInfoTable[toPage(0x200000)], toPage(0x80000) * sizeof(VramInfoEntry));
+	for (int i = toPage(0x000000); i < toPage(0x200000); i += toPage(0x80000)) // A BG
+		memcpy(&vramInfoTable[i], &vramInfoTable[toPage(0x000000)], toPage(0x80000) * sizeof(VramInfoEntry));
 	for (int i = toPage(0x200000); i < toPage(0x400000); i += toPage(0x20000)) // B BG
 		memcpy(&vramInfoTable[i], &vramInfoTable[toPage(0x200000)], toPage(0x20000) * sizeof(VramInfoEntry));
-	for (int i = toPage(0x400000); i < toPage(0x600000); i += toPage(0x20000)) // A OBJ
+	for (int i = toPage(0x400000); i < toPage(0x600000); i += toPage(0x40000)) // A OBJ
 		memcpy(&vramInfoTable[i], &vramInfoTable[toPage(0x400000)], toPage(0x40000) * sizeof(VramInfoEntry));
 	for (int i = toPage(0x600000); i < toPage(0x800000); i += toPage(0x20000)) // B OBJ
 		memcpy(&vramInfoTable[i], &vramInfoTable[toPage(0x600000)], toPage(0x20000) * sizeof(VramInfoEntry));
