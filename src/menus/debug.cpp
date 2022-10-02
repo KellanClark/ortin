@@ -768,7 +768,7 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 74> registers9 = {{
+static const std::array<IoRegister, 88> registers9 = {{
 	{"(A) DISPCNT", "LCD Control", 0x4000000, 4, true, true, 23, (IoField[]){
 		{"BG Mode", 0, 3, TEXT_BOX},
 		{"BG0 2D/3D Selection", 3, 1, COMBO, "2D\0"
@@ -866,6 +866,47 @@ static const std::array<IoRegister, 74> registers9 = {{
 		{"Offset", 0, 9, TEXT_BOX}}},
 	{"(A) BG3VOFS", "BG3 Y-Offset", 0x400001E, 2, false, true, 1, (IoField[]){
 		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(A) BG2PA", "BG2 Rotation/Scaling Parameter A (alias dx)", 0x4000020, 2, false, true, 2, (IoField[]){
+		{"BG2 Rotation/Scaling Parameter A", 0, 16, TEXT_BOX_HEX},
+		{"BG2 Rotation/Scaling Parameter A", 0, 16, SPECIAL}}},
+	{"(A) BG2PB", "BG2 Rotation/Scaling Parameter B (alias dmx)", 0x4000022, 2, false, true, 2, (IoField[]){
+		{"BG2 Rotation/Scaling Parameter B", 0, 16, TEXT_BOX_HEX},
+		{"BG2 Rotation/Scaling Parameter B", 0, 16, SPECIAL}}},
+	{"(A) BG2PC", "BG2 Rotation/Scaling Parameter C (alias dy)", 0x4000024, 2, false, true, 2, (IoField[]){
+		{"BG2 Rotation/Scaling Parameter C", 0, 16, TEXT_BOX_HEX},
+		{"BG2 Rotation/Scaling Parameter C", 0, 16, SPECIAL}}},
+	{"(A) BG2PD", "BG2 Rotation/Scaling Parameter D (alias dmy)", 0x4000026, 2, false, true, 2, (IoField[]){
+		{"BG2 Rotation/Scaling Parameter D", 0, 16, TEXT_BOX_HEX},
+		{"BG2 Rotation/Scaling Parameter D", 0, 16, SPECIAL}}},
+	{"(A) BG2X", "BG2 Reference Point X-Coordinate", 0x4000028, 4, false, true, 2, (IoField[]){
+		{"BG2 Reference Point X-Coordinate", 0, 28, TEXT_BOX_HEX},
+		{"BG2 Reference Point X-Coordinate", 0, 28, SPECIAL}}},
+	{"(A) BG2Y", "BG2 Reference Point Y-Coordinate", 0x400002C, 4, false, true, 2, (IoField[]){
+		{"BG2 Reference Point Y-Coordinate", 0, 28, TEXT_BOX_HEX},
+		{"BG2 Reference Point Y-Coordinate", 0, 28, SPECIAL}}},
+	{"(A) BG3PA", "BG3 Rotation/Scaling Parameter A (alias dx)", 0x4000030, 2, false, true, 2, (IoField[]){
+		{"BG3 Rotation/Scaling Parameter A", 0, 16, TEXT_BOX_HEX},
+		{"BG3 Rotation/Scaling Parameter A", 0, 16, SPECIAL}}},
+	{"(A) BG3PB", "BG3 Rotation/Scaling Parameter B (alias dmx)", 0x4000032, 2, false, true, 2, (IoField[]){
+		{"BG3 Rotation/Scaling Parameter B", 0, 16, TEXT_BOX_HEX},
+		{"BG3 Rotation/Scaling Parameter B", 0, 16, SPECIAL}}},
+	{"(A) BG3PC", "BG3 Rotation/Scaling Parameter C (alias dy)", 0x4000034, 2, false, true, 2, (IoField[]){
+		{"BG3 Rotation/Scaling Parameter C", 0, 16, TEXT_BOX_HEX},
+		{"BG3 Rotation/Scaling Parameter C", 0, 16, SPECIAL}}},
+	{"(A) BG3PD", "BG3 Rotation/Scaling Parameter D (alias dmy)", 0x4000036, 2, false, true, 2, (IoField[]){
+		{"BG3 Rotation/Scaling Parameter D", 0, 16, TEXT_BOX_HEX},
+		{"BG3 Rotation/Scaling Parameter D", 0, 16, SPECIAL}}},
+	{"(A) BG3X", "BG3 Reference Point X-Coordinate", 0x4000038, 4, false, true, 2, (IoField[]){
+		{"BG3 Reference Point X-Coordinate", 0, 28, TEXT_BOX_HEX},
+		{"BG3 Reference Point X-Coordinate", 0, 28, SPECIAL}}},
+	{"(A) BG3Y", "BG3 Reference Point Y-Coordinate", 0x400003C, 4, false, true, 2, (IoField[]){
+		{"BG3 Reference Point Y-Coordinate", 0, 28, TEXT_BOX_HEX},
+		{"BG3 Reference Point Y-Coordinate", 0, 28, SPECIAL}}},
+	{"(A) MOSAIC", "Mosaic Size", 0x400004C, 2, false, true, 4, (IoField[]){
+		{"BG Mosaic H-Size (minus 1)", 0, 4, TEXT_BOX},
+		{"BG Mosaic V-Size (minus 1)", 4, 4, TEXT_BOX},
+		{"OBJ Mosaic H-Size (minus 1)", 8, 4, TEXT_BOX},
+		{"OBJ Mosaic V-Size (minus 1)", 12, 4, TEXT_BOX}}},
 	{"(A) MASTER_BRIGHT", "Master Brightness Up/Down", 0x400006C, 2, true, true, 2, (IoField[]){
 		{"Factor used for 6bit R,G,B Intensities", 0, 5, TEXT_BOX},
 		{"Mode", 14, 2, COMBO, "Disable\0"
@@ -1235,6 +1276,11 @@ static const std::array<IoRegister, 74> registers9 = {{
 		{"Offset", 0, 9, TEXT_BOX}}},
 	{"(B) BG3VOFS", "BG3 Y-Offset", 0x400101E, 2, false, true, 1, (IoField[]){
 		{"Offset", 0, 9, TEXT_BOX}}},
+	{"(B) MOSAIC", "Mosaic Size", 0x400104C, 2, false, true, 4, (IoField[]){
+		{"BG Mosaic H-Size (minus 1)", 0, 4, TEXT_BOX},
+		{"BG Mosaic V-Size (minus 1)", 4, 4, TEXT_BOX},
+		{"OBJ Mosaic H-Size (minus 1)", 8, 4, TEXT_BOX},
+		{"OBJ Mosaic V-Size (minus 1)", 12, 4, TEXT_BOX}}},
 	{"(B) MASTER_BRIGHT", "Master Brightness Up/Down", 0x400106C, 2, true, true, 2, (IoField[]){
 		{"Factor used for 6bit R,G,B Intensities", 0, 5, TEXT_BOX},
 		{"Mode", 14, 2, COMBO, "Disable\0"
@@ -1244,7 +1290,7 @@ static const std::array<IoRegister, 74> registers9 = {{
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 74> registerPointers9 = {
+	static std::array<void *, 88> registerPointers9 = {
 		&ortin.nds.ppu.engineA.DISPCNT,
 		&ortin.nds.ppu.DISPSTAT9,
 		&ortin.nds.ppu.VCOUNT,
@@ -1260,6 +1306,19 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 		&ortin.nds.ppu.engineA.bg[2].BGVOFS,
 		&ortin.nds.ppu.engineA.bg[3].BGHOFS,
 		&ortin.nds.ppu.engineA.bg[3].BGVOFS,
+		&ortin.nds.ppu.engineA.bg[2].BGPA,
+		&ortin.nds.ppu.engineA.bg[2].BGPB,
+		&ortin.nds.ppu.engineA.bg[2].BGPC,
+		&ortin.nds.ppu.engineA.bg[2].BGPD,
+		&ortin.nds.ppu.engineA.bg[2].BGX,
+		&ortin.nds.ppu.engineA.bg[2].BGY,
+		&ortin.nds.ppu.engineA.bg[3].BGPA,
+		&ortin.nds.ppu.engineA.bg[3].BGPB,
+		&ortin.nds.ppu.engineA.bg[3].BGPC,
+		&ortin.nds.ppu.engineA.bg[3].BGPD,
+		&ortin.nds.ppu.engineA.bg[3].BGX,
+		&ortin.nds.ppu.engineA.bg[3].BGY,
+		&ortin.nds.ppu.engineA.MOSAIC,
 		&ortin.nds.ppu.engineA.MASTER_BRIGHT,
 		&ortin.nds.nds9.dma.channel[0].DMASAD,
 		&ortin.nds.nds9.dma.channel[0].DMADAD,
@@ -1318,6 +1377,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 		&ortin.nds.ppu.engineB.bg[2].BGVOFS,
 		&ortin.nds.ppu.engineB.bg[3].BGHOFS,
 		&ortin.nds.ppu.engineB.bg[3].BGVOFS,
+		&ortin.nds.ppu.engineB.MOSAIC,
 		&ortin.nds.ppu.engineB.MASTER_BRIGHT,
 	};
 
@@ -1387,6 +1447,22 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 				case 0x4000004: // DISPSTAT
 					fValue = numberInput(((std::string)field.name).c_str(), false, (fValue >> 1) | ((fValue & 1) << 8), mask >> field.startBit);
 					fValue = ((fValue & 0xFF) << 1) | (fValue >> 8);
+					break;
+				case 0x4000020: // BG2PA
+				case 0x4000022: // BG2PB
+				case 0x4000024: // BG2PC
+				case 0x4000026: // BG2PD
+				case 0x4000030: // BG3PA
+				case 0x4000032: // BG3PB
+				case 0x4000034: // BG3PC
+				case 0x4000036: // BG3PD
+					ImGui::Text("%f", (float)((i16)fValue) / 256);
+					break;
+				case 0x4000028: // BG2X
+				case 0x400002C: // BG2Y
+				case 0x4000038: // BG3X
+				case 0x400003C: // BG3Y
+					ImGui::Text("%f", (float)((i32)(fValue << 4) >> 4) / 256);
 					break;
 				}
 				break;

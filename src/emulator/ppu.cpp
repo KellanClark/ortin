@@ -60,6 +60,15 @@ void PPU::reset() {
 	engineA.bg[0].BGCNT = engineA.bg[1].BGCNT = engineA.bg[2].BGCNT = engineA.bg[3].BGCNT = engineB.bg[0].BGCNT = engineB.bg[1].BGCNT = engineB.bg[2].BGCNT = engineB.bg[3].BGCNT = 0;
 	engineA.bg[0].BGHOFS = engineA.bg[1].BGHOFS = engineA.bg[2].BGHOFS = engineA.bg[3].BGHOFS = engineB.bg[0].BGHOFS = engineB.bg[1].BGHOFS = engineB.bg[2].BGHOFS = engineB.bg[3].BGHOFS = 0;
 	engineA.bg[0].BGVOFS = engineA.bg[1].BGVOFS = engineA.bg[2].BGVOFS = engineA.bg[3].BGVOFS = engineB.bg[0].BGVOFS = engineB.bg[1].BGVOFS = engineB.bg[2].BGVOFS = engineB.bg[3].BGVOFS = 0;
+	engineA.bg[2].BGPA = engineA.bg[3].BGPA = engineB.bg[2].BGPA = engineB.bg[3].BGPA = 0;
+	engineA.bg[2].BGPB = engineA.bg[3].BGPB = engineB.bg[2].BGPB = engineB.bg[3].BGPB = 0;
+	engineA.bg[2].BGPC = engineA.bg[3].BGPC = engineB.bg[2].BGPC = engineB.bg[3].BGPC = 0;
+	engineA.bg[2].BGPD = engineA.bg[3].BGPD = engineB.bg[2].BGPD = engineB.bg[3].BGPD = 0;
+	engineA.bg[2].BGX = engineA.bg[3].BGX = engineB.bg[2].BGX = engineB.bg[3].BGX = 0;
+	engineA.bg[2].internalBGX = engineA.bg[3].internalBGX = engineB.bg[2].internalBGX = engineB.bg[3].internalBGX = 0;
+	engineA.bg[2].BGY = engineA.bg[3].BGY = engineB.bg[2].BGY = engineB.bg[3].BGY = 0;
+	engineA.bg[2].internalBGY = engineA.bg[3].internalBGY = engineB.bg[2].internalBGY = engineB.bg[3].internalBGY = 0;
+	engineA.MOSAIC = engineB.MOSAIC = 0;
 	engineA.MASTER_BRIGHT = engineB.MASTER_BRIGHT = 0;
 
 	VRAMSTAT = 0;
@@ -95,6 +104,15 @@ void PPU::lineStart() {
 	case 263: // Start of Frame
 		++frameCounter;
 		currentScanline = 0;
+
+		engineA.bg[2].internalBGX = (float)((i32)(engineA.bg[2].BGX << 4) >> 4) / 256;
+		engineA.bg[2].internalBGY = (float)((i32)(engineA.bg[2].BGY << 4) >> 4) / 256;
+		engineA.bg[3].internalBGX = (float)((i32)(engineA.bg[3].BGX << 4) >> 4) / 256;
+		engineA.bg[3].internalBGY = (float)((i32)(engineA.bg[3].BGY << 4) >> 4) / 256;
+		engineB.bg[2].internalBGX = (float)((i32)(engineB.bg[2].BGX << 4) >> 4) / 256;
+		engineB.bg[2].internalBGY = (float)((i32)(engineB.bg[2].BGY << 4) >> 4) / 256;
+		engineB.bg[3].internalBGX = (float)((i32)(engineB.bg[3].BGX << 4) >> 4) / 256;
+		engineB.bg[3].internalBGY = (float)((i32)(engineB.bg[3].BGY << 4) >> 4) / 256;
 		break;
 	}
 
@@ -141,10 +159,43 @@ void PPU::drawLine() {
 		// BG modes
 		switch (engineA.bgMode) {
 		case 0:
-			if (engineA.displayBg0) draw2D<true, 0, false>();
-			if (engineA.displayBg1) draw2D<true, 1, false>();
-			if (engineA.displayBg2) draw2D<true, 2, false>();
-			if (engineA.displayBg3) draw2D<true, 3, false>();
+			if (engineA.displayBg0) draw2D<true, 0>();
+			if (engineA.displayBg1) draw2D<true, 1>();
+			if (engineA.displayBg2) draw2D<true, 2>();
+			if (engineA.displayBg3) draw2D<true, 3>();
+			break;
+		case 1:
+			if (engineA.displayBg0) draw2D<true, 0>();
+			if (engineA.displayBg1) draw2D<true, 1>();
+			if (engineA.displayBg2) draw2D<true, 2>();
+			if (engineA.displayBg3) draw2DAffine<true, 3, false>();
+			break;
+		case 2:
+			if (engineA.displayBg0) draw2D<true, 0>();
+			if (engineA.displayBg1) draw2D<true, 1>();
+			if (engineA.displayBg2) draw2DAffine<true, 2, false>();
+			if (engineA.displayBg3) draw2DAffine<true, 3, false>();
+			break;
+		case 3:
+			if (engineA.displayBg0) draw2D<true, 0>();
+			if (engineA.displayBg1) draw2D<true, 1>();
+			if (engineA.displayBg2) draw2D<true, 2>();
+			if (engineA.displayBg3) draw2DAffine<true, 3, true>();
+			break;
+		case 4:
+			if (engineA.displayBg0) draw2D<true, 0>();
+			if (engineA.displayBg1) draw2D<true, 1>();
+			if (engineA.displayBg2) draw2DAffine<true, 2, false>();
+			if (engineA.displayBg3) draw2DAffine<true, 3, true>();
+			break;
+		case 5:
+			if (engineA.displayBg0) draw2D<true, 0>();
+			if (engineA.displayBg1) draw2D<true, 1>();
+			if (engineA.displayBg2) draw2DAffine<true, 2, true>();
+			if (engineA.displayBg3) draw2DAffine<true, 3, true>();
+			break;
+		case 6:
+			if (engineA.displayBg2) draw2DAffine<true, 2, true>();
 			break;
 		}
 
@@ -179,10 +230,40 @@ void PPU::drawLine() {
 		// BG modes
 		switch (engineB.bgMode) {
 		case 0:
-			if (engineB.displayBg0) draw2D<false, 0, false>();
-			if (engineB.displayBg1) draw2D<false, 1, false>();
-			if (engineB.displayBg2) draw2D<false, 2, false>();
-			if (engineB.displayBg3) draw2D<false, 3, false>();
+			if (engineB.displayBg0) draw2D<false, 0>();
+			if (engineB.displayBg1) draw2D<false, 1>();
+			if (engineB.displayBg2) draw2D<false, 2>();
+			if (engineB.displayBg3) draw2D<false, 3>();
+			break;
+		case 1:
+			if (engineB.displayBg0) draw2D<false, 0>();
+			if (engineB.displayBg1) draw2D<false, 1>();
+			if (engineB.displayBg2) draw2D<false, 2>();
+			if (engineB.displayBg3) draw2DAffine<false, 3, false>();
+			break;
+		case 2:
+			if (engineB.displayBg0) draw2D<false, 0>();
+			if (engineB.displayBg1) draw2D<false, 1>();
+			if (engineB.displayBg2) draw2DAffine<false, 2, false>();
+			if (engineB.displayBg3) draw2DAffine<false, 3, false>();
+			break;
+		case 3:
+			if (engineB.displayBg0) draw2D<false, 0>();
+			if (engineB.displayBg1) draw2D<false, 1>();
+			if (engineB.displayBg2) draw2D<false, 2>();
+			if (engineB.displayBg3) draw2DAffine<false, 3, true>();
+			break;
+		case 4:
+			if (engineB.displayBg0) draw2D<false, 0>();
+			if (engineB.displayBg1) draw2D<false, 1>();
+			if (engineB.displayBg2) draw2DAffine<false, 2, false>();
+			if (engineB.displayBg3) draw2DAffine<false, 3, true>();
+			break;
+		case 5:
+			if (engineB.displayBg0) draw2D<false, 0>();
+			if (engineB.displayBg1) draw2D<false, 1>();
+			if (engineB.displayBg2) draw2DAffine<false, 2, true>();
+			if (engineB.displayBg3) draw2DAffine<false, 3, true>();
 			break;
 		}
 
@@ -233,18 +314,30 @@ void PPU::drawLine() {
 			pix.b = pix.b - (pix.b * multiplier);
 		}
 	}
+
+	/* Update Affine Registers */
+	engineA.bg[2].internalBGX += (float)engineA.bg[2].BGPB / 256;
+	engineA.bg[2].internalBGY += (float)engineA.bg[2].BGPD / 256;
+	engineA.bg[3].internalBGX += (float)engineA.bg[3].BGPB / 256;
+	engineA.bg[3].internalBGY += (float)engineA.bg[3].BGPD / 256;
+	engineB.bg[2].internalBGX += (float)engineB.bg[2].BGPB / 256;
+	engineB.bg[2].internalBGY += (float)engineB.bg[2].BGPD / 256;
+	engineB.bg[3].internalBGX += (float)engineB.bg[3].BGPB / 256;
+	engineB.bg[3].internalBGY += (float)engineB.bg[3].BGPD / 256;
 }
 
-template <bool useEngineA, int layer, bool affine>
+template <bool useEngineA, int layer>
 void PPU::draw2D() {
 	GraphicsEngine& engine = useEngineA ? engineA : engineB;
 	auto& bg = engine.bg[layer];
 
-	u8 y = currentScanline + bg.BGVOFS;
+	int x = bg.BGHOFS;
+	int y = currentScanline + bg.BGVOFS;
+
+	if (bg.mosaic)
+		y = y - (y % (engine.bgMosV + 1));
 
 	for (int column = 0; column < 256; column++) {
-		u32 x = column + bg.BGHOFS;
-
 		u32 tileAddress;
 		switch (bg.screenSize) {
 		case 0: // 256x256
@@ -283,6 +376,109 @@ void PPU::draw2D() {
 			bg.drawBuf[column] = (useEngineA ? engineABgPalette : engineBBgPalette)[((tile.paletteBank << 4) * !bg.eightBitColor) | tileData];
 			bg.drawBuf[column].solid = true;
 		}
+
+		if (bg.mosaic) {
+			x = bg.BGHOFS + column;
+			x = x - (x % (engine.bgMosH + 1));
+		} else {
+			++x;
+		}
+	}
+}
+
+template <bool useEngineA, int layer, bool extended>
+void PPU::draw2DAffine() {
+	GraphicsEngine& engine = useEngineA ? engineA : engineB;
+	auto& bg = engine.bg[layer];
+
+	bool largeBitmap = useEngineA && (layer == 2) && (engine.bgMode == 6);
+
+	// > bgcnt size  text     rotscal    bitmap   large bmp
+	// > 0           256x256  128x128    128x128  512x1024
+	// > 1           512x256  256x256    256x256  1024x512
+	// > 2           256x512  512x512    512x256  -
+	// > 3           512x512  1024x1024  512x512  -
+	// `text` isn't used here
+	unsigned int screenSizeX;
+	unsigned int screenSizeY;
+	if (largeBitmap) { // `large bmp`
+		if (bg.screenSize & 1) {
+			screenSizeX = 1024;
+			screenSizeY = 512;
+		} else {
+			screenSizeX = 512;
+			screenSizeY = 1024;
+		}
+	} else if (extended && (bg.BGCNT & (1 << 7))) { // `bitmap`
+		switch (bg.screenSize) {
+		case 0: screenSizeX = 128; screenSizeY = 128; break;
+		case 1: screenSizeX = 256; screenSizeY = 256; break;
+		case 2: screenSizeX = 512; screenSizeY = 256; break;
+		case 3: screenSizeX = 512; screenSizeY = 512; break;
+		}
+	} else { // `rotscal`
+		screenSizeX = 128 << bg.screenSize;
+		screenSizeY = 128 << bg.screenSize;
+	}
+
+	float affX = bg.internalBGX;
+	float affY = bg.internalBGY;
+	float pa = (float)bg.BGPA / 256;
+	float pc = (float)bg.BGPC / 256;
+
+	for (int column = 0; column < 256; column++, affX += pa, affY += pc) {
+		int x = bg.mosaic ? ((int)affX - ((int)affX % (engine.bgMosH + 1))) : (int)affX;
+		int y = bg.mosaic ? ((int)affY - ((int)affY % (engine.bgMosV + 1))) : (int)affY;
+		if (!bg.displayAreaWraparound && (((unsigned int)y >= screenSizeY) || ((unsigned int)x >= screenSizeX)))
+			continue;
+
+		if constexpr (extended) {
+			// Save me, branch prediction.
+			if (largeBitmap) { // Large screen bitmap
+				u8 tileData = readVram<u8, useEngineA, false>((y * screenSizeX) + x);
+
+				if (tileData != 0) {
+					bg.drawBuf[column] = (useEngineA ? engineABgPalette : engineBBgPalette)[tileData];
+					bg.drawBuf[column].solid = true;
+				}
+			} else if (bg.BGCNT & (1 << 7)) {
+				if (bg.BGCNT & (1 << 2)) { // rot/scal direct color bitmap
+					u16 tileData = readVram<u16, useEngineA, false>((bg.screenBlock * 0x4000) + (y * screenSizeX * 2) + (x * 2));
+
+					// > However, the upper bit (Bit15) is used as Alpha flag. That is, Alpha=0=Transparent, Alpha=1=Normal (ie. on the NDS, Direct Color values 0..7FFFh are NOT displayed).
+					// This conveniently matches how I store the Pixel struct
+					bg.drawBuf[column].raw = tileData;
+				} else { // rot/scal 256 color bitmap
+					u8 tileData = readVram<u8, useEngineA, false>((bg.screenBlock * 0x4000) + (y * screenSizeX) + x);
+
+					if (tileData != 0) {
+						bg.drawBuf[column] = (useEngineA ? engineABgPalette : engineBBgPalette)[tileData];
+						bg.drawBuf[column].solid = true;
+					}
+				}
+			} else { // rot/scal with 16bit bgmap entries (Text+Affine mixup)
+				TileInfo tile;
+				tile.raw = readVram<u16, useEngineA, false>(bg.screenBlockBaseAddress + ((((y & (screenSizeY - 1)) / 8) * (screenSizeY / 8)) + ((x & (screenSizeX - 1)) / 8)) * 2);
+
+				// Despite BGCNT.7 being 0, this mode uses 8 bit palette indexes because it's affine
+				int xMod = tile.horizontalFlip ? (7 - (x % 8)) : (x % 8);
+				int yMod = tile.verticalFlip ? (7 - (y % 8)) : (y % 8);
+				u8 tileData = readVram<u8, useEngineA, false>(bg.charBlockBaseAddress + (tile.tileIndex * 64) + (yMod * 8) + xMod);
+
+				if (tileData != 0) {
+					bg.drawBuf[column] = (useEngineA ? engineABgPalette : engineBBgPalette)[tileData];
+					bg.drawBuf[column].solid = true;
+				}
+			}
+		} else { // Normal affine
+			int tile = readVram<u8, useEngineA, false>(bg.screenBlockBaseAddress + (((y & (screenSizeY - 1)) / 8) * (screenSizeY / 8)) + ((x & (screenSizeX - 1)) / 8));
+			u8 tileData = readVram<u8, useEngineA, false>(bg.charBlockBaseAddress + (tile * 64) + ((y & 7) * 8) + (x & 7));
+
+			if (tileData != 0) {
+				bg.drawBuf[column] = (useEngineA ? engineABgPalette : engineBBgPalette)[tileData];
+				bg.drawBuf[column].solid = true;
+			}
+		}
 	}
 }
 
@@ -311,23 +507,24 @@ void PPU::combineLayers() {
 }
 
 void PPU::refreshVramPages() {
-	// Clear the temp VRAM table
-	for (int i = 0; i < 0x200; i++)
+	// Clear the VRAM tables
+	for (int i = 0; i < 0x200; i++) {
 		vramInfoTable[i].raw = 0;
+		vramPageTable[i] = NULL;
+	}
 
-	// TODO: Mirroring
 	if (vramAEnable) {
 		switch (vramAMst) {
 		case 1: // 6000000h+(20000h*OFS)
 			for (int i = 0; i < 8; i++) {
-				vramInfoTable[(vramAOffset << 3) + i].enableA = true;
-				vramInfoTable[(vramAOffset << 3) + i].bankA = i;
+				vramInfoTable[(vramAOffset << 3) | i].enableA = true;
+				vramInfoTable[(vramAOffset << 3) | i].bankA = i;
 			}
 			break;
 		case 2: // 6400000h+(20000h*OFS.0)
 			for (int i = 0; i < 8; i++) {
-				vramInfoTable[toPage(0x400000) + ((vramAOffset & 1) << 3) + i].enableA = true;
-				vramInfoTable[toPage(0x400000) + ((vramAOffset & 1) << 3) + i].bankA = i;
+				vramInfoTable[toPage(0x400000) | ((vramAOffset & 1) << 3) | i].enableA = true;
+				vramInfoTable[toPage(0x400000) | ((vramAOffset & 1) << 3) | i].bankA = i;
 			}
 			break;
 		}
@@ -336,14 +533,14 @@ void PPU::refreshVramPages() {
 		switch (vramBMst) {
 		case 1: // 6000000h+(20000h*OFS)
 			for (int i = 0; i < 8; i++) {
-				vramInfoTable[(vramBOffset << 3) + i].enableB = true;
-				vramInfoTable[(vramBOffset << 3) + i].bankB = i;
+				vramInfoTable[(vramBOffset << 3) | i].enableB = true;
+				vramInfoTable[(vramBOffset << 3) | i].bankB = i;
 			}
 			break;
 		case 2: // 6400000h+(20000h*OFS.0)
 			for (int i = 0; i < 8; i++) {
-				vramInfoTable[toPage(0x400000) + ((vramBOffset & 1) << 3) + i].enableB = true;
-				vramInfoTable[toPage(0x400000) + ((vramBOffset & 1) << 3) + i].bankB = i;
+				vramInfoTable[toPage(0x400000) | ((vramBOffset & 1) << 3) | i].enableB = true;
+				vramInfoTable[toPage(0x400000) | ((vramBOffset & 1) << 3) | i].bankB = i;
 			}
 			break;
 		}
@@ -352,14 +549,14 @@ void PPU::refreshVramPages() {
 		switch (vramCMst) {
 		case 1: // 6000000h+(20000h*OFS)
 			for (int i = 0; i < 8; i++) {
-				vramInfoTable[(vramCOffset << 3) + i].enableC = true;
-				vramInfoTable[(vramCOffset << 3) + i].bankC = i;
+				vramInfoTable[(vramCOffset << 3) | i].enableC = true;
+				vramInfoTable[(vramCOffset << 3) | i].bankC = i;
 			}
 			break;
 		case 4: // 6200000h
 			for (int i = 0; i < 8; i++) {
-				vramInfoTable[toPage(0x200000) + i].enableC = true;
-				vramInfoTable[toPage(0x200000) + i].bankC = i;
+				vramInfoTable[toPage(0x200000) | i].enableC = true;
+				vramInfoTable[toPage(0x200000) | i].bankC = i;
 			}
 			break;
 		}
@@ -368,14 +565,14 @@ void PPU::refreshVramPages() {
 		switch (vramDMst) {
 		case 1: // 6000000h+(20000h*OFS)
 			for (int i = 0; i < 8; i++) {
-				vramInfoTable[(vramDOffset << 3) + i].enableD = true;
-				vramInfoTable[(vramDOffset << 3) + i].bankD = i;
+				vramInfoTable[(vramDOffset << 3) | i].enableD = true;
+				vramInfoTable[(vramDOffset << 3) | i].bankD = i;
 			}
 			break;
 		case 4: // 6600000h
 			for (int i = 0; i < 8; i++) {
-				vramInfoTable[toPage(0x600000) + i].enableD = true;
-				vramInfoTable[toPage(0x600000) + i].bankD = i;
+				vramInfoTable[toPage(0x600000) | i].enableD = true;
+				vramInfoTable[toPage(0x600000) | i].bankD = i;
 			}
 			break;
 		}
@@ -390,8 +587,8 @@ void PPU::refreshVramPages() {
 			break;
 		case 2: // 6400000h
 			for (int i = 0; i < 4; i++) {
-				vramInfoTable[toPage(0x400000) + i].enableE = true;
-				vramInfoTable[toPage(0x400000) + i].bankE = i;
+				vramInfoTable[toPage(0x400000) | i].enableE = true;
+				vramInfoTable[toPage(0x400000) | i].bankE = i;
 			}
 			break;
 		}
@@ -399,38 +596,38 @@ void PPU::refreshVramPages() {
 	if (vramFEnable) {
 		switch (vramFMst) {
 		case 1: // 6000000h+(4000h*OFS.0)+(10000h*OFS.1)
-			vramInfoTable[(vramFOffset & 1) + ((vramFOffset & 2) << 2)].enableF = true;
-			vramInfoTable[(vramFOffset & 1) + ((vramFOffset & 2) << 2) | 2].enableF = true;
+			vramInfoTable[(vramFOffset & 1) | ((vramFOffset & 2) << 1)].enableF = true;
+			vramInfoTable[(vramFOffset & 1) | ((vramFOffset & 2) << 1) | 2].enableF = true;
 			break;
 		case 2: // 6400000h+(4000h*OFS.0)+(10000h*OFS.1)
-			vramInfoTable[toPage(0x400000) + (vramFOffset & 1) + ((vramFOffset & 2) << 2)].enableF = true;
-			vramInfoTable[toPage(0x400000) + (vramFOffset & 1) + ((vramFOffset & 2) << 2) | 2].enableF = true;
+			vramInfoTable[toPage(0x400000) | (vramFOffset & 1) | ((vramFOffset & 2) << 1)].enableF = true;
+			vramInfoTable[toPage(0x400000) | (vramFOffset & 1) | ((vramFOffset & 2) << 1) | 2].enableF = true;
 			break;
 		}
 	}
 	if (vramGEnable) {
 		switch (vramGMst) {
 		case 1: // 6000000h+(4000h*OFS.0)+(10000h*OFS.1)
-			vramInfoTable[(vramGOffset & 1) + ((vramGOffset & 2) << 2)].enableG = true;
-			vramInfoTable[(vramGOffset & 1) + ((vramGOffset & 2) << 2) | 2].enableG = true;
+			vramInfoTable[(vramGOffset & 1) | ((vramGOffset & 2) << 1)].enableG = true;
+			vramInfoTable[(vramGOffset & 1) | ((vramGOffset & 2) << 1) | 2].enableG = true;
 			break;
 		case 2: // 6400000h+(4000h*OFS.0)+(10000h*OFS.1)
-			vramInfoTable[toPage(0x400000) + (vramGOffset & 1) + ((vramGOffset & 2) << 2)].enableG = true;
-			vramInfoTable[toPage(0x400000) + (vramGOffset & 1) + ((vramGOffset & 2) << 2) | 2].enableG = true;
+			vramInfoTable[toPage(0x400000) | (vramGOffset & 1) | ((vramGOffset & 2) << 1)].enableG = true;
+			vramInfoTable[toPage(0x400000) | (vramGOffset & 1) | ((vramGOffset & 2) << 1) | 2].enableG = true;
 			break;
 		}
 	}
 	if (vramHEnable) {
 		switch (vramHMst) {
 		case 1: // 6200000h
-			vramInfoTable[toPage(0x200000) + 0].enableH = true;
-			vramInfoTable[toPage(0x200000) + 0].bankH = 0;
-			vramInfoTable[toPage(0x200000) + 1].enableH = true;
-			vramInfoTable[toPage(0x200000) + 1].bankH = 1;
-			vramInfoTable[toPage(0x200000) + 4].enableH = true;
-			vramInfoTable[toPage(0x200000) + 4].bankH = 0;
-			vramInfoTable[toPage(0x200000) + 5].enableH = true;
-			vramInfoTable[toPage(0x200000) + 5].bankH = 1;
+			vramInfoTable[toPage(0x200000) | 0].enableH = true;
+			vramInfoTable[toPage(0x200000) | 0].bankH = 0;
+			vramInfoTable[toPage(0x200000) | 1].enableH = true;
+			vramInfoTable[toPage(0x200000) | 1].bankH = 1;
+			vramInfoTable[toPage(0x200000) | 4].enableH = true;
+			vramInfoTable[toPage(0x200000) | 4].bankH = 0;
+			vramInfoTable[toPage(0x200000) | 5].enableH = true;
+			vramInfoTable[toPage(0x200000) | 5].bankH = 1;
 			break;
 		}
 	}
@@ -444,10 +641,20 @@ void PPU::refreshVramPages() {
 			break;
 		case 2: // 6600000h
 			for (int i = 0; i < 8; i++)
-				vramInfoTable[toPage(0x600000) + i].enableI = true;
+				vramInfoTable[toPage(0x600000) | i].enableI = true;
 			break;
 		}
 	}
+
+	// Mirroring
+	for (int i = toPage(0x000000); i < toPage(0x200000); i += toPage(0x20000)) // A BG
+		memcpy(&vramInfoTable[i], &vramInfoTable[toPage(0x200000)], toPage(0x80000) * sizeof(VramInfoEntry));
+	for (int i = toPage(0x200000); i < toPage(0x400000); i += toPage(0x20000)) // B BG
+		memcpy(&vramInfoTable[i], &vramInfoTable[toPage(0x200000)], toPage(0x20000) * sizeof(VramInfoEntry));
+	for (int i = toPage(0x400000); i < toPage(0x600000); i += toPage(0x20000)) // A OBJ
+		memcpy(&vramInfoTable[i], &vramInfoTable[toPage(0x400000)], toPage(0x40000) * sizeof(VramInfoEntry));
+	for (int i = toPage(0x600000); i < toPage(0x800000); i += toPage(0x20000)) // B OBJ
+		memcpy(&vramInfoTable[i], &vramInfoTable[toPage(0x600000)], toPage(0x20000) * sizeof(VramInfoEntry));
 
 	// Translate non-overlapping banks into pages
 	for (int i = 0; i < 0x200; i++) {
@@ -482,7 +689,7 @@ T PPU::readVram(u32 address) {
 	if (ptr != NULL) { [[likely]]
 		memcpy(&val, ptr + offset, sizeof(T));
 	} else {
-		VramInfoEntry entry = vramInfoTable[toPage(alignedAddress - 0x6000000)];
+		VramInfoEntry entry = vramInfoTable[toPage(alignedAddress)];
 		T tmpVal = 0;
 
 		if (entry.enableA) { memcpy(&tmpVal, vramA + (entry.bankA * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
@@ -692,11 +899,129 @@ void PPU::writeIO9(u32 address, u8 value) {
 	case 0x400001F:
 		engineA.bg[3].BGVOFS = (engineA.bg[3].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
 		break;
+	case 0x4000020:
+		engineA.bg[2].BGPA = (engineA.bg[2].BGPA & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000021:
+		engineA.bg[2].BGPA = (engineA.bg[2].BGPA & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4000022:
+		engineA.bg[2].BGPB = (engineA.bg[2].BGPB & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000023:
+		engineA.bg[2].BGPB = (engineA.bg[2].BGPB & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4000024:
+		engineA.bg[2].BGPC = (engineA.bg[2].BGPC & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000025:
+		engineA.bg[2].BGPC = (engineA.bg[2].BGPC & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4000026:
+		engineA.bg[2].BGPD = (engineA.bg[2].BGPD & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000027:
+		engineA.bg[2].BGPD = (engineA.bg[2].BGPD & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4000028:
+		engineA.bg[2].BGX = (engineA.bg[2].BGX & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		engineA.bg[2].internalBGX = (float)((i32)(engineA.bg[2].BGX << 4) >> 4) / 256;
+		break;
+	case 0x4000029:
+		engineA.bg[2].BGX = (engineA.bg[2].BGX & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		engineA.bg[2].internalBGX = (float)((i32)(engineA.bg[2].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400002A:
+		engineA.bg[2].BGX = (engineA.bg[2].BGX & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		engineA.bg[2].internalBGX = (float)((i32)(engineA.bg[2].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400002B:
+		engineA.bg[2].BGX = (engineA.bg[2].BGX & 0x00FFFFFF) | ((value & 0x0F) << 24);
+		engineA.bg[2].internalBGX = (float)((i32)(engineA.bg[2].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400002C:
+		engineA.bg[2].BGY = (engineA.bg[2].BGY & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		engineA.bg[2].internalBGY = (float)((i32)(engineA.bg[2].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400002D:
+		engineA.bg[2].BGY = (engineA.bg[2].BGY & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		engineA.bg[2].internalBGY = (float)((i32)(engineA.bg[2].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400002E:
+		engineA.bg[2].BGY = (engineA.bg[2].BGY & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		engineA.bg[2].internalBGY = (float)((i32)(engineA.bg[2].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400002F:
+		engineA.bg[2].BGY = (engineA.bg[2].BGY & 0x00FFFFFF) | ((value & 0x0F) << 24);
+		engineA.bg[2].internalBGY = (float)((i32)(engineA.bg[2].BGY << 4) >> 4) / 256;
+		break;
+	case 0x4000030:
+		engineA.bg[3].BGPA = (engineA.bg[3].BGPA & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000031:
+		engineA.bg[3].BGPA = (engineA.bg[3].BGPA & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4000032:
+		engineA.bg[3].BGPB = (engineA.bg[3].BGPB & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000033:
+		engineA.bg[3].BGPB = (engineA.bg[3].BGPB & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4000034:
+		engineA.bg[3].BGPC = (engineA.bg[3].BGPC & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000035:
+		engineA.bg[3].BGPC = (engineA.bg[3].BGPC & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4000036:
+		engineA.bg[3].BGPD = (engineA.bg[3].BGPD & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000037:
+		engineA.bg[3].BGPD = (engineA.bg[3].BGPD & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4000038:
+		engineA.bg[3].BGX = (engineA.bg[3].BGX & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		engineA.bg[3].internalBGX = (float)((i32)(engineA.bg[3].BGX << 4) >> 4) / 256;
+		break;
+	case 0x4000039:
+		engineA.bg[3].BGX = (engineA.bg[3].BGX & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		engineA.bg[3].internalBGX = (float)((i32)(engineA.bg[3].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400003A:
+		engineA.bg[3].BGX = (engineA.bg[3].BGX & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		engineA.bg[3].internalBGX = (float)((i32)(engineA.bg[3].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400003B:
+		engineA.bg[3].BGX = (engineA.bg[3].BGX & 0x00FFFFFF) | ((value & 0x0F) << 24);
+		engineA.bg[3].internalBGX = (float)((i32)(engineA.bg[3].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400003C:
+		engineA.bg[3].BGY = (engineA.bg[3].BGY & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		engineA.bg[3].internalBGY = (float)((i32)(engineA.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400003D:
+		engineA.bg[3].BGY = (engineA.bg[3].BGY & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		engineA.bg[3].internalBGY = (float)((i32)(engineA.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400003E:
+		engineA.bg[3].BGY = (engineA.bg[3].BGY & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		engineA.bg[3].internalBGY = (float)((i32)(engineA.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400003F:
+		engineA.bg[3].BGY = (engineA.bg[3].BGY & 0x00FFFFFF) | ((value & 0x0F) << 24);
+		engineA.bg[3].internalBGY = (float)((i32)(engineA.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400004C:
+		engineA.MOSAIC = (engineA.MOSAIC & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400004D:
+		engineA.MOSAIC = (engineA.MOSAIC & 0x00FF) | ((value & 0xFF) << 8);
+		break;
 	case 0x400006C:
-		engineA.MASTER_BRIGHT = (engineA.MASTER_BRIGHT & 0xFF00) | ((engineA.MASTER_BRIGHT & 0x1F) << 0);
+		engineA.MASTER_BRIGHT = (engineA.MASTER_BRIGHT & 0xFF00) | ((value & 0x1F) << 0);
 		break;
 	case 0x400006D:
-		engineA.MASTER_BRIGHT = (engineA.MASTER_BRIGHT & 0x00FF) | ((engineA.MASTER_BRIGHT & 0xC0) << 8);
+		engineA.MASTER_BRIGHT = (engineA.MASTER_BRIGHT & 0x00FF) | ((value & 0xC0) << 8);
 		break;
 	case 0x400006E:
 	case 0x400006F:
@@ -849,11 +1174,129 @@ void PPU::writeIO9(u32 address, u8 value) {
 	case 0x400101F:
 		engineB.bg[3].BGVOFS = (engineB.bg[3].BGVOFS & 0x00FF) | ((value & 0x01) << 8);
 		break;
+	case 0x4001020:
+		engineB.bg[2].BGPA = (engineB.bg[2].BGPA & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001021:
+		engineB.bg[2].BGPA = (engineB.bg[2].BGPA & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4001022:
+		engineB.bg[2].BGPB = (engineB.bg[2].BGPB & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001023:
+		engineB.bg[2].BGPB = (engineB.bg[2].BGPB & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4001024:
+		engineB.bg[2].BGPC = (engineB.bg[2].BGPC & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001025:
+		engineB.bg[2].BGPC = (engineB.bg[2].BGPC & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4001026:
+		engineB.bg[2].BGPD = (engineB.bg[2].BGPD & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001027:
+		engineB.bg[2].BGPD = (engineB.bg[2].BGPD & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4001028:
+		engineB.bg[2].BGX = (engineB.bg[2].BGX & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		engineB.bg[2].internalBGX = (float)((i32)(engineB.bg[2].BGX << 4) >> 4) / 256;
+		break;
+	case 0x4001029:
+		engineB.bg[2].BGX = (engineB.bg[2].BGX & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		engineB.bg[2].internalBGX = (float)((i32)(engineB.bg[2].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400102A:
+		engineB.bg[2].BGX = (engineB.bg[2].BGX & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		engineB.bg[2].internalBGX = (float)((i32)(engineB.bg[2].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400102B:
+		engineB.bg[2].BGX = (engineB.bg[2].BGX & 0x00FFFFFF) | ((value & 0x0F) << 24);
+		engineB.bg[2].internalBGX = (float)((i32)(engineB.bg[2].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400102C:
+		engineB.bg[2].BGY = (engineB.bg[2].BGY & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		engineB.bg[2].internalBGY = (float)((i32)(engineB.bg[2].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400102D:
+		engineB.bg[2].BGY = (engineB.bg[2].BGY & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		engineB.bg[2].internalBGY = (float)((i32)(engineB.bg[2].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400102E:
+		engineB.bg[2].BGY = (engineB.bg[2].BGY & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		engineB.bg[2].internalBGY = (float)((i32)(engineB.bg[2].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400102F:
+		engineB.bg[2].BGY = (engineB.bg[2].BGY & 0x00FFFFFF) | ((value & 0x0F) << 24);
+		engineB.bg[2].internalBGY = (float)((i32)(engineB.bg[2].BGY << 4) >> 4) / 256;
+		break;
+	case 0x4001030:
+		engineB.bg[3].BGPA = (engineB.bg[3].BGPA & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001031:
+		engineB.bg[3].BGPA = (engineB.bg[3].BGPA & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4001032:
+		engineB.bg[3].BGPB = (engineB.bg[3].BGPB & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001033:
+		engineB.bg[3].BGPB = (engineB.bg[3].BGPB & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4001034:
+		engineB.bg[3].BGPC = (engineB.bg[3].BGPC & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001035:
+		engineB.bg[3].BGPC = (engineB.bg[3].BGPC & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4001036:
+		engineB.bg[3].BGPD = (engineB.bg[3].BGPD & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001037:
+		engineB.bg[3].BGPD = (engineB.bg[3].BGPD & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x4001038:
+		engineB.bg[3].BGX = (engineB.bg[3].BGX & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		engineB.bg[3].internalBGX = (float)((i32)(engineB.bg[3].BGX << 4) >> 4) / 256;
+		break;
+	case 0x4001039:
+		engineB.bg[3].BGX = (engineB.bg[3].BGX & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		engineB.bg[3].internalBGX = (float)((i32)(engineB.bg[3].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400103A:
+		engineB.bg[3].BGX = (engineB.bg[3].BGX & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		engineB.bg[3].internalBGX = (float)((i32)(engineB.bg[3].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400103B:
+		engineB.bg[3].BGX = (engineB.bg[3].BGX & 0x00FFFFFF) | ((value & 0x0F) << 24);
+		engineB.bg[3].internalBGX = (float)((i32)(engineB.bg[3].BGX << 4) >> 4) / 256;
+		break;
+	case 0x400103C:
+		engineB.bg[3].BGY = (engineB.bg[3].BGY & 0xFFFFFF00) | ((value & 0xFF) << 0);
+		engineB.bg[3].internalBGY = (float)((i32)(engineB.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400103D:
+		engineB.bg[3].BGY = (engineB.bg[3].BGY & 0xFFFF00FF) | ((value & 0xFF) << 8);
+		engineB.bg[3].internalBGY = (float)((i32)(engineB.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400103E:
+		engineB.bg[3].BGY = (engineB.bg[3].BGY & 0xFF00FFFF) | ((value & 0xFF) << 16);
+		engineB.bg[3].internalBGY = (float)((i32)(engineB.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400103F:
+		engineB.bg[3].BGY = (engineB.bg[3].BGY & 0x00FFFFFF) | ((value & 0x0F) << 24);
+		engineB.bg[3].internalBGY = (float)((i32)(engineB.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x400104C:
+		engineB.MOSAIC = (engineB.MOSAIC & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400104D:
+		engineB.MOSAIC = (engineB.MOSAIC & 0x00FF) | ((value & 0xFF) << 8);
+		break;
 	case 0x400106C:
-		engineB.MASTER_BRIGHT = (engineB.MASTER_BRIGHT & 0xFF00) | ((engineB.MASTER_BRIGHT & 0x1F) << 0);
+		engineB.MASTER_BRIGHT = (engineB.MASTER_BRIGHT & 0xFF00) | ((value & 0x1F) << 0);
 		break;
 	case 0x400106D:
-		engineB.MASTER_BRIGHT = (engineB.MASTER_BRIGHT & 0x00FF) | ((engineB.MASTER_BRIGHT & 0xC0) << 8);
+		engineB.MASTER_BRIGHT = (engineB.MASTER_BRIGHT & 0x00FF) | ((value & 0xC0) << 8);
 		break;
 	case 0x400106E:
 	case 0x400106F:

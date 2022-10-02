@@ -73,7 +73,8 @@ public:
 	void lineStart();
 	void hBlank();
 	void drawLine();
-	template <bool useEngineA, int layer, bool affine> void draw2D();
+	template <bool useEngineA, int layer> void draw2D();
+	template <bool useEngineA, int layer, bool extended> void draw2DAffine();
 	template <bool useEngineA> void combineLayers();
 
 	// Memory Interface
@@ -164,7 +165,26 @@ public:
 			};
 			u16 BGHOFS; // NDS9 - 0x4000010/0x4000014/0x4000018/0x400001C
 			u16 BGVOFS; // NDS9 - 0x4000012/0x4000016/0x400001A/0x400001E
+			i16 BGPA; // NDS9 - BG2/BG3 - 0x4000020/0x4000030
+			i16 BGPB; // NDS9 - BG2/BG3 - 0x4000022/0x4000032
+			i16 BGPC; // NDS9 - BG2/BG3 - 0x4000024/0x4000034
+			i16 BGPD; // NDS9 - BG2/BG3 - 0x4000026/0x4000036
+			u32 BGX; // NDS9 - BG2/BG3 - 0x4000028/0x4000038
+			u32 BGY; // NDS9 - BG2/BG3 - 0x400002C/0x400003C
+
+			float internalBGX;
+			float internalBGY;
 		} bg[4];
+
+		union {
+			struct {
+				u16 bgMosH : 4;
+				u16 bgMosV : 4;
+				u16 objMosH : 4;
+				u16 objMosV : 4;
+			};
+			u16 MOSAIC; // NDS9 - 0x400004C
+		};
 
 		union {
 			struct {
@@ -296,7 +316,7 @@ public:
 	union {
 		struct {
 			u8 vramHMst : 2;
-			u8 : 4;
+			u8 : 5;
 			u8 vramHEnable : 1;
 		};
 		u8 VRAMCNT_H; // NDS9 - 0x4000248
@@ -305,7 +325,7 @@ public:
 	union {
 		struct {
 			u8 vramIMst : 2;
-			u8 : 4;
+			u8 : 5;
 			u8 vramIEnable : 1;
 		};
 		u8 VRAMCNT_I; // NDS9 - 0x4000249
