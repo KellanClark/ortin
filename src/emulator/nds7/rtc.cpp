@@ -243,7 +243,7 @@ void RTC::writeIO7(u8 value) {
 						if ((commandRegister & 0xF0) != 0b0110'0000)
 							log << fmt::format("[NDS7][RTC] Invalid control command {:0>8b}\n", reverseBits(commandRegister));
 						if (logRtc)
-							log << fmt::format("[NDS7][RTC] Command: {:0>8b} {} register {}\n", (u8)command, parameterReadWrite ? "Reading" : "Writing", commandRegister);
+							log << fmt::format("[NDS7][RTC] Command: {:0>8b} {} register {}\n", commandRegister, parameterReadWrite ? "Reading" : "Writing", (u8)command);
 
 						if (parameterReadWrite) { // Reading register
 							switch (command) {
