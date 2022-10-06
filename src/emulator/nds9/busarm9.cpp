@@ -203,6 +203,9 @@ T BusARM9::read(u32 address, bool sequential) {
 			if (entry.enableH) { memcpy(&tmpVal, ppu.vramH + (entry.bankH * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
 			if (entry.enableI) { memcpy(&tmpVal, ppu.vramI + offset, sizeof(T)); val |= tmpVal; }
 			} break;
+		case 0x7000000 ... 0x7FFFFFF: // OAM
+			memcpy(&val, ppu.oam + (alignedAddress & 0x7FF), sizeof(T));
+			break;
 		case 0xFFFF0000 ... 0xFFFFFFFF: // ARM9-BIOS
 			memcpy(&val, bios + (alignedAddress - 0xFFFF0000), sizeof(T));
 			break;
@@ -256,8 +259,8 @@ void BusARM9::write(u32 address, T value, bool sequential) {
 		case 0x5000000 ... 0x5FFFFFF: // PRAM
 			memcpy(ppu.pram + (alignedAddress & 0x7FF), &value, sizeof(T));
 			break;
-		case 0x6800000 ... 0x6FFFFFF: { // VRAM fallback
-			PPU::VramInfoEntry entry = ppu.vramInfoTable[toPage(alignedAddress - 0x6800000)];
+		case 0x6000000 ... 0x67FFFFF: { // VRAM fallback
+			PPU::VramInfoEntry entry = ppu.vramInfoTable[toPage(alignedAddress - 0x6000000)];
 
 			if (entry.enableA) memcpy(ppu.vramA + (entry.bankA * 0x4000) + offset, &value, sizeof(T));
 			if (entry.enableB) memcpy(ppu.vramB + (entry.bankB * 0x4000) + offset, &value, sizeof(T));
