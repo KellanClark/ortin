@@ -113,6 +113,9 @@ void PPU::lineStart() {
 		engineB.bg[2].internalBGY = (float)((i32)(engineB.bg[2].BGY << 4) >> 4) / 256;
 		engineB.bg[3].internalBGX = (float)((i32)(engineB.bg[3].BGX << 4) >> 4) / 256;
 		engineB.bg[3].internalBGY = (float)((i32)(engineB.bg[3].BGY << 4) >> 4) / 256;
+
+		memset(engineA.objInfoBuf, 0, sizeof(engineA.objInfoBuf));
+		memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
 		break;
 	}
 
@@ -201,6 +204,9 @@ void PPU::drawLine() {
 
 		// Combine everything
 		combineLayers<true>();
+		memset(engineA.objInfoBuf, 0, sizeof(engineA.objInfoBuf));
+		if (engineA.displayBgObj)
+			drawObjects<true>();
 		break;
 	case 2: // VRAM Display
 		u16 *bank;
@@ -217,7 +223,6 @@ void PPU::drawLine() {
 	}
 
 	/* Engine B */
-	// It's your fault if you think I'm going to write another graphics engine right now.
 	if (engineB.displayMode == 1) { // Graphics Display
 		// Clear buffers
 		for (int i = 0; i < 256; i++) {
@@ -269,6 +274,9 @@ void PPU::drawLine() {
 
 		// Combine everything
 		combineLayers<false>();
+		memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
+		if (engineB.displayBgObj)
+			drawObjects<false>();
 	} else { // Display off
 		for (int i = 0; i < 256; i++)
 			framebufferB[currentScanline][i] = 0xFFFF;
@@ -482,6 +490,132 @@ void PPU::draw2DAffine() {
 	}
 }
 
+static const unsigned int objSizeTable[4][4][2] = {
+	{{ 8,  8}, {16, 16}, {32, 32}, {64, 64}},
+	{{16,  8}, {32,  8}, {32, 16}, {64, 32}},
+	{{ 8, 16}, { 8, 32}, {16, 32}, {32, 64}},
+	{{ 0,  0}, { 0,  0}, { 0,  0}, { 0,  0}}
+};
+
+template <bool useEngineA>
+void PPU::drawObjects() {
+	GraphicsEngine& engine = useEngineA ? engineA : engineB;
+	auto& objects = useEngineA ? oamA.objects : oamB.objects;
+	auto& matrices = useEngineA ? oamA.objectMatrices : oamB.objectMatrices;
+	const int realLine = currentScanline + 1;
+
+	for (int priority = 0; priority < 4; priority++) {
+		for (int objNum = 0; objNum < 128; objNum++) {
+			Object& obj = objects[objNum];
+			if ((obj.priority != priority) || (obj.objMode == 2))
+				continue;
+
+			const bool isAffine = obj.objMode != 0;
+			const bool isDoubleSize = obj.objMode == 3;
+			const bool isBitmap = obj.gfxMode == 2;
+
+			unsigned int column = obj.objX;
+			unsigned int line = realLine - obj.objY;
+			unsigned int y = (obj.mosaic ? (realLine - (realLine % (engine.objMosV + 1))) : realLine) - obj.objY;
+			unsigned int xSize = objSizeTable[obj.shape][obj.size][0];
+			unsigned int ySize = objSizeTable[obj.shape][obj.size][1];
+
+			// Initialize affine variables
+			float affX, affY, pa, pb, pc, pd;
+			ObjectMatrix& mat = matrices[obj.affineIndex];
+			if (isAffine) {
+				pa = (float)mat.pa / 256;
+				pb = (float)mat.pb / 256;
+				pc = (float)mat.pc / 256;
+				pd = (float)mat.pd / 256;
+
+				if (isDoubleSize) {
+					affX = (pb * (line - (float)ySize)) + (pa * ((float)xSize * -1)) + ((float)xSize / 2);
+					affY = (pd * (line - (float)ySize)) + (pc * ((float)xSize * -1)) + ((float)ySize / 2);
+				} else {
+					affX = (pb * (line - ((float)ySize / 2))) + (pa * ((float)xSize / -2)) + ((float)xSize / 2);
+					affY = (pd * (line - ((float)ySize / 2))) + (pc * ((float)xSize / -2)) + ((float)ySize / 2);
+				}
+			}
+
+			// Eliminate objects that aren't on this line
+			if ((obj.objY + ySize) > 255) {
+				if ((realLine < obj.objY) && (realLine >= (u8)(obj.objY + (ySize << isDoubleSize))))
+					continue;
+			} else {
+				if ((realLine < obj.objY) || (realLine >= (obj.objY + (ySize << isDoubleSize))))
+					continue;
+			}
+
+			// Draw loop
+			for (unsigned int relX = 0; relX < (xSize << isDoubleSize); relX++) {
+				if (column >= 256)
+					goto nextPixel;
+
+				// Calculate X and Y
+				unsigned int x;
+				if (isAffine) {
+					// Get X and Y
+					x = floor(affX);
+					y = floor(affY);
+					if (obj.mosaic) {
+						y = (realLine - (realLine % (engine.objMosV + 1))) - y;
+					}
+
+					// Only draw if part of the object
+					if ((x >= xSize) || (y >= ySize))
+						goto nextPixel;
+				} else {
+					x = relX;
+				}
+
+				if (isBitmap) {
+					//
+				} else {
+					u32 tileDataAddress;
+					u8 tileData = 0;
+
+					if (obj.bpp) { // 8 bits per pixel
+						if (engine.tileObjMapping) { // 1D
+							tileDataAddress = ((obj.tileIndex & ~1) * (32 << engine.tileObjBoundary)) + ((((y / 8) * (xSize / 8)) + (x / 8)) * 64) + ((y & 7) * 8) + (x & 7);
+						} else { // 2D
+							tileDataAddress = ((obj.tileIndex & ~1) * 32) + ((((y / 8) * 16) + (x / 8)) * 64) + ((y & 7) * 8) + (x & 7);
+						}
+						tileData = readVram<u8, useEngineA, true>(tileDataAddress);
+					} else { // 4 bits per pixel
+						if (engine.tileObjMapping) { // 1D
+							tileDataAddress = (obj.tileIndex * (32 << engine.tileObjBoundary)) + ((((y / 8) * (xSize / 8)) + (x / 8)) * 32) + ((y & 7) * 4) + ((x & 7) / 2);
+						} else { // 2D
+							tileDataAddress = (obj.tileIndex * 32) + ((((y / 8) * 32) + (x / 8)) * 32) + ((y & 7) * 4) + ((x & 7) / 2);
+						}
+						tileData = readVram<u8, useEngineA, true>(tileDataAddress);
+
+						if (x & 1) {
+							tileData >>= 4;
+						} else {
+							tileData &= 0xF;
+						}
+					}
+
+					if (tileData != 0) {
+						engine.objInfoBuf[column].pix = (useEngineA ? engineAObjPalette : engineBObjPalette)[tileData];
+						engine.objInfoBuf[column].pix.solid = true;
+						engine.objInfoBuf[column].mosaic = obj.mosaic;
+						engine.objInfoBuf[column].priority = priority;
+					}
+				}
+
+				nextPixel:
+				if (isAffine) {
+					affX += pa;
+					affY += pc;
+				}
+				column = (column + 1) & 0x1FF;
+			}
+		}
+	}
+}
+
 template <bool useEngineA>
 void PPU::combineLayers() {
 	GraphicsEngine& engine = useEngineA ? engineA : engineB;
@@ -494,12 +628,14 @@ void PPU::combineLayers() {
 	for (int i = 0; i < 256; i++) {
 		Pixel final = (useEngineA ? engineABgPalette : engineBBgPalette)[0];
 		final.solid = true; // Just in case the graphics API needs it.
+		int objBufIndex = engine.objInfoBuf[i].mosaic ? i - (i % (engine.objMosH + 1)) : i;
 
 		for (int priority = 3; priority >= 0; priority--) {
 			if ((engine.bg[3].priority == priority) && engine.bg[3].drawBuf[i].solid) final = engine.bg[3].drawBuf[i];
 			if ((engine.bg[2].priority == priority) && engine.bg[2].drawBuf[i].solid) final = engine.bg[2].drawBuf[i];
 			if ((engine.bg[1].priority == priority) && engine.bg[1].drawBuf[i].solid) final = engine.bg[1].drawBuf[i];
 			if ((engine.bg[0].priority == priority) && engine.bg[0].drawBuf[i].solid) final = engine.bg[0].drawBuf[i];
+			if ((engine.objInfoBuf[objBufIndex].priority == priority) && engine.objInfoBuf[objBufIndex].pix.solid) final = engine.objInfoBuf[objBufIndex].pix;
 		}
 
 		(useEngineA ? framebufferA : framebufferB)[currentScanline][i] = final.raw;

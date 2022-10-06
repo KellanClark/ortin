@@ -23,6 +23,7 @@ public:
 	void reset();
 
 	// Types
+
 	union VramInfoEntry {
 		struct {
 			u32 enableA : 1;
@@ -69,12 +70,61 @@ public:
 		};
 	};
 
+	struct __attribute__ ((packed)) Object {
+		union {
+			struct {
+				u16 objY : 8;
+				u16 objMode : 2;
+				u16 gfxMode : 2;
+				u16 mosaic : 1;
+				u16 bpp : 1;
+				u16 shape : 2;
+			};
+			u16 attribute0;
+		};
+		union {
+			struct {
+				u16 objX : 9;
+				u16 : 3;
+				u16 horizontalFlip : 1;
+				u16 verticalFlip : 1;
+				u16 size : 2;
+			};
+			struct {
+				u16 : 9;
+				u16 affineIndex : 5;
+				u16 : 2;
+			};
+			u16 attribute1;
+		};
+		union {
+			struct {
+				u16 tileIndex : 10;
+				u16 priority : 2;
+				u16 palette : 4;
+			};
+			u16 attribute2;
+		};
+		u16 unused;
+	};
+	struct __attribute__ ((packed)) ObjectMatrix {
+		u16 un1, un2, un3;
+		i16 pa;
+		u16 un4, un5, un6;
+		i16 pb;
+		u16 un7, un8, un9;
+		i16 pc;
+		u16 un10, un11, un12;
+		i16 pd;
+	};
+
 	// Events/Internal Function
 	void lineStart();
 	void hBlank();
 	void drawLine();
 	template <bool useEngineA, int layer> void draw2D();
 	template <bool useEngineA, int layer, bool extended> void draw2DAffine();
+	template <bool useEngineA> void drawObjects();
 	template <bool useEngineA> void combineLayers();
 
 	// Memory Interface
@@ -99,7 +149,18 @@ public:
 	u8 *vramG;
 	u8 *vramH;
 	u8 *vramI;
-	u8 oam[0x800];
+
+	union {
+		struct {
+			struct {
+				union {
+					Object objects[128];
+					ObjectMatrix objectMatrices[32];
+				};
+			} oamA, oamB;
+		};
+		u8 oam[0x800];
+	};
 
 	void refreshVramPages();
 	template <typename T, bool useEngineA, bool useObj> T readVram(u32 address);
@@ -110,7 +171,13 @@ public:
 
 	// I/O Registers
 	struct GraphicsEngine { // Engine B has a memory offset of 0x1000
-		Pixel objBuf[256];
+		struct {
+			bool objWin;
+			bool mosaic;
+			bool semiTransparent;
+			int priority;
+			Pixel pix;
+		} objInfoBuf[256];
 
 		union {
 			struct {
