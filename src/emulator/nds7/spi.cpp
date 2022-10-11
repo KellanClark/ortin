@@ -12,7 +12,7 @@
 SPI::SPI(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
 	logSpi = false;
 
-	firmware.logFirmware = true;
+	firmware.logFirmware = false;
 	firmware.writeProtect = true;
 	firmware.data = nullptr;
 }
