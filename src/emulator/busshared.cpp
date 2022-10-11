@@ -10,6 +10,7 @@ BusShared::BusShared(std::stringstream &log) : log(log) {
 	KEYINPUT = 0x03FF;
 	KEYCNT9 = KEYCNT7 = 0x0000;
 	EXTKEYIN = 0x007F;
+	EXMEMCNT = 0;
 	WRAMCNT = 0x03;
 }
 
@@ -45,6 +46,10 @@ u8 BusShared::readIO9(u32 address) {
 		return (u8)KEYCNT9;
 	case 0x4000133:
 		return (u8)(KEYCNT9 >> 8);
+	case 0x4000204:
+		return (u8)EXMEMCNT;
+	case 0x4000205:
+		return (u8)(EXMEMCNT >> 8);
 	case 0x4000247:
 		return WRAMCNT;
 	default:
@@ -60,6 +65,12 @@ void BusShared::writeIO9(u32 address, u8 value) {
 		break;
 	case 0x4000133:
 		KEYCNT9 = (KEYCNT9 & 0x00FF) | ((value & 0xC3) << 8);
+		break;
+	case 0x4000204:
+		EXMEMCNT = (EXMEMCNT & 0xFF00) | ((value & 0x80) << 0);
+		break;
+	case 0x4000205:
+		EXMEMCNT = (EXMEMCNT & 0x00FF) | (((value & 0x08) | 0x20) << 8);
 		break;
 	case 0x4000247:
 		WRAMCNT = value & 0x03;
@@ -86,6 +97,10 @@ u8 BusShared::readIO7(u32 address) {
 		return (u8)EXTKEYIN;
 	case 0x4000137:
 		return (u8)(EXTKEYIN >> 8);
+	case 0x4000204:
+		return (u8)EXMEMCNT;
+	case 0x4000205:
+		return (u8)(EXMEMCNT >> 8);
 	case 0x4000241:
 		return WRAMCNT;
 	default:
@@ -101,6 +116,9 @@ void BusShared::writeIO7(u32 address, u8 value) {
 		break;
 	case 0x4000133:
 		KEYCNT7 = (KEYCNT7 & 0x00FF) | ((value & 0xC3) << 8);
+		break;
+	case 0x4000204:
+	case 0x4000205:
 		break;
 	default:
 		log << fmt::format("[ARM7 Bus][Shared] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);

@@ -8,6 +8,7 @@
 #include "emulator/busshared.hpp"
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
+#include "emulator/gamecard.hpp"
 #include "emulator/dma.hpp"
 #include "emulator/timer.hpp"
 #include "emulator/nds7/rtc.hpp"
@@ -18,10 +19,9 @@ class BusARM7 {
 public:
 	// Connected components
 	ARM7TDMI<BusARM7> cpu;
-	BusShared& shared;
-	std::stringstream& log;
 	IPC& ipc;
 	PPU& ppu;
+	Gamecard& gamecard;
 	DMA<false> dma;
 	Timer timer;
 	RTC rtc;
@@ -29,8 +29,11 @@ public:
 	u8 *wram;
 	u8 *bios;
 
-	// For normal use
-	BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log);
+	BusShared& shared;
+	std::stringstream& log;
+
+	// For external use
+	BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, Gamecard &gamecard, std::stringstream &log);
 	~BusARM7();
 	void reset();
 
@@ -64,6 +67,7 @@ public:
 	u32 IE; // NDS7 - 0x4000210
 	u32 IF; // NDS7 - 0x4000214
 	u8 HALTCNT; // NDS7 - 0x4000301
+	u16 SOUNDBIAS; // NDS7 - 0x4000504 (stub)
 
 	void requestInterrupt(InterruptType type);
 	void refreshInterrupts();

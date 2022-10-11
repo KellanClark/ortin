@@ -3,7 +3,13 @@
 #include "emulator/timer.hpp"
 #include "emulator/nds7/spi.hpp"
 
-NDS::NDS() : shared(log), ipc(shared, log), ppu(shared, log), nds9(shared, log, ipc, ppu), nds7(shared, ipc, ppu, log) {
+NDS::NDS() :
+	shared(log),
+	ipc(shared, log),
+	ppu(shared, log),
+	gamecard(shared, log),
+	nds9(shared, log, ipc, ppu, gamecard),
+	nds7(shared, ipc, ppu, gamecard, log) {
 	romInfo.romLoaded = romInfo.bios9Loaded = romInfo.bios7Loaded = romInfo.firmwareLoaded = false;
 	running = false;
 	stepArm9 = stepArm7 = 0;
@@ -22,6 +28,7 @@ void NDS::reset() {
 	shared.reset();
 	ipc.reset();
 	ppu.reset();
+	gamecard.reset();
 	nds9.reset();
 	nds7.reset();
 
@@ -29,7 +36,7 @@ void NDS::reset() {
 	nds7.refreshWramPages();
 	nds9.refreshVramPages();
 
-	directBoot();
+	//directBoot();
 
 	nds9.delay = 0;
 	nds7.delay = 0;
@@ -172,6 +179,15 @@ void NDS::run() {
 					if (nds7.timer.timer[1].interruptRequested) { nds7.timer.timer[1].interruptRequested = false; nds7.requestInterrupt(BusARM7::INT_TIMER_1); }
 					if (nds7.timer.timer[2].interruptRequested) { nds7.timer.timer[2].interruptRequested = false; nds7.requestInterrupt(BusARM7::INT_TIMER_2); }
 					if (nds7.timer.timer[3].interruptRequested) { nds7.timer.timer[3].interruptRequested = false; nds7.requestInterrupt(BusARM7::INT_TIMER_3); }
+					break;
+				case GAMECARD_TRANSFER_READY:
+					if (shared.ndsSlotAccess) {
+						nds7.requestInterrupt(BusARM7::INT_NDS_SLOT_DATA);
+					} else {
+						nds9.requestInterrupt(BusARM9::INT_NDS_SLOT_DATA);
+					}
+					//nds7.requestInterrupt(BusARM7::INT_NDS_SLOT_DATA);
+					//nds9.requestInterrupt(BusARM9::INT_NDS_SLOT_DATA);
 					break;
 				}
 			}

@@ -769,7 +769,7 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 88> registers9 = {{
+static const std::array<IoRegister, 90> registers9 = {{
 	{"(A) DISPCNT", "LCD Control", 0x4000000, 4, true, true, 23, (IoField[]){
 		{"BG Mode", 0, 3, TEXT_BOX},
 		{"BG0 2D/3D Selection", 3, 1, COMBO, "2D\0"
@@ -1105,6 +1105,38 @@ static const std::array<IoRegister, 88> registers9 = {{
 		{"Receive Fifo Not Empty IRQ", 10, 1, CHECKBOX},
 		{"Error, Read Empty/Send Full", 14, 1, CHECKBOX},
 		{"Enable Send/Receive Fifo", 15, 1, CHECKBOX}}},
+	{"AUXSPICNT", "Gamecard ROM and SPI Control", 0x40001A0, 2, true, true, 6, (IoField[]){
+		{"SPI Baudrate", 0, 2, COMBO, "4MHz/Default\0"
+									  "2MHz\0"
+									  "1MHz\0"
+									  "512KHz\0\0"},
+		{"SPI Hold Chipselect", 6, 1, CHECKBOX},
+		{"SPI Busy", 7, 1, CHECKBOX},
+		{"NDS Slot Mode", 13, 1, COMBO, "Parallel/ROM\0"
+										"Serial/SPI-Backup\0\0"},
+		{"Transfer Ready IRQ", 14, 1, CHECKBOX},
+		{"NDS Slot Enable", 15, 1, CHECKBOX}}},
+	{"ROMCTRL", "Gamecard Bus ROMCTRL", 0x40001A4, 4, true, true, 12, (IoField[]){
+		{"KEY1 gap1 length", 0, 13, TEXT_BOX_HEX},
+		{"KEY2 encrypt data", 13, 1, CHECKBOX},
+		{"KEY2 Apply Seed", 15, 1, CHECKBOX},
+		{"KEY1 gap2 length", 16, 6, TEXT_BOX_HEX},
+		{"KEY2 encrypt cmd", 22, 1, CHECKBOX},
+		{"Data-Word Status", 23, 1, CHECKBOX},
+		{"Data Block size", 24, 3, COMBO, "None\0"
+										  "200h bytes\0"
+										  "400h bytes\0"
+										  "800h bytes\0"
+										  "1000h bytes\0"
+										  "2000h bytes\0"
+										  "4000h bytes\0"
+										  "4 bytes\0\0"},
+		{"Transfer CLK rate", 27, 1, COMBO, "6.7MHz=33.51MHz/5\0"
+											"4.2MHz=33.51MHz/8\0\0"},
+		{"KEY1 Gap CLKs", 28, 1, CHECKBOX},
+		{"RESB Release Reset", 29, 1, CHECKBOX},
+		{"Data Direction \"WR\"", 30, 1, CHECKBOX},
+		{"Block Start/Status", 31, 1, CHECKBOX}}},
 	{"IME",	"Interrupt Master Enable", 0x4000208, 4, true, true, 1, (IoField[]){
 		{"Enable Interrupts", 0, 1, CHECKBOX}}},
 	{"IE", "Interrupt Enable", 0x4000210, 4, true, true, 19, (IoField[]){
@@ -1291,7 +1323,7 @@ static const std::array<IoRegister, 88> registers9 = {{
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 88> registerPointers9 = {
+	static std::array<void *, 90> registerPointers9 = {
 		&ortin.nds.ppu.engineA.DISPCNT,
 		&ortin.nds.ppu.DISPSTAT9,
 		&ortin.nds.ppu.VCOUNT,
@@ -1349,6 +1381,8 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 		&ortin.nds.shared.KEYCNT9,
 		&ortin.nds.ipc.IPCSYNC9,
 		&ortin.nds.ipc.IPCFIFOCNT9,
+		&ortin.nds.gamecard.AUXSPICNT,
+		&ortin.nds.gamecard.ROMCTRL,
 		&ortin.nds.nds9.IME,
 		&ortin.nds.nds9.IE,
 		&ortin.nds.nds9.IF,
@@ -1502,7 +1536,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
-static const std::array<IoRegister, 36> registers7 = {{
+static const std::array<IoRegister, 38> registers7 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -1694,6 +1728,38 @@ static const std::array<IoRegister, 36> registers7 = {{
 		{"Receive Fifo Not Empty IRQ", 10, 1, CHECKBOX},
 		{"Error, Read Empty/Send Full", 14, 1, CHECKBOX},
 		{"Enable Send/Receive Fifo", 15, 1, CHECKBOX}}},
+	{"AUXSPICNT", "Gamecard ROM and SPI Control", 0x40001A0, 2, true, true, 6, (IoField[]){
+		{"SPI Baudrate", 0, 2, COMBO, "4MHz/Default\0"
+									  "2MHz\0"
+									  "1MHz\0"
+									  "512KHz\0\0"},
+		{"SPI Hold Chipselect", 6, 1, CHECKBOX},
+		{"SPI Busy", 7, 1, CHECKBOX},
+		{"NDS Slot Mode", 13, 1, COMBO, "Parallel/ROM\0"
+										"Serial/SPI-Backup\0\0"},
+		{"Transfer Ready IRQ", 14, 1, CHECKBOX},
+		{"NDS Slot Enable", 15, 1, CHECKBOX}}},
+	{"ROMCTRL", "Gamecard Bus ROMCTRL", 0x40001A4, 4, true, true, 12, (IoField[]){
+		{"KEY1 gap1 length", 0, 13, TEXT_BOX_HEX},
+		{"KEY2 encrypt data", 13, 1, CHECKBOX},
+		{"KEY2 Apply Seed", 15, 1, CHECKBOX},
+		{"KEY1 gap2 length", 16, 6, TEXT_BOX_HEX},
+		{"KEY2 encrypt cmd", 22, 1, CHECKBOX},
+		{"Data-Word Status", 23, 1, CHECKBOX},
+		{"Data Block size", 24, 3, COMBO, "None\0"
+										  "200h bytes\0"
+										  "400h bytes\0"
+										  "800h bytes\0"
+										  "1000h bytes\0"
+										  "2000h bytes\0"
+										  "4000h bytes\0"
+										  "4 bytes\0\0"},
+		{"Transfer CLK rate", 27, 1, COMBO, "6.7MHz=33.51MHz/5\0"
+											"4.2MHz=33.51MHz/8\0\0"},
+		{"KEY1 Gap CLKs", 28, 1, CHECKBOX},
+		{"RESB Release Reset", 29, 1, CHECKBOX},
+		{"Data Direction \"WR\"", 30, 1, CHECKBOX},
+		{"Block Start/Status", 31, 1, CHECKBOX}}},
 	{"SPICNT", "SPI Bus Control/Status Register", 0x40001C0, 2, true, true, 7, (IoField[]){
 		{"Baudrate", 0, 2, COMBO, "4MHz/Firmware\0"
 								  "2MHz/Touchscr\0"
@@ -1775,7 +1841,7 @@ static const std::array<IoRegister, 36> registers7 = {{
 }};
 
 void DebugMenu::ioReg7Window() {
-	static std::array<void *, 36> registerPointers7 = {
+	static std::array<void *, 38> registerPointers7 = {
 		&ortin.nds.ppu.DISPSTAT7,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.nds7.dma.channel[0].DMASAD,
@@ -1804,6 +1870,8 @@ void DebugMenu::ioReg7Window() {
 		&ortin.nds.nds7.rtc.bus,
 		&ortin.nds.ipc.IPCSYNC7,
 		&ortin.nds.ipc.IPCFIFOCNT7,
+		&ortin.nds.gamecard.AUXSPICNT,
+		&ortin.nds.gamecard.ROMCTRL,
 		&ortin.nds.nds7.spi.SPICNT,
 		&ortin.nds.nds7.spi.SPIDATA,
 		&ortin.nds.nds7.IME,

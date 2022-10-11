@@ -28,7 +28,7 @@ static constexpr u64 fromRtcTime(u64 time) {
 }
 
 RTC::RTC(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
-	logRtc = true;
+	logRtc = false;
 }
 
 RTC::~RTC() {

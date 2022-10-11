@@ -8,6 +8,7 @@
 #include "emulator/busshared.hpp"
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
+#include "emulator/gamecard.hpp"
 #include "emulator/dma.hpp"
 #include "emulator/timer.hpp"
 #include "emulator/nds9/dsmath.hpp"
@@ -17,17 +18,19 @@ class BusARM9 {
 public:
 	// Connected components
 	ARM946E<BusARM9> cpu;
-	BusShared& shared;
-	std::stringstream& log;
 	IPC& ipc;
 	PPU& ppu;
+	Gamecard& gamecard;
 	DMA<true> dma;
 	Timer timer;
 	DSMath dsmath;
 	u8 *bios;
 
-	// For normal use
-	BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu);
+	BusShared& shared;
+	std::stringstream& log;
+
+	// For external use
+	BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu, Gamecard &gamecard);
 	~BusARM9();
 	void reset();
 

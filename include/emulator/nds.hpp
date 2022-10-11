@@ -6,6 +6,7 @@
 #include "busshared.hpp"
 #include "ipc.hpp"
 #include "ppu.hpp"
+#include "gamecard.hpp"
 #include "emulator/nds9/busarm9.hpp"
 #include "emulator/nds7/busarm7.hpp"
 #include "arm946e/arm946edisasm.hpp"
@@ -22,6 +23,7 @@ public:
 	BusShared shared;
 	IPC ipc;
 	PPU ppu;
+	Gamecard gamecard;
 	BusARM9 nds9;
 	BusARM7 nds7;
 	std::stringstream log;

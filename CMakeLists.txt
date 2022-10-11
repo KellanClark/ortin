@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.14)
 project(Ortin)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 if(NOT CMAKE_BUILD_TYPE)
@@ -45,6 +45,7 @@ add_executable(Ortin
 	src/emulator/busshared.cpp
 	src/emulator/ipc.cpp
 	src/emulator/ppu.cpp
+	src/emulator/gamecard.cpp
 	src/emulator/dma.cpp
 	src/emulator/timer.cpp
 	src/emulator/nds9/busarm9.cpp

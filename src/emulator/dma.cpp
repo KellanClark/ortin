@@ -3,7 +3,7 @@
 
 template <bool dma9>
 DMA<dma9>::DMA(BusShared &shared, std::stringstream &log, ArchBus &bus) : shared(shared), log(log), bus(bus) {
-	logDma = true;
+	logDma = false;
 }
 
 template <bool dma9>

@@ -9,7 +9,7 @@ static constexpr u32 toAddress(u32 page) {
 	return page << 14;
 }
 
-BusARM9::BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu) :
+BusARM9::BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu, Gamecard &gamecard) :
 	cpu(*this),
 	shared(shared),
 	log(log),
@@ -17,7 +17,8 @@ BusARM9::BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu) 
 	ppu(ppu),
 	dma(shared, log, *this),
 	timer(true, shared, log),
-	dsmath(shared, log) {
+	dsmath(shared, log),
+	gamecard(gamecard) {
 	bios = new u8[0x8000]; // 32KB
 	memset(bios, 0, 0x8000);
 
@@ -296,6 +297,7 @@ void BusARM9::breakpoint() {
 u8 BusARM9::readIO(u32 address, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
+	case 0x4000204: case 0x4000205:
 	case 0x4000247:
 		return shared.readIO9(address);
 
@@ -307,6 +309,10 @@ u8 BusARM9::readIO(u32 address, bool final) {
 	case 0x4000304 ... 0x4000307:
 	case 0x4001000 ... 0x400106F:
 		return ppu.readIO9(address);
+
+	case 0x40001A0 ... 0x40001BB:
+	case 0x4100010 ... 0x4100014:
+		return gamecard.readIO9(address, final);
 
 	case 0x40000B0 ... 0x40000EF:
 		return dma.readIO9(address);
@@ -347,6 +353,7 @@ u8 BusARM9::readIO(u32 address, bool final) {
 void BusARM9::writeIO(u32 address, u8 value, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
+	case 0x4000204: case 0x4000205:
 	case 0x4000247:
 		shared.writeIO9(address, value);
 		break;
@@ -362,6 +369,11 @@ void BusARM9::writeIO(u32 address, u8 value, bool final) {
 	case 0x4000304 ... 0x4000307:
 	case 0x4001000 ... 0x400106F:
 		ppu.writeIO9(address, value);
+		break;
+
+	case 0x40001A0 ... 0x40001BB:
+	case 0x4100010 ... 0x4100014:
+		gamecard.writeIO9(address, value);
 		break;
 
 	case 0x40000B0 ... 0x40000EF:

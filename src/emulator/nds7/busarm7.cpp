@@ -9,12 +9,13 @@ static constexpr u32 toAddress(u32 page) {
 	return page << 14;
 }
 
-BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, std::stringstream &log) :
+BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, Gamecard &gamecard, std::stringstream &log) :
 	cpu(*this),
 	shared(shared),
 	log(log),
 	ipc(ipc),
 	ppu(ppu),
+	gamecard(gamecard),
 	dma(shared, log, *this),
 	timer(false, shared, log),
 	rtc(shared, log),
@@ -51,6 +52,7 @@ void BusARM7::reset() {
 	IME = false;
 	IE = IF = 0;
 	HALTCNT = 0;
+	SOUNDBIAS = 0;
 
 	dma.reset();
 	rtc.reset();
@@ -224,6 +226,7 @@ void BusARM7::breakpoint() {
 u8 BusARM7::readIO(u32 address, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
+	case 0x4000204: case 0x4000205:
 	case 0x4000241:
 		return shared.readIO7(address);
 
@@ -234,6 +237,10 @@ u8 BusARM7::readIO(u32 address, bool final) {
 	case 0x4000004 ... 0x4000007:
 	case 0x4000240:
 		return ppu.readIO7(address);
+
+	case 0x40001A0 ... 0x40001BB:
+	case 0x4100010 ... 0x4100014:
+		return gamecard.readIO7(address, final);
 
 	case 0x40000B0 ... 0x40000DF:
 		return dma.readIO7(address);
@@ -269,6 +276,10 @@ u8 BusARM7::readIO(u32 address, bool final) {
 		return (u8)(IF >> 24);
 	case 0x4000301: // TODO: Is this only allowed in BIOS?
 		return HALTCNT;
+	case 0x4000504:
+		return (u8)(SOUNDBIAS >> 0);
+	case 0x4000505:
+		return (u8)(SOUNDBIAS >> 8);
 
 	default:
 		log << fmt::format("[NDS7 Bus] Read from unknown IO register 0x{:0>7X}\n", address);
@@ -288,6 +299,11 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 
 	case 0x4000004 ... 0x4000007:
 		ppu.writeIO7(address, value);
+		break;
+
+	case 0x40001A0 ... 0x40001BB:
+	case 0x4100010 ... 0x4100014:
+		gamecard.writeIO7(address, value);
 		break;
 
 	case 0x40000B0 ... 0x40000DF:
@@ -354,6 +370,12 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 			log << "[NDS7 Bus] Attempt to switch to Sleep mode\n";
 			hacf();
 		}
+		break;
+	case 0x4000504:
+		SOUNDBIAS = (SOUNDBIAS & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000505:
+		SOUNDBIAS = (SOUNDBIAS & 0x00FF) | ((value & 0xFF) << 8);
 		break;
 
 	default:
