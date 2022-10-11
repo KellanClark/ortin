@@ -504,8 +504,8 @@ void PPU::drawObjects() {
 	auto& matrices = useEngineA ? oamA.objectMatrices : oamB.objectMatrices;
 	const int realLine = currentScanline + 1;
 
-	for (int priority = 0; priority < 4; priority++) {
-		for (int objNum = 0; objNum < 128; objNum++) {
+	for (int priority = 3; priority >= 0; priority--) {
+		for (int objNum = 127; objNum >= 0; objNum--) {
 			Object& obj = objects[objNum];
 			if ((obj.priority != priority) || (obj.objMode == 2))
 				continue;
@@ -516,9 +516,10 @@ void PPU::drawObjects() {
 
 			unsigned int column = obj.objX;
 			unsigned int line = realLine - obj.objY;
-			unsigned int y = (obj.mosaic ? (realLine - (realLine % (engine.objMosV + 1))) : realLine) - obj.objY;
 			unsigned int xSize = objSizeTable[obj.shape][obj.size][0];
 			unsigned int ySize = objSizeTable[obj.shape][obj.size][1];
+			unsigned int y = (obj.mosaic ? (realLine - (realLine % (engine.objMosV + 1))) : realLine) - obj.objY;
+			if (obj.verticalFlip) y = ySize - 1 - y;
 
 			// Initialize affine variables
 			float affX, affY, pa, pb, pc, pd;
@@ -566,7 +567,11 @@ void PPU::drawObjects() {
 					if ((x >= xSize) || (y >= ySize))
 						goto nextPixel;
 				} else {
-					x = relX;
+					if (obj.horizontalFlip) {
+						x = xSize - 1 - relX;
+					} else {
+						x = relX;
+					}
 				}
 
 				if (isBitmap) {
@@ -575,22 +580,23 @@ void PPU::drawObjects() {
 					u32 tileDataAddress;
 					u8 tileData = 0;
 
+					int xMod = x & 7;//obj.horizontalFlip ? (7 - (x % 8)) : (x % 8);
 					if (obj.bpp) { // 8 bits per pixel
 						if (engine.tileObjMapping) { // 1D
-							tileDataAddress = ((obj.tileIndex & ~1) * (32 << engine.tileObjBoundary)) + ((((y / 8) * (xSize / 8)) + (x / 8)) * 64) + ((y & 7) * 8) + (x & 7);
+							tileDataAddress = ((obj.tileIndex & ~1) * (32 << engine.tileObjBoundary)) + ((((y / 8) * (xSize / 8)) + (x / 8)) * 64) + ((y & 7) * 8) + xMod;
 						} else { // 2D
-							tileDataAddress = ((obj.tileIndex & ~1) * 32) + ((((y / 8) * 16) + (x / 8)) * 64) + ((y & 7) * 8) + (x & 7);
+							tileDataAddress = ((obj.tileIndex & ~1) * 32) + ((((y / 8) * 16) + (x / 8)) * 64) + ((y & 7) * 8) + xMod;
 						}
 						tileData = readVram<u8, useEngineA, true>(tileDataAddress);
 					} else { // 4 bits per pixel
 						if (engine.tileObjMapping) { // 1D
-							tileDataAddress = (obj.tileIndex * (32 << engine.tileObjBoundary)) + ((((y / 8) * (xSize / 8)) + (x / 8)) * 32) + ((y & 7) * 4) + ((x & 7) / 2);
+							tileDataAddress = (obj.tileIndex * (32 << engine.tileObjBoundary)) + ((((y / 8) * (xSize / 8)) + (x / 8)) * 32) + ((y & 7) * 4) + (xMod / 2);
 						} else { // 2D
-							tileDataAddress = (obj.tileIndex * 32) + ((((y / 8) * 32) + (x / 8)) * 32) + ((y & 7) * 4) + ((x & 7) / 2);
+							tileDataAddress = (obj.tileIndex * 32) + ((((y / 8) * 32) + (x / 8)) * 32) + ((y & 7) * 4) + (xMod / 2);
 						}
 						tileData = readVram<u8, useEngineA, true>(tileDataAddress);
 
-						if (x & 1) {
+						if (xMod & 1) {
 							tileData >>= 4;
 						} else {
 							tileData &= 0xF;
