@@ -30,7 +30,7 @@ void Timer::updateCounter(int channel) {
 
 void Timer::scheduleTimer(int channel) {
 	auto& tim = timer[channel];
-	shared.addEventAbsolute(((shared.currentTime >> prescalerShifts[tim.prescaler]) + (0x1000 - tim.TIMCNT_L)) << prescalerShifts[tim.prescaler], timer9 ? TIMER_OVERFLOW_9 : TIMER_OVERFLOW_7);
+	shared.addEventAbsolute(((shared.currentTime >> prescalerShifts[tim.prescaler]) + (0x10000 - tim.TIMCNT_L)) << prescalerShifts[tim.prescaler], timer9 ? TIMER_OVERFLOW_9 : TIMER_OVERFLOW_7);
 }
 
 void Timer::checkOverflow() {
@@ -38,7 +38,7 @@ void Timer::checkOverflow() {
 	for (int channel = 0; channel < 4; channel++) {
 		auto& tim = timer[channel];
 		if (!tim.startStop)
-			break;
+			continue;
 
 		if (tim.cascade) {
 			if (overflow) {
