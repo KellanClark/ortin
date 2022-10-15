@@ -38,6 +38,8 @@ BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, Gamecard &gamecard, std:
 	for (int i = toPage(0x3800000); i < toPage(0x4000000); i++) {
 		readTable[i] = writeTable[i] = wram + (((toAddress(i) - 0x3800000)) % 0x10000);
 	}
+
+	POSTFLG = 0;
 }
 
 BusARM7::~BusARM7() {
@@ -274,6 +276,8 @@ u8 BusARM7::readIO(u32 address, bool final) {
 		return (u8)(IF >> 16);
 	case 0x4000217:
 		return (u8)(IF >> 24);
+	case 0x4000300:
+		return POSTFLG;
 	case 0x4000301: // TODO: Is this only allowed in BIOS?
 		return HALTCNT;
 	case 0x4000504:
@@ -359,6 +363,11 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 	case 0x4000217:
 		IF &= ~(value << 24);
 		refreshInterrupts();
+		break;
+	case 0x4000300:
+		if (cpu.reg.R[15] <= 0x7FFF) {
+			POSTFLG |= value & 1;
+		}
 		break;
 	case 0x4000301: // TODO: Is this only allowed in BIOS?
 		HALTCNT = value & 0xC0;

@@ -31,6 +31,8 @@ BusARM9::BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu, 
 	for (int i = toPage(0x2000000); i < toPage(0x3000000); i++) {
 		readTable[i] = readTable8[i] = writeTable[i] = shared.psram + ((toAddress(i) - 0x2000000)) % 0x400000;
 	}
+
+	POSTFLG = 0;
 }
 
 BusARM9::~BusARM9() {
@@ -343,6 +345,8 @@ u8 BusARM9::readIO(u32 address, bool final) {
 		return (u8)(IF >> 16);
 	case 0x4000217:
 		return (u8)(IF >> 24);
+	case 0x4000300:
+		return POSTFLG;
 
 	default:
 		log << fmt::format("[NDS9 Bus] Read from unknown IO register 0x{:0>7X}\n", address);
@@ -425,6 +429,9 @@ void BusARM9::writeIO(u32 address, u8 value, bool final) {
 	case 0x4000217:
 		IF &= ~(value << 24);
 		refreshInterrupts();
+		break;
+	case 0x4000300:
+		POSTFLG = ((POSTFLG | value) & 1) | (value & 2);
 		break;
 
 	default:

@@ -66,6 +66,7 @@ public:
 	bool IME; // NDS7 - 0x4000208
 	u32 IE; // NDS7 - 0x4000210
 	u32 IF; // NDS7 - 0x4000214
+	u8 POSTFLG; // NDS7 - 0x4000300
 	u8 HALTCNT; // NDS7 - 0x4000301
 	u16 SOUNDBIAS; // NDS7 - 0x4000504 (stub)
 

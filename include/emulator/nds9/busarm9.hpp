@@ -60,6 +60,7 @@ public:
 	bool IME; // NDS9 - 0x4000208
 	u32 IE; // NDS9 - 0x4000210
 	u32 IF; // NDS9 - 0x4000214
+	u8 POSTFLG; // NDS9 - 0x4000300
 
 	void requestInterrupt(InterruptType type);
 	void refreshInterrupts();
