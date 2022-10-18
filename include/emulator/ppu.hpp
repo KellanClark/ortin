@@ -140,15 +140,8 @@ public:
 
 	VramInfoEntry vramInfoTable[0x200];
 	u8 *vramPageTable[0x200];
-	u8 *vramA;
-	u8 *vramB;
-	u8 *vramC;
-	u8 *vramD;
-	u8 *vramE;
-	u8 *vramF;
-	u8 *vramG;
-	u8 *vramH;
-	u8 *vramI;
+	u8 *vramAll;
+	u8 *vramA, *vramB, *vramC, *vramD, *vramE, *vramF, *vramG, *vramH, *vramI;
 
 	union {
 		struct {

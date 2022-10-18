@@ -2,33 +2,27 @@
 #include "emulator/ppu.hpp"
 
 #define convertColor(x) ((x) | 0x8000)
+#define VRAM_SIZE ((128 + 128 + 128 + 128 + 64 + 16 + 16 + 32 + 16) * 1024)
 
 static constexpr u32 toPage(u32 address) {
 	return address >> 14; // Pages are 16KB
 }
 
 PPU::PPU(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
-	vramA = new u8[0x20000]; // 128KB
-	vramB = new u8[0x20000]; // 128KB
-	vramC = new u8[0x20000]; // 128KB
-	vramD = new u8[0x20000]; // 128KB
-	vramE = new u8[0x10000]; // 64KB
-	vramF = new u8[0x4000]; // 16KB
-	vramG = new u8[0x4000]; // 16KB
-	vramH = new u8[0x8000]; // 32KB
-	vramI = new u8[0x4000]; // 16KB
+	vramAll = new u8[VRAM_SIZE];
+	vramA = vramAll; // 128KB
+	vramB = vramA + 0x20000; // 128KB
+	vramC = vramB + 0x20000; // 128KB
+	vramD = vramC + 0x20000; // 128KB
+	vramE = vramD + 0x20000; // 64KB
+	vramF = vramE + 0x10000; // 16KB
+	vramG = vramF + 0x4000; // 16KB
+	vramH = vramG + 0x4000; // 32KB
+	vramI = vramH + 0x8000; // 16KB
 }
 
 PPU::~PPU() {
-	delete[] vramA;
-	delete[] vramB;
-	delete[] vramC;
-	delete[] vramD;
-	delete[] vramE;
-	delete[] vramF;
-	delete[] vramG;
-	delete[] vramH;
-	delete[] vramI;
+	delete[] vramAll;
 }
 
 void PPU::reset() {
