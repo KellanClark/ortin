@@ -77,7 +77,7 @@ public:
 				u16 objMode : 2;
 				u16 gfxMode : 2;
 				u16 mosaic : 1;
-				u16 bpp : 1;
+				u16 eightBitColor : 1;
 				u16 shape : 2;
 			};
 			u16 attribute0;
@@ -101,7 +101,7 @@ public:
 			struct {
 				u16 tileIndex : 10;
 				u16 priority : 2;
-				u16 palette : 4;
+				u16 paletteBank : 4;
 			};
 			u16 attribute2;
 		};

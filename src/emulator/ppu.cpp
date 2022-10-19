@@ -575,7 +575,7 @@ void PPU::drawObjects() {
 					u8 tileData = 0;
 
 					int xMod = x & 7;//obj.horizontalFlip ? (7 - (x % 8)) : (x % 8);
-					if (obj.bpp) { // 8 bits per pixel
+					if (obj.eightBitColor) { // 8 bits per pixel
 						if (engine.tileObjMapping) { // 1D
 							tileDataAddress = ((obj.tileIndex & ~1) * (32 << engine.tileObjBoundary)) + ((((y / 8) * (xSize / 8)) + (x / 8)) * 64) + ((y & 7) * 8) + xMod;
 						} else { // 2D
@@ -598,7 +598,7 @@ void PPU::drawObjects() {
 					}
 
 					if (tileData != 0) {
-						engine.objInfoBuf[column].pix = (useEngineA ? engineAObjPalette : engineBObjPalette)[tileData];
+						engine.objInfoBuf[column].pix = (useEngineA ? engineAObjPalette : engineBObjPalette)[((obj.paletteBank << 4) * !obj.eightBitColor) | tileData];
 						engine.objInfoBuf[column].pix.solid = true;
 						engine.objInfoBuf[column].mosaic = obj.mosaic;
 						engine.objInfoBuf[column].priority = priority;
