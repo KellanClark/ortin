@@ -76,6 +76,7 @@ void DebugMenu::logsWindow() {
 	ImGui::Checkbox("Log SPI", &ortin.nds.nds7.spi.logSpi);
 	ImGui::SameLine();
 	ImGui::Checkbox("Log Firmware", &ortin.nds.nds7.spi.firmware.logFirmware);
+	ImGui::Checkbox("Log Gamecard", &ortin.nds.gamecard.logGamecard);
 
 	if (ImGui::TreeNode("ARM9 Disassembler Options")) {
 		ImGui::Checkbox("Show AL Condition", (bool *)&arm9disasm.options.showALCondition);
@@ -390,7 +391,7 @@ void DebugMenu::arm9DebugWindow() {
 		}
 
 		for (int i = 0; i < breakpoints.size(); i++) {
-			if (ImGui::Selectable(fmt::format("0x{:0>7X}", breakpoints[i]).c_str(), selectedBreakpoint == i))
+			if (ImGui::Selectable(fmt::format("{:0>7X}", breakpoints[i]).c_str(), selectedBreakpoint == i))
 				selectedBreakpoint = i;
 		}
 
@@ -673,7 +674,7 @@ void DebugMenu::arm7DebugWindow() {
 		}
 
 		for (int i = 0; i < breakpoints.size(); i++) {
-			if (ImGui::Selectable(fmt::format("0x{:0>7X}", breakpoints[i]).c_str(), selectedBreakpoint == i))
+			if (ImGui::Selectable(fmt::format("{:0>7X}", breakpoints[i]).c_str(), selectedBreakpoint == i))
 				selectedBreakpoint = i;
 		}
 
@@ -769,7 +770,7 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 90> registers9 = {{
+static const std::array<IoRegister, 94> registers9 = {{
 	{"(A) DISPCNT", "LCD Control", 0x4000000, 4, true, true, 23, (IoField[]){
 		{"BG Mode", 0, 3, TEXT_BOX},
 		{"BG0 2D/3D Selection", 3, 1, COMBO, "2D\0"
@@ -1137,6 +1138,14 @@ static const std::array<IoRegister, 90> registers9 = {{
 		{"RESB Release Reset", 29, 1, CHECKBOX},
 		{"Data Direction \"WR\"", 30, 1, CHECKBOX},
 		{"Block Start/Status", 31, 1, CHECKBOX}}},
+	{"Encryption Seed 0 Lower 32bit", "Encryption Seed 0 Lower 32bit", 0x40001B0, 4, false, true, 1, (IoField[]){
+		{"Encryption Seed 0 Lower 32bit", 0, 32, TEXT_BOX_HEX}}},
+	{"Encryption Seed 1 Lower 32bit", "Encryption Seed 1 Lower 32bit", 0x40001B4, 4, false, true, 1, (IoField[]){
+		{"Encryption Seed 1 Lower 32bit", 0, 32, TEXT_BOX_HEX}}},
+	{"Encryption Seed 0 Upper 7bit", "Encryption Seed 0 Upper 7bit", 0x40001B8, 2, false, true, 1, (IoField[]){
+		{"Encryption Seed 0 Upper 7bit", 0, 7, TEXT_BOX_HEX}}},
+	{"Encryption Seed 1 Upper 7bit", "Encryption Seed 1 Upper 7bit", 0x40001BA, 2, false, true, 1, (IoField[]){
+		{"Encryption Seed 1 Upper 7bit", 0, 7, TEXT_BOX_HEX}}},
 	{"IME",	"Interrupt Master Enable", 0x4000208, 4, true, true, 1, (IoField[]){
 		{"Enable Interrupts", 0, 1, CHECKBOX}}},
 	{"IE", "Interrupt Enable", 0x4000210, 4, true, true, 19, (IoField[]){
@@ -1323,7 +1332,7 @@ static const std::array<IoRegister, 90> registers9 = {{
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 90> registerPointers9 = {
+	static std::array<void *, 94> registerPointers9 = {
 		&ortin.nds.ppu.engineA.DISPCNT,
 		&ortin.nds.ppu.DISPSTAT9,
 		&ortin.nds.ppu.VCOUNT,
@@ -1383,6 +1392,10 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 		&ortin.nds.ipc.IPCFIFOCNT9,
 		&ortin.nds.gamecard.AUXSPICNT,
 		&ortin.nds.gamecard.ROMCTRL,
+		&ortin.nds.gamecard.key2Seed0Low7,
+		&ortin.nds.gamecard.key2Seed1Low7,
+		&ortin.nds.gamecard.key2Seed0High7,
+		&ortin.nds.gamecard.key2Seed1High7,
 		&ortin.nds.nds9.IME,
 		&ortin.nds.nds9.IE,
 		&ortin.nds.nds9.IF,
@@ -1536,7 +1549,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
-static const std::array<IoRegister, 38> registers7 = {{
+static const std::array<IoRegister, 42> registers7 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -1711,8 +1724,7 @@ static const std::array<IoRegister, 38> registers7 = {{
 		{"Select Out", 2, 1, CHECKBOX},
 		{"Data Direction", 4, 1, CHECKBOX},
 		{"Clock Direction", 5, 1, CHECKBOX},
-		{"Select Direction", 6, 1, CHECKBOX},
-	}},
+		{"Select Direction", 6, 1, CHECKBOX}}},
 	{"IPCSYNC", "IPC Synchronize Register", 0x4000180, 2, true, true, 4, (IoField[]){
 		{"Data input from IPCSYNC of remote CPU", 0, 4, TEXT_BOX_HEX},
 		{"Data output to IPCSYNC of remote CPU", 8, 4, TEXT_BOX_HEX},
@@ -1760,6 +1772,14 @@ static const std::array<IoRegister, 38> registers7 = {{
 		{"RESB Release Reset", 29, 1, CHECKBOX},
 		{"Data Direction \"WR\"", 30, 1, CHECKBOX},
 		{"Block Start/Status", 31, 1, CHECKBOX}}},
+	{"Encryption Seed 0 Lower 32bit", "Encryption Seed 0 Lower 32bit", 0x40001B0, 4, false, true, 1, (IoField[]){
+		{"Encryption Seed 0 Lower 32bit", 0, 32, TEXT_BOX_HEX}}},
+	{"Encryption Seed 1 Lower 32bit", "Encryption Seed 1 Lower 32bit", 0x40001B4, 4, false, true, 1, (IoField[]){
+		{"Encryption Seed 1 Lower 32bit", 0, 32, TEXT_BOX_HEX}}},
+	{"Encryption Seed 0 Upper 7bit", "Encryption Seed 0 Upper 7bit", 0x40001B8, 2, false, true, 1, (IoField[]){
+		{"Encryption Seed 0 Upper 7bit", 0, 7, TEXT_BOX_HEX}}},
+	{"Encryption Seed 1 Upper 7bit", "Encryption Seed 1 Upper 7bit", 0x40001BA, 2, false, true, 1, (IoField[]){
+		{"Encryption Seed 1 Upper 7bit", 0, 7, TEXT_BOX_HEX}}},
 	{"SPICNT", "SPI Bus Control/Status Register", 0x40001C0, 2, true, true, 7, (IoField[]){
 		{"Baudrate", 0, 2, COMBO, "4MHz/Firmware\0"
 								  "2MHz/Touchscr\0"
@@ -1841,7 +1861,7 @@ static const std::array<IoRegister, 38> registers7 = {{
 }};
 
 void DebugMenu::ioReg7Window() {
-	static std::array<void *, 38> registerPointers7 = {
+	static std::array<void *, 42> registerPointers7 = {
 		&ortin.nds.ppu.DISPSTAT7,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.nds7.dma.channel[0].DMASAD,
@@ -1872,6 +1892,10 @@ void DebugMenu::ioReg7Window() {
 		&ortin.nds.ipc.IPCFIFOCNT7,
 		&ortin.nds.gamecard.AUXSPICNT,
 		&ortin.nds.gamecard.ROMCTRL,
+		&ortin.nds.gamecard.key2Seed0Low7,
+		&ortin.nds.gamecard.key2Seed1Low7,
+		&ortin.nds.gamecard.key2Seed0High7,
+		&ortin.nds.gamecard.key2Seed1High7,
 		&ortin.nds.nds7.spi.SPICNT,
 		&ortin.nds.nds7.spi.SPIDATA,
 		&ortin.nds.nds7.IME,

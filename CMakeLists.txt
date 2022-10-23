@@ -45,7 +45,8 @@ add_executable(Ortin
 	src/emulator/busshared.cpp
 	src/emulator/ipc.cpp
 	src/emulator/ppu.cpp
-	src/emulator/gamecard.cpp
+	src/emulator/cartridge/key1.cpp
+	src/emulator/cartridge/gamecard.cpp
 	src/emulator/dma.cpp
 	src/emulator/timer.cpp
 	src/emulator/nds9/busarm9.cpp

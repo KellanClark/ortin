@@ -8,7 +8,7 @@
 #include "emulator/busshared.hpp"
 #include "emulator/ipc.hpp"
 #include "emulator/ppu.hpp"
-#include "emulator/gamecard.hpp"
+#include "emulator/cartridge/gamecard.hpp"
 #include "emulator/dma.hpp"
 #include "emulator/timer.hpp"
 #include "emulator/nds7/rtc.hpp"

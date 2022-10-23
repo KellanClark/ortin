@@ -3,6 +3,7 @@
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
+#include "key1.hpp"
 
 class Gamecard {
 public:
@@ -10,6 +11,8 @@ public:
 	std::stringstream &log;
 
 	// External Use
+	bool logGamecard;
+
 	Gamecard(BusShared &shared, std::stringstream &log);
 	~Gamecard();
 	void reset();
@@ -18,9 +21,29 @@ public:
 	u64 currentCommand;
 	u32 bytesRead;
 	u32 dataBlockSizeBytes;
+	KEY1 level2;
+	KEY1 level3;
 
 	void sendCommand();
 	void readMoreData();
+
+	// Cartridge State
+	enum {
+		UNENCRYPTED,
+		KEY1,
+		KEY2
+	} encryptionMode;
+	union {
+		struct {
+			u32 manufacturer : 8;
+			u32 cartSize : 8;
+			u32 cartFlags : 16;
+		};
+		u32 chipId;
+	};
+	u8 *romData;
+	size_t romSize;
+	size_t romSizeMax;
 
 	// Memory Interface
 	u8 readIO9(u32 address, bool final);
@@ -61,7 +84,15 @@ public:
 		};
 		u32 ROMCTRL; // NDS9/NDS7 - 0x40001A4
 	};
-	u64 nextCartridgeCommand;
+	u64 nextCartridgeCommand; // NDS9/NDS7 0x40001A8
+	u32 key2Seed0Low9; // NDS9 0x40001B0
+	u32 key2Seed0Low7; // NDS7 0x40001B0
+	u32 key2Seed1Low9; // NDS9 0x40001B4
+	u32 key2Seed1Low7; // NDS7 0x40001B4
+	u16 key2Seed0High9; // NDS9 0x40001B8
+	u16 key2Seed0High7; // NDS7 0x40001B8
+	u16 key2Seed1High9; // NDS9 0x40001BA
+	u16 key2Seed1High7; // NDS7 0x40001BA
 	u32 cartridgeReadData; // NDS9/NDS7 0x4100010
 };
 

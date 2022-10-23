@@ -36,7 +36,7 @@ void NDS::reset() {
 	nds7.refreshWramPages();
 	nds9.refreshVramPages();
 
-	//directBoot();
+	directBoot();
 
 	nds9.delay = 0;
 	nds7.delay = 0;
@@ -73,6 +73,13 @@ void NDS::directBoot() {
 	nds9.write<u16>(0x27FFC80 + 0x5E, 0x0FF0, false); // Touch-screen calibration point (adc.x2,y2) 12bit ADC-position
 	nds9.write<u16>(0x27FFC80 + 0x60, 0x0BF0, false);
 	nds9.write<u16>(0x27FFC80 + 0x62, 0xBF'FF, false); // Touch-screen calibration point (scr.x2,y2) 8bit pixel-position
+
+	// Cartridge State
+	gamecard.encryptionMode = Gamecard::KEY2;
+
+	// IO registers
+	nds9.POSTFLG = 1;
+	nds7.POSTFLG = 1;
 }
 
 void NDS::run() {
@@ -298,6 +305,19 @@ int NDS::loadRom(std::filesystem::path romFilePath) {
 		return error.value();
 	}
 
+	gamecard.romData = romMap.data();
+	gamecard.romSize = romMap.mapped_length();
+	gamecard.romSizeMax = std::bit_ceil(gamecard.romSize);
+
+	// Make a chip ID since I haven't found a database
+	auto romSize = std::min(gamecard.romSizeMax, (size_t)0x100000);
+	gamecard.manufacturer = 0xC2; // Macronix
+	if (romSize <= 128 * 1024 * 1024) { // Between 1MB and 128MB
+		gamecard.cartSize = (romSize >> 20) - 1; // > 00h..7Fh: (N+1)Mbytes
+	} else {
+		gamecard.cartSize = 0x100 - (romSize >> 28); // > F0h..FFh: (100h-N)*256Mbytes?
+	}
+
 	// Fill ROM info struct
 	char name[13] = {0};
 	for (int i = 0; i < 12; i++)
@@ -355,6 +375,10 @@ int NDS::loadBios7(std::filesystem::path bios7FilePath) {
 	memset(nds7.bios, 0, 0x4000);
 	for (int i = 0; i < std::min((u32)bios7Map.size(), (u32)0x4000); i++)
 		nds7.bios[i] = bios7Map[i];
+
+	// The BIOS has a table of values used in KEY1 encryption
+	memcpy(gamecard.level2.keyBuf, &nds7.bios[0x30], 0x1048);
+	memcpy(gamecard.level3.keyBuf, &nds7.bios[0x30], 0x1048);
 
 	log << fmt::format("Loaded NDS7 BIOS {}\n", bios7FilePath.string());
 	return 0;

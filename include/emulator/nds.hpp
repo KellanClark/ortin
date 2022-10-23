@@ -6,7 +6,7 @@
 #include "busshared.hpp"
 #include "ipc.hpp"
 #include "ppu.hpp"
-#include "gamecard.hpp"
+#include "emulator/cartridge/gamecard.hpp"
 #include "emulator/nds9/busarm9.hpp"
 #include "emulator/nds7/busarm7.hpp"
 #include "arm946e/arm946edisasm.hpp"
@@ -89,7 +89,7 @@ public:
 	bool running;
 	bool stepArm9;
 	bool stepArm7;
-	mio::ummap_source romMap;
+	mio::ummap_cow_sink romMap;
 	mio::ummap_source bios9Map;
 	mio::ummap_source bios7Map;
 	mio::ummap_sink firmwareMap;

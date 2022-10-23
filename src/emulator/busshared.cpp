@@ -53,7 +53,7 @@ u8 BusShared::readIO9(u32 address) {
 	case 0x4000247:
 		return WRAMCNT;
 	default:
-		log << fmt::format("[ARM9 Bus][Shared] Read from unknown IO register 0x{:0>8X}\n", address);
+		log << fmt::format("[NDS9 Bus][Shared] Read from unknown IO register 0x{:0>8X}\n", address);
 		return 0;
 	}
 }
@@ -78,7 +78,7 @@ void BusShared::writeIO9(u32 address, u8 value) {
 		addEvent(0, EventType::REFRESH_WRAM_PAGES);
 		break;
 	default:
-		log << fmt::format("[ARM9 Bus][Shared] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
+		log << fmt::format("[NDS9 Bus][Shared] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
 		break;
 	}
 }
@@ -104,7 +104,7 @@ u8 BusShared::readIO7(u32 address) {
 	case 0x4000241:
 		return WRAMCNT;
 	default:
-		log << fmt::format("[ARM7 Bus][Shared] Read from unknown IO register 0x{:0>8X}\n", address);
+		log << fmt::format("[NDS7 Bus][Shared] Read from unknown IO register 0x{:0>8X}\n", address);
 		return 0;
 	}
 }
@@ -121,7 +121,7 @@ void BusShared::writeIO7(u32 address, u8 value) {
 	case 0x4000205:
 		break;
 	default:
-		log << fmt::format("[ARM7 Bus][Shared] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
+		log << fmt::format("[NDS7 Bus][Shared] Write to unknown IO register 0x{:0>8X} with value 0x{:0>8X}\n", address, value);
 		break;
 	}
 }
