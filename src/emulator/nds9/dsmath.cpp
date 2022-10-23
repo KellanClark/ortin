@@ -135,6 +135,8 @@ void DSMath::writeIO9(u32 address, u8 value, bool final) {
 	case 0x4000280:
 		DIVCNT = (DIVCNT & 0xFF00) | ((value & 0x03) << 0);
 		break;
+	case 0x4000281:
+		break;
 	case 0x4000290:
 		DIV_NUMER = (DIV_NUMER & 0xFFFFFFFFFFFFFF00) | ((u64)value << 0);
 		break;
@@ -185,6 +187,8 @@ void DSMath::writeIO9(u32 address, u8 value, bool final) {
 		break;
 	case 0x40002B0:
 		SQRTCNT = (SQRTCNT & 0xFF00) | ((value & 0x01) << 0);
+		break;
+	case 0x40002B1:
 		break;
 	case 0x40002B8:
 		SQRT_PARAM = (SQRT_PARAM & 0xFFFFFFFFFFFFFF00) | ((u64)value << 0);
