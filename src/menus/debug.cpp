@@ -1036,9 +1036,9 @@ static const std::array<IoRegister, 94> registers9 = {{
 											 "F/1024\0\0"},
 		{"Timer IRQ Enable", 6, 1, CHECKBOX},
 		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
-	{"TM1CNT_L", "Timer 0 Counter/Reload", 0x4000104, 2, true, true, 1, (IoField[]){
+	{"TM1CNT_L", "Timer 1 Counter/Reload", 0x4000104, 2, true, true, 1, (IoField[]){
 		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
-	{"TM1CNT_H", "Timer 0 Control", 0x4000106, 2, true, true, 4, (IoField[]){
+	{"TM1CNT_H", "Timer 1 Control", 0x4000106, 2, true, true, 4, (IoField[]){
 		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
 											 "F/64\0"
 											 "F/256\0"
@@ -1046,9 +1046,9 @@ static const std::array<IoRegister, 94> registers9 = {{
 		{"Count-up Timing", 2, 1, CHECKBOX},
 		{"Timer IRQ Enable", 6, 1, CHECKBOX},
 		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
-	{"TM2CNT_L", "Timer 0 Counter/Reload", 0x4000108, 2, true, true, 1, (IoField[]){
+	{"TM2CNT_L", "Timer 2 Counter/Reload", 0x4000108, 2, true, true, 1, (IoField[]){
 		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
-	{"TM2CNT_H", "Timer 0 Control", 0x400010A, 2, true, true, 4, (IoField[]){
+	{"TM2CNT_H", "Timer 2 Control", 0x400010A, 2, true, true, 4, (IoField[]){
 		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
 											 "F/64\0"
 											 "F/256\0"
@@ -1056,9 +1056,9 @@ static const std::array<IoRegister, 94> registers9 = {{
 		{"Count-up Timing", 2, 1, CHECKBOX},
 		{"Timer IRQ Enable", 6, 1, CHECKBOX},
 		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
-	{"TM3CNT_L", "Timer 0 Counter/Reload", 0x400010C, 2, true, true, 1, (IoField[]){
+	{"TM3CNT_L", "Timer 3 Counter/Reload", 0x400010C, 2, true, true, 1, (IoField[]){
 		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
-	{"TM3CNT_H", "Timer 0 Control", 0x400010E, 2, true, true, 4, (IoField[]){
+	{"TM3CNT_H", "Timer 4 Control", 0x400010E, 2, true, true, 4, (IoField[]){
 		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
 											 "F/64\0"
 											 "F/256\0"
@@ -1549,7 +1549,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
-static const std::array<IoRegister, 42> registers7 = {{
+static const std::array<IoRegister, 130> registers7 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -1657,9 +1657,9 @@ static const std::array<IoRegister, 42> registers7 = {{
 											 "F/1024\0\0"},
 		{"Timer IRQ Enable", 6, 1, CHECKBOX},
 		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
-	{"TM1CNT_L", "Timer 0 Counter/Reload", 0x4000104, 2, true, true, 1, (IoField[]){
+	{"TM1CNT_L", "Timer 1 Counter/Reload", 0x4000104, 2, true, true, 1, (IoField[]){
 		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
-	{"TM1CNT_H", "Timer 0 Control", 0x4000106, 2, true, true, 4, (IoField[]){
+	{"TM1CNT_H", "Timer 1 Control", 0x4000106, 2, true, true, 4, (IoField[]){
 		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
 											 "F/64\0"
 											 "F/256\0"
@@ -1667,9 +1667,9 @@ static const std::array<IoRegister, 42> registers7 = {{
 		{"Count-up Timing", 2, 1, CHECKBOX},
 		{"Timer IRQ Enable", 6, 1, CHECKBOX},
 		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
-	{"TM2CNT_L", "Timer 0 Counter/Reload", 0x4000108, 2, true, true, 1, (IoField[]){
+	{"TM2CNT_L", "Timer 2 Counter/Reload", 0x4000108, 2, true, true, 1, (IoField[]){
 		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
-	{"TM2CNT_H", "Timer 0 Control", 0x400010A, 2, true, true, 4, (IoField[]){
+	{"TM2CNT_H", "Timer 2 Control", 0x400010A, 2, true, true, 4, (IoField[]){
 		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
 											 "F/64\0"
 											 "F/256\0"
@@ -1677,9 +1677,9 @@ static const std::array<IoRegister, 42> registers7 = {{
 		{"Count-up Timing", 2, 1, CHECKBOX},
 		{"Timer IRQ Enable", 6, 1, CHECKBOX},
 		{"Timer Start/Stop", 7, 1, CHECKBOX}}},
-	{"TM3CNT_L", "Timer 0 Counter/Reload", 0x400010C, 2, true, true, 1, (IoField[]){
+	{"TM3CNT_L", "Timer 3 Counter/Reload", 0x400010C, 2, true, true, 1, (IoField[]){
 		{"Counter(R)/Reload(W)", 0, 16, TEXT_BOX_HEX}}},
-	{"TM3CNT_H", "Timer 0 Control", 0x400010E, 2, true, true, 4, (IoField[]){
+	{"TM3CNT_H", "Timer 3 Control", 0x400010E, 2, true, true, 4, (IoField[]){
 		{"Prescaler Selection", 0, 2, COMBO, "F/1\0"
 											 "F/64\0"
 											 "F/256\0"
@@ -1858,10 +1858,373 @@ static const std::array<IoRegister, 42> registers7 = {{
 										 "Enter GBA Mode\0"
 										 "Halt\0"
 										 "Sleep\0\0"}}},
+	{"SOUND0CNT", "Sound Channel 0 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND0SAD", "Sound Channel 0 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND0TMR", "Sound Channel 0 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND0PNT", "Sound Channel 0 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND0LEN", "Sound Channel 0 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUND1CNT", "Sound Channel 1 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND1SAD", "Sound Channel 1 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND1TMR", "Sound Channel 1 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND1PNT", "Sound Channel 1 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND1LEN", "Sound Channel 1 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUND2CNT", "Sound Channel 2 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND2SAD", "Sound Channel 2 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND2TMR", "Sound Channel 2 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND2PNT", "Sound Channel 2 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND2LEN", "Sound Channel 2 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUND3CNT", "Sound Channel 3 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND3SAD", "Sound Channel 3 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND3TMR", "Sound Channel 3 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND3PNT", "Sound Channel 3 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND3LEN", "Sound Channel 3 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUND4CNT", "Sound Channel 4 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND4SAD", "Sound Channel 4 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND4TMR", "Sound Channel 4 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND4PNT", "Sound Channel 4 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND4LEN", "Sound Channel 4 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUND5CNT", "Sound Channel 5 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND5SAD", "Sound Channel 5 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND5TMR", "Sound Channel 5 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND5PNT", "Sound Channel 5 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND5LEN", "Sound Channel 5 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUND6CNT", "Sound Channel 6 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND6SAD", "Sound Channel 6 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND6TMR", "Sound Channel 6 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND6PNT", "Sound Channel 6 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND6LEN", "Sound Channel 6 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUND7CNT", "Sound Channel 7 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND7SAD", "Sound Channel 7 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND7TMR", "Sound Channel 7 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND7PNT", "Sound Channel 7 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND7LEN", "Sound Channel 7 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUND8CNT", "Sound Channel 8 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND8SAD", "Sound Channel 8 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND8TMR", "Sound Channel 8 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND8PNT", "Sound Channel 8 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND8LEN", "Sound Channel 8 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUND9CNT", "Sound Channel 9 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUND9SAD", "Sound Channel 9 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUND9TMR", "Sound Channel 9 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND9PNT", "Sound Channel 9 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUND9LEN", "Sound Channel 9 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUNDACNT", "Sound Channel 10 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUNDASAD", "Sound Channel 10 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUNDATMR", "Sound Channel 10 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDAPNT", "Sound Channel 10 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDALEN", "Sound Channel 10 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUNDBCNT", "Sound Channel 11 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUNDBSAD", "Sound Channel 11 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUNDBTMR", "Sound Channel 11 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDBPNT", "Sound Channel 11 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDBLEN", "Sound Channel 11 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUNDCCNT", "Sound Channel 12 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUNDCSAD", "Sound Channel 12 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUNDCTMR", "Sound Channel 12 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDCPNT", "Sound Channel 12 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDCLEN", "Sound Channel 12 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUNDDCNT", "Sound Channel 13 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUNDDSAD", "Sound Channel 13 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUNDDTMR", "Sound Channel 13 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDDPNT", "Sound Channel 13 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDDLEN", "Sound Channel 13 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUNDECNT", "Sound Channel 14 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUNDESAD", "Sound Channel 14 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUNDETMR", "Sound Channel 14 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDEPNT", "Sound Channel 14 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDELEN", "Sound Channel 14 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUNDFCNT", "Sound Channel 15 Control Register", 0x4000400, 4, true, true, 8, (IoField[]){
+		{"Volume Mul", 0, 7, TEXT_BOX},
+		{"Volume Div", 8, 2, COMBO, "Normal\0"
+									"Div2\0"
+									"Div4\0"
+									"Div16\0\0"},
+		{"Hold", 15, 1, CHECKBOX},
+		{"Panning", 16, 7, TEXT_BOX},
+		{"Wave Duty", 24, 3, TEXT_BOX},
+		{"Repeat Mode", 27, 2, TEXT_BOX},
+		{"Format", 29, 2, TEXT_BOX},
+		{"Start/Status", 31, 1, CHECKBOX}}},
+	{"SOUNDFSAD", "Sound Channel 15 Data Source Register", 0x4000404, 4, false, true, 1, (IoField[]){
+		{"Source Address", 0, 27, TEXT_BOX_HEX}}},
+	{"SOUNDFTMR", "Sound Channel 15 Timer Register", 0x4000408, 2, false, true, 1, (IoField[]){
+		{"Timer Value, Sample frequency", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDFPNT", "Sound Channel 15 Loopstart Register", 0x400040A, 2, false, true, 1, (IoField[]){
+		{"Loop Start, Sample loop start position", 0, 16, TEXT_BOX_HEX}}},
+	{"SOUNDFLEN", "Sound Channel 15 Length Register", 0x400040C, 4, false, true, 1, (IoField[]){
+		{"Sound length", 0, 22, TEXT_BOX_HEX}}},
+	{"SOUNDCNT", "Sound Control Register", 0x4000500, 2, true, true, 6, (IoField[]){
+		{"Master Volume", 0, 7, TEXT_BOX},
+		{"Left Output from", 8, 2, COMBO, "Left Mixer\0"
+										  "Ch1\0"
+										  "Ch3\0"
+										  "Ch1+Ch3\0\0"},
+		{"Right Output from", 10, 2, COMBO, "Right Mixer\0"
+											"Ch1\0"
+											"Ch3\0"
+											"Ch1+Ch3\0\0"},
+		{"Output Ch1 to Mixer", 12, 1, CHECKBOX},
+		{"Output Ch3 to Mixer", 13, 1, CHECKBOX},
+		{"Master Enable", 15, 1, CHECKBOX}}},
+	{"SOUNDBIAS", "Sound Bias Register", 0x4000504, 2, true, true, 1, (IoField[]){
+		{"Sound Bias", 0, 10, TEXT_BOX_HEX}}},
+	{"SNDCAP0CNT", "Sound Capture 0 Control Register", 0x4000508, 1, true, true, 5, (IoField[]){
+		{"Control of Associated Sound Channels", 0, 1, COMBO, "Output Sound Channel 1\0"
+															  "Add to Channel 0\0\0"},
+		{"Capture Source Selection", 1, 1, COMBO, "Left Mixer\0"
+												  "Channel 0/Bugged\0\0"},
+		{"Capture Repeat", 2, 1, COMBO, "Loop\0"
+										"One-shot\0\0"},
+		{"Capture Format", 3, 1, COMBO, "PCM16\0"
+										"PCM8\0\0"},
+		{"Capture Start/Status", 7, 1, CHECKBOX}}},
+	{"SNDCAP1CNT", "Sound Capture 1 Control Register", 0x4000509, 1, true, true, 5, (IoField[]){
+		{"Control of Associated Sound Channels", 0, 1, COMBO, "Output Sound Channel 3\0"
+															  "Add to Channel 2\0\0"},
+		{"Capture Source Selection", 1, 1, COMBO, "Right Mixer\0"
+												  "Channel 2/Bugged\0\0"},
+		{"Capture Repeat", 2, 1, COMBO, "Loop\0"
+										"One-shot\0\0"},
+		{"Capture Format", 3, 1, COMBO, "PCM16\0"
+										"PCM8\0\0"},
+		{"Capture Start/Status", 7, 1, CHECKBOX}}},
+	{"SNDCAP0DAD", "Sound Capture 0 Destination Address", 0x4000510, 4, true, true, 1, (IoField[]){
+		{"Destination address", 0, 27, TEXT_BOX_HEX}}},
+	{"SNDCAP0LEN", "Sound Capture 0 Length", 0x4000514, 2, false, true, 1, (IoField[]){
+		{"Buffer length", 0, 16, TEXT_BOX_HEX}}},
+	{"SNDCAP1DAD", "Sound Capture 1 Destination Address", 0x4000518, 4, true, true, 1, (IoField[]){
+		{"Destination address", 0, 27, TEXT_BOX_HEX}}},
+	{"SNDCAP1LEN", "Sound Capture 1 Length", 0x400051C, 2, false, true, 1, (IoField[]){
+		{"Buffer length", 0, 16, TEXT_BOX_HEX}}},
 }};
 
 void DebugMenu::ioReg7Window() {
-	static std::array<void *, 42> registerPointers7 = {
+	static std::array<void *, 130> registerPointers7 = {
 		&ortin.nds.ppu.DISPSTAT7,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.nds7.dma.channel[0].DMASAD,
@@ -1903,7 +2266,95 @@ void DebugMenu::ioReg7Window() {
 		&ortin.nds.nds7.IF,
 		&ortin.nds.ppu.VRAMSTAT,
 		&ortin.nds.shared.WRAMCNT,
-		&ortin.nds.nds7.HALTCNT
+		&ortin.nds.nds7.HALTCNT,
+		&ortin.nds.nds7.apu.channel[0].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[0].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[0].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[0].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[0].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[1].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[1].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[1].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[1].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[1].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[2].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[2].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[2].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[2].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[2].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[3].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[3].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[3].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[3].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[3].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[4].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[4].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[4].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[4].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[4].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[5].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[5].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[5].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[5].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[5].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[6].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[6].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[6].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[6].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[6].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[7].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[7].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[7].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[7].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[7].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[8].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[8].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[8].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[8].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[8].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[9].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[9].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[9].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[9].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[9].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[10].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[10].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[10].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[10].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[10].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[11].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[11].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[11].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[11].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[11].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[12].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[12].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[12].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[12].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[12].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[13].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[13].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[13].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[13].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[13].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[14].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[14].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[14].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[14].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[14].SOUNDLEN,
+		&ortin.nds.nds7.apu.channel[15].SOUNDCNT,
+		&ortin.nds.nds7.apu.channel[15].SOUNDSAD,
+		&ortin.nds.nds7.apu.channel[15].SOUNDTMR,
+		&ortin.nds.nds7.apu.channel[15].SOUNDPNT,
+		&ortin.nds.nds7.apu.channel[15].SOUNDLEN,
+		&ortin.nds.nds7.apu.SOUNDCNT,
+		&ortin.nds.nds7.apu.SOUNDBIAS,
+		&ortin.nds.nds7.apu.SNDCAP0CNT,
+		&ortin.nds.nds7.apu.SNDCAP1CNT,
+		&ortin.nds.nds7.apu.SNDCAP0DAD,
+		&ortin.nds.nds7.apu.SNDCAP0LEN,
+		&ortin.nds.nds7.apu.SNDCAP1DAD,
+		&ortin.nds.nds7.apu.SNDCAP1LEN
 	};
 
 	static int selected = 0;

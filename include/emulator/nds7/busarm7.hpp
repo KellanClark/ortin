@@ -13,6 +13,7 @@
 #include "emulator/timer.hpp"
 #include "emulator/nds7/rtc.hpp"
 #include "emulator/nds7/spi.hpp"
+#include "emulator/nds7/apu.hpp"
 #include "arm7tdmi/arm7tdmi.hpp"
 
 class BusARM7 {
@@ -26,6 +27,7 @@ public:
 	Timer timer;
 	RTC rtc;
 	SPI spi;
+	APU apu;
 	u8 *wram;
 	u8 *bios;
 
@@ -68,7 +70,6 @@ public:
 	u32 IF; // NDS7 - 0x4000214
 	u8 POSTFLG; // NDS7 - 0x4000300
 	u8 HALTCNT; // NDS7 - 0x4000301
-	u16 SOUNDBIAS; // NDS7 - 0x4000504 (stub)
 
 	void requestInterrupt(InterruptType type);
 	void refreshInterrupts();
