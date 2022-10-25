@@ -105,10 +105,18 @@ void Gamecard::readMoreData() {
 			cartridgeReadData = chipId;
 			break;
 		case 0x2: { // Get Secure Area Block
-			if ((bytesRead % 0x218) >= 0x200) {
-				cartridgeReadData = 0;
+			if (cartFlags2 & 0x80) {
+				if ((bytesRead % 0x218) >= 0x200) {
+					cartridgeReadData = 0;
+				} else {
+					cartridgeReadData = *(u32 *)(romData + ((currentCommand >> 32) & 0xF000) + (bytesRead % 0x218) + ((bytesRead / 0x218) * 0x200));
+				}
 			} else {
-				cartridgeReadData = *(u32 *)(romData + ((currentCommand >> 32) & 0xF000) + (bytesRead % 0x218) + ((bytesRead / 0x218) * 0x200));
+				if ((bytesRead % 0x1018) >= 0x1000) {
+					cartridgeReadData = 0;
+				} else {
+					cartridgeReadData = *(u32 *)(romData + ((currentCommand >> 32) & 0xF000) + (bytesRead % 0x1018));
+				}
 			}
 			} break;
 		case 0x4: // Activate KEY2 Encryption Mode

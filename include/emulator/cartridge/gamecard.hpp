@@ -37,7 +37,8 @@ public:
 		struct {
 			u32 manufacturer : 8;
 			u32 cartSize : 8;
-			u32 cartFlags : 16;
+			u32 cartFlags1 : 8;
+			u32 cartFlags2 : 8;
 		};
 		u32 chipId;
 	};

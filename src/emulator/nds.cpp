@@ -36,7 +36,7 @@ void NDS::reset() {
 	nds7.refreshWramPages();
 	nds9.refreshVramPages();
 
-	directBoot();
+	//directBoot();
 
 	nds9.delay = 0;
 	nds7.delay = 0;
@@ -317,6 +317,8 @@ int NDS::loadRom(std::filesystem::path romFilePath) {
 	} else {
 		gamecard.cartSize = 0x100 - (romSize >> 28); // > F0h..FFh: (100h-N)*256Mbytes?
 	}
+	gamecard.cartFlags1 = 0x00;
+	gamecard.cartFlags2 = 0x00;
 
 	// Fill ROM info struct
 	char name[13] = {0};
