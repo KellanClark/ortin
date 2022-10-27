@@ -169,6 +169,11 @@ void NDS::run() {
 				case REFRESH_VRAM_PAGES:
 					ppu.refreshVramPages();
 					nds9.refreshVramPages();
+					nds7.refreshVramPages();
+					break;
+				case REFRESH_ROM_PAGES:
+					nds9.refreshRomPages();
+					nds7.refreshRomPages();
 					break;
 				case SPI_FINISHED: nds7.requestInterrupt(BusARM7::INT_SPI); break;
 				case RTC_REFRESH: nds7.rtc.refresh<true>(); break;

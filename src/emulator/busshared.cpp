@@ -67,10 +67,12 @@ void BusShared::writeIO9(u32 address, u8 value) {
 		KEYCNT9 = (KEYCNT9 & 0x00FF) | ((value & 0xC3) << 8);
 		break;
 	case 0x4000204:
-		EXMEMCNT = (EXMEMCNT & 0xFF00) | ((value & 0x80) << 0);
+		EXMEMCNT = (EXMEMCNT & 0xFF00) | ((value & 0xFF) << 0);
+		EXMEMSTAT = (EXMEMSTAT & 0x007F) | (EXMEMCNT & 0xFF80);
 		break;
 	case 0x4000205:
-		EXMEMCNT = (EXMEMCNT & 0x00FF) | (((value & 0x08) | 0x20) << 8);
+		EXMEMCNT = (EXMEMCNT & 0x00FF) | (((value & 0xC8) | 0x20) << 8);
+		EXMEMSTAT = (EXMEMSTAT & 0x007F) | (EXMEMCNT & 0xFF80);
 		break;
 	case 0x4000247:
 		WRAMCNT = value & 0x03;
@@ -98,9 +100,9 @@ u8 BusShared::readIO7(u32 address) {
 	case 0x4000137:
 		return (u8)(EXTKEYIN >> 8);
 	case 0x4000204:
-		return (u8)EXMEMCNT;
+		return (u8)EXMEMSTAT;
 	case 0x4000205:
-		return (u8)(EXMEMCNT >> 8);
+		return (u8)(EXMEMSTAT >> 8);
 	case 0x4000241:
 		return WRAMCNT;
 	default:
@@ -118,6 +120,8 @@ void BusShared::writeIO7(u32 address, u8 value) {
 		KEYCNT7 = (KEYCNT7 & 0x00FF) | ((value & 0xC3) << 8);
 		break;
 	case 0x4000204:
+		EXMEMSTAT = (EXMEMCNT & 0xFF80) | ((value & 0x7F) << 0);
+		break;
 	case 0x4000205:
 		break;
 	default:

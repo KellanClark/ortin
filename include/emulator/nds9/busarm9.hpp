@@ -73,6 +73,7 @@ public:
 
 	void refreshWramPages();
 	void refreshVramPages();
+	void refreshRomPages();
 
 	void hacf(); // TODO: Document this interface
 	template <typename T, bool code> T read(u32 address, bool sequential);

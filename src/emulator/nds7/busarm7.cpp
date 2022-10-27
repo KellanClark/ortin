@@ -117,6 +117,44 @@ void BusARM7::refreshWramPages() {
 	}
 }
 
+void BusARM7::refreshVramPages() {
+	// Clear existing entries
+	for (int i = toPage(0x6000000); i < toPage(0x6040000); i++)
+		readTable[i] = nullptr;
+
+	// Hopefully temporary
+	if ((ppu.vramCMapped7 != ppu.vramDMapped7) || (ppu.vramCOffset != ppu.vramDOffset)) { // No overlap
+		if (ppu.vramCMapped7) {
+			if (ppu.vramCOffset) {
+				for (int i = 0; i < toPage(0x20000); i++)
+					readTable[toPage(0x6020000) + i] = ppu.vramC + toAddress(i);
+			} else {
+				for (int i = 0; i < toPage(0x20000); i++)
+					readTable[toPage(0x6000000) + i] = ppu.vramC + toAddress(i);
+			}
+		}
+
+		if (ppu.vramDMapped7) {
+			if (ppu.vramDOffset) {
+				for (int i = 0; i < toPage(0x20000); i++)
+					readTable[toPage(0x6020000) + i] = ppu.vramD + toAddress(i);
+			} else {
+				for (int i = 0; i < toPage(0x20000); i++)
+					readTable[toPage(0x6000000) + i] = ppu.vramD + toAddress(i);
+			}
+		}
+	}
+
+	// Mirror and copy to write table
+	for (int i = toPage(0x6000000); i < toPage(0x7000000); i++)
+		//printf("0x%07X\n", toAddress(i & toPage(0xF03FFFF)));
+		readTable[i] = writeTable[i] = readTable[i & toPage(0xF03FFFF)];
+}
+
+void BusARM7::refreshRomPages() {
+	//
+}
+
 void BusARM7::hacf() {
 	shared.addEvent(0, EventType::STOP);
 }
@@ -151,7 +189,7 @@ T BusARM7::read(u32 address, bool sequential) {
 				val = readIO(alignedAddress, true);
 			}
 			break;
-		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap ... unless I don't feel like doing the page table
+		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap
 			offset = alignedAddress & 0x1FFFF;
 
 			if (ppu.vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu.vramCOffset & 1)))
@@ -293,6 +331,7 @@ u8 BusARM7::readIO(u32 address, bool final) {
 void BusARM7::writeIO(u32 address, u8 value, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
+	case 0x4000204: case 0x4000205:
 		shared.writeIO7(address, value);
 		break;
 

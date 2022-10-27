@@ -80,6 +80,8 @@ public:
 	u8 *writeTable[0x4000];
 
 	void refreshWramPages();
+	void refreshVramPages();
+	void refreshRomPages();
 
 	void hacf();
 	template <typename T, bool code> T read(u32 address, bool sequential);

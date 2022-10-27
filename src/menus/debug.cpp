@@ -770,7 +770,7 @@ struct IoRegister {
 	IoField *fields;
 };
 
-static const std::array<IoRegister, 94> registers9 = {{
+static const std::array<IoRegister, 95> registers9 = {{
 	{"(A) DISPCNT", "LCD Control", 0x4000000, 4, true, true, 23, (IoField[]){
 		{"BG Mode", 0, 3, TEXT_BOX},
 		{"BG0 2D/3D Selection", 3, 1, COMBO, "2D\0"
@@ -1146,7 +1146,30 @@ static const std::array<IoRegister, 94> registers9 = {{
 		{"Encryption Seed 0 Upper 7bit", 0, 7, TEXT_BOX_HEX}}},
 	{"Encryption Seed 1 Upper 7bit", "Encryption Seed 1 Upper 7bit", 0x40001BA, 2, false, true, 1, (IoField[]){
 		{"Encryption Seed 1 Upper 7bit", 0, 7, TEXT_BOX_HEX}}},
-	{"IME",	"Interrupt Master Enable", 0x4000208, 4, true, true, 1, (IoField[]){
+	{"EXMEMCNT","External Memory Control", 0x4000204, 2, true, true, 8, (IoField[]){
+		{"32-pin GBA Slot SRAM Access Time", 0, 2, COMBO, "10 cycles\0"
+														  "8 cycles\0"
+														  "6 cycles\0"
+														  "18 cycles\0\0"},
+		{"32-pin GBA Slot ROM 1st Access Time", 2, 2, COMBO, "10 cycles\0"
+															 "8 cycles\0"
+															 "6 cycles\0"
+															 "18 cycles\0\0"},
+		{"32-pin GBA Slot ROM 2nd Access Time", 4, 1, COMBO, "6 cycles\0"
+															 "4 cycles\0\0"},
+		{"32-pin GBA Slot PHI-pin out", 5, 2, COMBO, "Low\0"
+													 "4.19MHz\0"
+													 "8.38MHz\0"
+													 "16.76MHz\0\0"},
+		{"32-pin GBA Slot Access Rights", 7, 1, COMBO, "ARM9\0"
+													   "ARM7\0\0"},
+		{"17-pin NDS Slot Access Rights", 11, 1, COMBO, "ARM9\0"
+														"ARM7\0\0"},
+		{"Main Memory Interface Mode Switch", 14, 1, COMBO, "Async/GBA/Reserved\0"
+															"Synchronous\0\0"},
+		{"Main Memory Access Priority", 15, 1, COMBO, "ARM9 Priority\0"
+													  "ARM7 Priority\0\0"}}},
+	{"IME", "Interrupt Master Enable", 0x4000208, 4, true, true, 1, (IoField[]){
 		{"Enable Interrupts", 0, 1, CHECKBOX}}},
 	{"IE", "Interrupt Enable", 0x4000210, 4, true, true, 19, (IoField[]){
 		{"LCD V-BLank", 0, 1, CHECKBOX},
@@ -1332,7 +1355,7 @@ static const std::array<IoRegister, 94> registers9 = {{
 }};
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
-	static std::array<void *, 94> registerPointers9 = {
+	static std::array<void *, 95> registerPointers9 = {
 		&ortin.nds.ppu.engineA.DISPCNT,
 		&ortin.nds.ppu.DISPSTAT9,
 		&ortin.nds.ppu.VCOUNT,
@@ -1396,6 +1419,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 		&ortin.nds.gamecard.key2Seed1Low7,
 		&ortin.nds.gamecard.key2Seed0High7,
 		&ortin.nds.gamecard.key2Seed1High7,
+		&ortin.nds.shared.EXMEMCNT,
 		&ortin.nds.nds9.IME,
 		&ortin.nds.nds9.IE,
 		&ortin.nds.nds9.IF,
@@ -1549,7 +1573,7 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	ImGui::End();
 }
 
-static const std::array<IoRegister, 130> registers7 = {{
+static const std::array<IoRegister, 131> registers7 = {{
 	{"DISPSTAT", "Display Status and Interrupt Control", 0x4000004, 2, true, true, 7, (IoField[]){
 		{"V-Blank", 0, 1, CHECKBOX},
 		{"H-Blank", 1, 1, CHECKBOX},
@@ -1797,6 +1821,29 @@ static const std::array<IoRegister, 130> registers7 = {{
 		{"SPI Bus Enable", 15, 1, CHECKBOX}}},
 	{"SPIDATA", "SPI Bus Data/Strobe Register", 0x40001C2, 2, true, true, 1, (IoField[]){
 		{"Data", 0, 8, TEXT_BOX_HEX}}},
+	{"EXMEMSTAT","External Memory Status", 0x4000204, 2, true, true, 8, (IoField[]){
+		{"32-pin GBA Slot SRAM Access Time", 0, 2, COMBO, "10 cycles\0"
+														  "8 cycles\0"
+														  "6 cycles\0"
+														  "18 cycles\0\0"},
+		{"32-pin GBA Slot ROM 1st Access Time", 2, 2, COMBO, "10 cycles\0"
+															 "8 cycles\0"
+															 "6 cycles\0"
+															 "18 cycles\0\0"},
+		{"32-pin GBA Slot ROM 2nd Access Time", 4, 1, COMBO, "6 cycles\0"
+															 "4 cycles\0\0"},
+		{"32-pin GBA Slot PHI-pin out", 5, 2, COMBO, "Low\0"
+													 "4.19MHz\0"
+													 "8.38MHz\0"
+													 "16.76MHz\0\0"},
+		{"32-pin GBA Slot Access Rights", 7, 1, COMBO, "ARM9\0"
+													   "ARM7\0\0"},
+		{"17-pin NDS Slot Access Rights", 11, 1, COMBO, "ARM9\0"
+														"ARM7\0\0"},
+		{"Main Memory Interface Mode Switch", 14, 1, COMBO, "Async/GBA/Reserved\0"
+															"Synchronous\0\0"},
+		{"Main Memory Access Priority", 15, 1, COMBO, "ARM9 Priority\0"
+													  "ARM7 Priority\0\0"}}},
 	{"IME", "Interrupt Master Enable", 0x4000208, 4, true, true, 1, (IoField[]){
 		{"Enable Interrupts", 0, 1, CHECKBOX}}},
 	{"IE", "Interrupt Enable", 0x4000210, 4, true, true, 22, (IoField[]){
@@ -2224,7 +2271,7 @@ static const std::array<IoRegister, 130> registers7 = {{
 }};
 
 void DebugMenu::ioReg7Window() {
-	static std::array<void *, 130> registerPointers7 = {
+	static std::array<void *, 131> registerPointers7 = {
 		&ortin.nds.ppu.DISPSTAT7,
 		&ortin.nds.ppu.VCOUNT,
 		&ortin.nds.nds7.dma.channel[0].DMASAD,
@@ -2261,6 +2308,7 @@ void DebugMenu::ioReg7Window() {
 		&ortin.nds.gamecard.key2Seed1High7,
 		&ortin.nds.nds7.spi.SPICNT,
 		&ortin.nds.nds7.spi.SPIDATA,
+		&ortin.nds.shared.EXMEMSTAT,
 		&ortin.nds.nds7.IME,
 		&ortin.nds.nds7.IE,
 		&ortin.nds.nds7.IF,

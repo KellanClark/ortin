@@ -145,6 +145,10 @@ void BusARM9::refreshVramPages() {
 		writeTable[i] = readTable[i];
 }
 
+void BusARM9::refreshRomPages() {
+	//
+}
+
 void BusARM9::hacf() {
 	shared.addEvent(0, EventType::STOP);
 }

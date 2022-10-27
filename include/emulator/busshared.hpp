@@ -17,6 +17,7 @@ enum EventType {
 	PPU_HBLANK,
 	REFRESH_WRAM_PAGES,
 	REFRESH_VRAM_PAGES,
+	REFRESH_ROM_PAGES,
 	SPI_FINISHED,
 	RTC_REFRESH,
 	SERIAL_INTERRUPT,
@@ -48,13 +49,26 @@ public:
 	u16 EXTKEYIN; // NDS7 - 0x4000136
 	union {
 		struct {
-			u16 : 7; // Handled in separate busses
+			u16 gbaSramWaitstates9 : 2;
+			u16 gbaNonsequentialWaitstates9 : 2;
+			u16 gbaSequentialWaitstates9 : 1;
+			u16 gbaPhi9 : 2;
 			u16 gbaSlotAccess : 1;
 			u16 : 3;
 			u16 ndsSlotAccess : 1;
 			u16 : 4; // I am *not* handling memory access conflicts
 		};
-		u16 EXMEMCNT; // NDS9 - 0x4000204 aka. EXMEMSTAT NDS7 - 0x4000204
+		u16 EXMEMCNT; // NDS9 - 0x4000204
+	};
+	union {
+		struct {
+			u16 gbaSramWaitstates7 : 2;
+			u16 gbaNonsequentialWaitstates7 : 2;
+			u16 gbaSequentialWaitstates7 : 1;
+			u16 gbaPhi7 : 2;
+			u16 : 9;
+		};
+		u16 EXMEMSTAT; // NDS7 - 0x4000204
 	};
 	u8 WRAMCNT; // NDS9 - 0x4000247 aka. WRAMSTAT NDS7 - 0x4000241
 

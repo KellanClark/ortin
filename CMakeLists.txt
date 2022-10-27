@@ -54,6 +54,7 @@ add_executable(Ortin
 	src/emulator/nds7/busarm7.cpp
 	src/emulator/nds7/rtc.cpp
 	src/emulator/nds7/spi.cpp
+	src/emulator/nds7/apu.cpp
 )
 
 target_compile_definitions(fmt PUBLIC FMT_EXCEPTIONS=0)
