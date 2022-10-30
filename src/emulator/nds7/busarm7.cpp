@@ -38,6 +38,8 @@ BusARM7::BusARM7(std::shared_ptr<BusShared> shared, std::shared_ptr<IPC> ipc, st
 	bios = new u8[0x4000]; // 16KB
 	memset(bios, 0, 0x4000);
 
+	POSTFLG = 0;
+
 	// Fill page tables
 	memset(&readTable, 0, sizeof(readTable));
 	memset(&writeTable, 0, sizeof(writeTable));
@@ -52,7 +54,18 @@ BusARM7::BusARM7(std::shared_ptr<BusShared> shared, std::shared_ptr<IPC> ipc, st
 		readTable[i] = writeTable[i] = wram + (((toAddress(i) - 0x3800000)) % 0x10000);
 	}
 
-	POSTFLG = 0;
+	const int startingWaitstates[2][2][2][16] = {
+		//  0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F
+		{{{ 2,  2, 20,  2,  2,  2,  2,  2,  0,  0,  0,  2,  2,  2,  2,  2},   // Data Nonsequential 32
+		  { 2,  2, 18,  2,  2,  2,  2,  2,  0,  0,  0,  2,  2,  2,  2,  2}},  // Data Nonsequential 16
+		 {{ 2,  2,  4,  2,  2,  2,  4,  2,  0,  0,  0,  2,  2,  2,  2,  2},   // Data Sequential 32
+		  { 2,  2,  2,  2,  2,  2,  2,  2,  0,  0,  0,  2,  2,  2,  2,  2}}}, // Data Sequential 16
+		{{{ 2,  2, 18,  2,  2,  2,  4,  2,  0,  0,  0,  2,  2,  2,  2,  2},   // Code Nonsequential 32
+		  { 2,  2, 16,  2,  2,  2,  2,  2,  0,  0,  0,  2,  2,  2,  2,  2}},  // Code Nonsequential 16
+		 {{ 2,  2,  4,  2,  2,  2,  4,  2,  0,  0,  0,  2,  2,  2,  2,  2},   // Code Sequential 32
+		  { 2,  2,  2,  2,  2,  2,  2,  2,  0,  0,  0,  2,  2,  2,  2,  2}}}  // Code Sequential 16
+	};
+	memcpy(waitstates, startingWaitstates, 2 * 2 * 2 * 16 * sizeof(int));
 }
 
 BusARM7::~BusARM7() {
@@ -66,6 +79,10 @@ void BusARM7::reset() {
 	IME = false;
 	IE = IF = 0;
 	HALTCNT = 0;
+
+	refreshWramPages();
+	refreshVramPages();
+	refreshRomPages();
 
 	dma->reset();
 	rtc->reset();
@@ -177,7 +194,8 @@ T BusARM7::read(u32 address, bool sequential) {
 	u32 page = toPage(alignedAddress & 0x0FFFFFFF);
 	u32 offset = alignedAddress & 0x3FFF;
 
-	delay += 2;
+	delay += waitstates[code][sequential][sizeof(T) == 4][(alignedAddress >> 24) & 0xF];
+	//delay += 2;
 
 	u8 *ptr = readTable[page];
 	T val = 0;
@@ -208,8 +226,13 @@ T BusARM7::read(u32 address, bool sequential) {
 				memcpy(&val, ppu->vramC + offset, sizeof(T));
 			if (ppu->vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramDOffset & 1)))
 				memcpy(&val, ppu->vramD + offset, sizeof(T));
+
+			if (!(ppu->vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramCOffset & 1))) && !(ppu->vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramDOffset & 1))))
+				delay -= waitstates[code][sequential][sizeof(T) == 4][0x6] + 2;
 			break;
 		default:
+			delay -= waitstates[code][sequential][sizeof(T) == 4][(alignedAddress >> 24) & 0xF] + 2;
+
 			shared->log << fmt::format("[NDS7 Bus] Read from unknown location 0x{:0>8X}\n", address);
 			break;
 		}
@@ -229,7 +252,8 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 	u32 page = toPage(alignedAddress & 0x0FFFFFFF);
 	u32 offset = alignedAddress & 0x3FFF;
 
-	delay += 2;
+	delay += waitstates[0][sequential][sizeof(T) == 4][(alignedAddress >> 24) & 0xF];
+	//delay += 2;
 
 	u8 *ptr = writeTable[page];
 	if ((address < 0x10000000) && (ptr != NULL)) { [[likely]]
@@ -249,15 +273,19 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 				writeIO(alignedAddress, value, true);
 			}
 			break;
-		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap ... unless I don't feel like doing the page table
+		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap
 			offset = alignedAddress & 0x1FFFF;
 
 			if (ppu->vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramCOffset & 1)))
 				memcpy(ppu->vramC + offset, &value, sizeof(T));
 			if (ppu->vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramDOffset & 1)))
 				memcpy(ppu->vramD + offset, &value, sizeof(T));
+
+			if (!(ppu->vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramCOffset & 1))) && !(ppu->vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramDOffset & 1))))
+				delay -= waitstates[0][sequential][sizeof(T) == 4][0x6] + 2;
 			break;
 		default:
+			delay -= waitstates[0][sequential][sizeof(T) == 4][(alignedAddress >> 24) & 0xF] + 2;
 			shared->log << fmt::format("[NDS7 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
 			break;
 		}

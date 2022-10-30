@@ -78,6 +78,7 @@ public:
 
 	// For CPU and memory
 	i64 delay;
+	int waitstates[2][2][2][16]; // 0/1=data/code, 0/1=nonsequential/sequential, 0/1=32/16bit, 0..15=bits24..27
 	u8 *readTable[0x4000];
 	u8 *writeTable[0x4000];
 

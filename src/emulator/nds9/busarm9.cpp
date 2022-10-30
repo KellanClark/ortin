@@ -55,6 +55,10 @@ void BusARM9::reset() {
 	IME = false;
 	IE = IF = 0;
 
+	refreshWramPages();
+	refreshVramPages();
+	refreshRomPages();
+
 	dma->reset();
 	dsmath->reset();
 	cpu->resetARM946E();
