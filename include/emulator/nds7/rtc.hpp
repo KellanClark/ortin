@@ -8,11 +8,10 @@
 
 class RTC {
 public:
-	BusShared &shared;
-	std::stringstream &log;
+	std::shared_ptr<BusShared> shared;
 
 	// External Use
-	RTC(BusShared &shared, std::stringstream &log);
+	RTC(std::shared_ptr<BusShared> shared);
 	~RTC();
 	void reset();
 

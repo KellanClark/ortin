@@ -1,6 +1,8 @@
 
 #include "ortin.hpp"
 
+#include "emulator/nds7/spi.hpp"
+
 Ortin::Ortin() : emuThread(&NDS::run, std::ref(nds)) {
 	error = false;
 	penDown = false;
@@ -108,21 +110,21 @@ void Ortin::drawFrame() {
 void Ortin::drawScreens() {
 	ImGui::Begin("DS Screen");
 
-	ImGui::Image((void*)(intptr_t)(nds.ppu.displaySwap ? ortin.engineATexture : ortin.engineBTexture), ImVec2(256 * 1, 192 * 1));
-	ImGui::ImageButton((void*)(intptr_t)(nds.ppu.displaySwap ? ortin.engineBTexture : ortin.engineATexture), ImVec2(256 * 1, 192 * 1), ImVec2(0, 0), ImVec2(1, 1), 0);
+	ImGui::Image((void*)(intptr_t)(nds.ppu->displaySwap ? ortin.engineATexture : ortin.engineBTexture), ImVec2(256 * 1, 192 * 1));
+	ImGui::ImageButton((void*)(intptr_t)(nds.ppu->displaySwap ? ortin.engineBTexture : ortin.engineATexture), ImVec2(256 * 1, 192 * 1), ImVec2(0, 0), ImVec2(1, 1), 0);
 
 	if (ImGui::IsItemActive() && ImGui::IsItemHovered()) { // Touchscreen
 		auto mousePos = ImGui::GetMousePos();
 		auto topLeft = ImGui::GetItemRectMin();
 		auto size = ImGui::GetItemRectSize();
 
-		nds.nds7.spi.touchscreen.xPosition = (u8)(((mousePos.x - topLeft.x) / size.x) * 0x100) << 4;
-		nds.nds7.spi.touchscreen.yPosition = (u8)(((mousePos.y - topLeft.y) / size.y) * 0xC0) << 4;
+		nds.nds7->spi->touchscreen.xPosition = (u8)(((mousePos.x - topLeft.x) / size.x) * 0x100) << 4;
+		nds.nds7->spi->touchscreen.yPosition = (u8)(((mousePos.y - topLeft.y) / size.y) * 0xC0) << 4;
 		penDown = true;
-		//printf("%03X  %03X\n", nds.nds7.spi.touchscreen.xPosition, nds.nds7.spi.touchscreen.yPosition);
+		//printf("%03X  %03X\n", nds.nds7->spi->touchscreen.xPosition, nds.nds7->spi->touchscreen.yPosition);
 	} else {
-		nds.nds7.spi.touchscreen.xPosition = 0;
-		nds.nds7.spi.touchscreen.yPosition = 0;
+		nds.nds7->spi->touchscreen.xPosition = 0;
+		nds.nds7->spi->touchscreen.yPosition = 0;
 		penDown = false;
 	}
 

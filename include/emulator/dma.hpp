@@ -24,15 +24,14 @@ enum DmaStart {
 template <bool dma9>
 class DMA {
 public:
+	std::shared_ptr<BusShared> shared;
 	using ArchBus = std::conditional_t<dma9, BusARM9, BusARM7>;
 	ArchBus &bus;
-	BusShared &shared;
-	std::stringstream &log;
 
 	// External Use
 	bool logDma;
 
-	DMA(BusShared &shared, std::stringstream &log, ArchBus &bus);
+	DMA(std::shared_ptr<BusShared> shared, ArchBus &bus);
 	~DMA();
 	void reset();
 	void checkDma(DmaStart event);

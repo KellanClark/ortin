@@ -8,7 +8,7 @@ static constexpr u32 toPage(u32 address) {
 	return address >> 14; // Pages are 16KB
 }
 
-PPU::PPU(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
+PPU::PPU(std::shared_ptr<BusShared> shared) : shared(shared) {
 	vramAll = new u8[VRAM_SIZE];
 	vramA = vramAll; // 128KB
 	vramB = vramA + 0x20000; // 128KB
@@ -73,12 +73,12 @@ void PPU::reset() {
 	// > Dot clock = 5.585664 MHz (=33.513982 MHz / 6)
 	// > H-Timing: 256 dots visible, 99 dots blanking, 355 dots total (15.7343KHz)
 	// Line length = (256 + 99) * 6 * 2 = 4,260
-	shared.addEvent(4260, EventType::PPU_LINE_START);
-	shared.addEvent(3072, EventType::PPU_HBLANK);
+	shared->addEvent(4260, EventType::PPU_LINE_START);
+	shared->addEvent(3072, EventType::PPU_HBLANK);
 }
 
 void PPU::lineStart() {
-	shared.addEvent(4260, EventType::PPU_LINE_START);
+	shared->addEvent(4260, EventType::PPU_LINE_START);
 
 	++currentScanline;
 	switch (currentScanline) {
@@ -126,7 +126,7 @@ void PPU::lineStart() {
 }
 
 void PPU::hBlank() {
-	shared.addEvent(4260, EventType::PPU_HBLANK);
+	shared->addEvent(4260, EventType::PPU_HBLANK);
 
 	hBlankFlag9 = hBlankFlag7 = true;
 	if (hBlankIrqEnable9)
@@ -922,7 +922,7 @@ u8 PPU::readIO9(u32 address) {
 	case 0x400106F:
 		return 0;
 	default:
-		log << fmt::format("[ARM9 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[ARM9 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -1165,49 +1165,49 @@ void PPU::writeIO9(u32 address, u8 value) {
 	case 0x4000240:
 		VRAMCNT_A = value & 0x9B;
 
-		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
+		shared->addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000241:
 		VRAMCNT_B = value & 0x9F;
 
-		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
+		shared->addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000242:
 		VRAMCNT_C = value & 0x9F;
 		vramCMapped7 = vramCEnable && (vramCMst == 2);
 
-		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
+		shared->addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000243:
 		VRAMCNT_D = value & 0x9F;
 		vramDMapped7 = vramDEnable && (vramDMst == 2);
 
-		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
+		shared->addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000244:
 		VRAMCNT_E = value & 0x87;
 
-		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
+		shared->addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000245:
 		VRAMCNT_F = value & 0x9F;
 
-		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
+		shared->addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000246:
 		VRAMCNT_G = value & 0x9F;
 
-		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
+		shared->addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000248:
 		VRAMCNT_H = value & 0x83;
 
-		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
+		shared->addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000249:
 		VRAMCNT_I = value & 0x83;
 
-		shared.addEvent(0, EventType::REFRESH_VRAM_PAGES);
+		shared->addEvent(0, EventType::REFRESH_VRAM_PAGES);
 		break;
 	case 0x4000304:
 		POWCNT1 = (POWCNT1 & 0xFF00) | ((value & 0x0F) << 0);
@@ -1438,7 +1438,7 @@ void PPU::writeIO9(u32 address, u8 value) {
 	case 0x400106F:
 		break;
 	default:
-		log << fmt::format("[ARM9 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>8X}\n", address, value);
+		shared->log << fmt::format("[ARM9 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>8X}\n", address, value);
 		break;
 	}
 }
@@ -1456,7 +1456,7 @@ u8 PPU::readIO7(u32 address) {
 	case 0x4000240:
 		return VRAMSTAT;
 	default:
-		log << fmt::format("[ARM7 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[ARM7 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -1470,7 +1470,7 @@ void PPU::writeIO7(u32 address, u8 value) {
 		DISPSTAT7 = (DISPSTAT7 & 0x00FF) | ((value & 0xFF) << 8);
 		break;
 	default:
-		log << fmt::format("[ARM7 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>8X}\n", address, value);
+		shared->log << fmt::format("[ARM7 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>8X}\n", address, value);
 		break;
 	}
 }

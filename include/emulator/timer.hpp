@@ -7,11 +7,10 @@
 class Timer {
 public:
 	bool timer9;
-	BusShared &shared;
-	std::stringstream &log;
+	std::shared_ptr<BusShared> shared;
 
 	// External Use
-	Timer(bool timer9, BusShared &shared, std::stringstream &log);
+	Timer(bool timer9, std::shared_ptr<BusShared> shared);
 	~Timer();
 	void reset();
 

@@ -4,38 +4,40 @@
 
 #define ARM7TDMI_DISABLE_FIQ
 
+#include <memory>
+
 #include "types.hpp"
 #include "emulator/busshared.hpp"
-#include "emulator/ipc.hpp"
-#include "emulator/ppu.hpp"
-#include "emulator/cartridge/gamecard.hpp"
-#include "emulator/dma.hpp"
-#include "emulator/timer.hpp"
-#include "emulator/nds7/rtc.hpp"
-#include "emulator/nds7/spi.hpp"
-#include "emulator/nds7/apu.hpp"
-#include "arm7tdmi/arm7tdmi.hpp"
+
+class BusShared;
+class IPC;
+class PPU;
+class Gamecard;
+template <class> class ARM7TDMI;
+template <bool> class DMA;
+class Timer;
+class RTC;
+class SPI;
+class APU;
 
 class BusARM7 {
 public:
 	// Connected components
-	ARM7TDMI<BusARM7> cpu;
-	IPC& ipc;
-	PPU& ppu;
-	Gamecard& gamecard;
-	DMA<false> dma;
-	Timer timer;
-	RTC rtc;
-	SPI spi;
-	APU apu;
+	std::shared_ptr<BusShared> shared;
+	std::shared_ptr<IPC> ipc;
+	std::shared_ptr<PPU> ppu;
+	std::shared_ptr<Gamecard> gamecard;
+	std::unique_ptr<ARM7TDMI<BusARM7>> cpu;
+	std::unique_ptr<DMA<false>> dma;
+	std::unique_ptr<Timer> timer;
+	std::unique_ptr<RTC> rtc;
+	std::unique_ptr<SPI> spi;
+	std::unique_ptr<APU> apu;
 	u8 *wram;
 	u8 *bios;
 
-	BusShared& shared;
-	std::stringstream& log;
-
 	// For external use
-	BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, Gamecard &gamecard, std::stringstream &log);
+	BusARM7(std::shared_ptr<BusShared> shared, std::shared_ptr<IPC> ipc, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamecard> gamecard);
 	~BusARM7();
 	void reset();
 
@@ -83,6 +85,7 @@ public:
 	void refreshVramPages();
 	void refreshRomPages();
 
+	std::stringstream &log;
 	void hacf();
 	template <typename T, bool code> T read(u32 address, bool sequential);
 	template <typename T> void write(u32 address, T value, bool sequential);

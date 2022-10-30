@@ -1,7 +1,7 @@
 
 #include "emulator/busshared.hpp"
 
-BusShared::BusShared(std::stringstream &log) : log(log) {
+BusShared::BusShared() {
 	psram = new u8[0x400000]; // 4MB
 	memset(psram, 0, 0x400000);
 	wram = new u8[0x8000]; // 32KB

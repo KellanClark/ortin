@@ -32,9 +32,9 @@ class BusShared {
 public:
 	u8 *psram;
 	u8 *wram;
-	std::stringstream& log;
+	std::stringstream log;
 
-	BusShared(std::stringstream &log);
+	BusShared();
 	~BusShared();
 	void reset();
 

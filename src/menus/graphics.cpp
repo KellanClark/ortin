@@ -42,10 +42,10 @@ void GraphicsMenu::paletteWindow() {
 		ImGui::Combo("##palette region", &item_current, items, IM_ARRAYSIZE(items));
 
 		switch (item_current) {
-		case 0: selectedRegion = (u16 *)ortin.nds.ppu.engineABgPalette; memoryOffset = 0x000; break;
-		case 1: selectedRegion = (u16 *)ortin.nds.ppu.engineAObjPalette; memoryOffset = 0x200; break;
-		case 2: selectedRegion = (u16 *)ortin.nds.ppu.engineBBgPalette; memoryOffset = 0x400; break;
-		case 3: selectedRegion = (u16 *)ortin.nds.ppu.engineBObjPalette; memoryOffset = 0x600; break;
+		case 0: selectedRegion = (u16 *)ortin.nds.ppu->engineABgPalette; memoryOffset = 0x000; break;
+		case 1: selectedRegion = (u16 *)ortin.nds.ppu->engineAObjPalette; memoryOffset = 0x200; break;
+		case 2: selectedRegion = (u16 *)ortin.nds.ppu->engineBBgPalette; memoryOffset = 0x400; break;
+		case 3: selectedRegion = (u16 *)ortin.nds.ppu->engineBObjPalette; memoryOffset = 0x600; break;
 		}
 	}
 

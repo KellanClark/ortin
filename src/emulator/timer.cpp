@@ -1,6 +1,7 @@
+
 #include "emulator/timer.hpp"
 
-Timer::Timer(bool timer9, BusShared &shared, std::stringstream &log) : timer9(timer9), shared(shared), log(log) {
+Timer::Timer(bool timer9, std::shared_ptr<BusShared> shared) : timer9(timer9), shared(shared) {
 	//
 }
 
@@ -24,13 +25,13 @@ void Timer::updateCounter(int channel) {
 	if (!tim.startStop || tim.cascade)
 		return;
 
-	tim.TIMCNT_L += (shared.currentTime - tim.lastIncrementTimestamp) >> shift;
-	tim.lastIncrementTimestamp = shared.currentTime & ~((1 << shift) - 1);
+	tim.TIMCNT_L += (shared->currentTime - tim.lastIncrementTimestamp) >> shift;
+	tim.lastIncrementTimestamp = shared->currentTime & ~((1 << shift) - 1);
 }
 
 void Timer::scheduleTimer(int channel) {
 	auto& tim = timer[channel];
-	shared.addEventAbsolute(((shared.currentTime >> prescalerShifts[tim.prescaler]) + (0x10000 - tim.TIMCNT_L)) << prescalerShifts[tim.prescaler], timer9 ? TIMER_OVERFLOW_9 : TIMER_OVERFLOW_7);
+	shared->addEventAbsolute(((shared->currentTime >> prescalerShifts[tim.prescaler]) + (0x10000 - tim.TIMCNT_L)) << prescalerShifts[tim.prescaler], timer9 ? TIMER_OVERFLOW_9 : TIMER_OVERFLOW_7);
 }
 
 void Timer::checkOverflow() {
@@ -55,7 +56,7 @@ void Timer::checkOverflow() {
 			overflow = false;
 
 			updateCounter(channel);
-			if ((tim.TIMCNT_L == 0) && (tim.lastIncrementTimestamp == shared.currentTime)) { // Overflow
+			if ((tim.TIMCNT_L == 0) && (tim.lastIncrementTimestamp == shared->currentTime)) { // Overflow
 				if (tim.irqEnable)
 					tim.interruptRequested = true;
 
@@ -111,7 +112,7 @@ u8 Timer::readIO(u32 address) {
 	case 0x400010F:
 		return (u8)(timer[3].TIMCNT_H >> 8);
 	default:
-		log << fmt::format("[NDS{} Bus][Timer] Read from unknown IO register 0x{:0>7X}\n", timer9 ? 9 : 7, address);
+		shared->log << fmt::format("[NDS{} Bus][Timer] Read from unknown IO register 0x{:0>7X}\n", timer9 ? 9 : 7, address);
 		return 0;
 	}
 }
@@ -207,7 +208,7 @@ void Timer::writeIO(u32 address, u8 value) {
 	case 0x400010F:
 		break;
 	default:
-		log << fmt::format("[NDS{} Bus][Timer] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", timer9 ? 9 : 7, address, value);
+		shared->log << fmt::format("[NDS{} Bus][Timer] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", timer9 ? 9 : 7, address, value);
 		break;
 	}
 }

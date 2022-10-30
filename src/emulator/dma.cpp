@@ -2,7 +2,7 @@
 #include "emulator/dma.hpp"
 
 template <bool dma9>
-DMA<dma9>::DMA(BusShared &shared, std::stringstream &log, ArchBus &bus) : shared(shared), log(log), bus(bus) {
+DMA<dma9>::DMA(std::shared_ptr<BusShared> shared, ArchBus &bus) : shared(shared), bus(bus) {
 	logDma = false;
 }
 
@@ -66,43 +66,43 @@ void DMA<dma9>::doDma(int channelNum) {
 
 	// Log info
 	if (logDma) {
-		log << fmt::format("[NDS{} Bus][DMA] DMA Channel {} from 0x{:0>7X} to 0x{:0>7X} of length 0x{:0>4X} with control = 0x{:0>4X}\n", dma9 ? 9 : 7, channelNum, info.sourceAddress, info.destinationAddress, info.realLength, (info.DMACNT >> 16) & 0xFFE0);
-		log << "Request Interrupt: " << (info.irqEnable ? "True" : "False") << "  Timing: ";
+		shared->log << fmt::format("[NDS{} Bus][DMA] DMA Channel {} from 0x{:0>7X} to 0x{:0>7X} of length 0x{:0>4X} with control = 0x{:0>4X}\n", dma9 ? 9 : 7, channelNum, info.sourceAddress, info.destinationAddress, info.realLength, (info.DMACNT >> 16) & 0xFFE0);
+		shared->log << "Request Interrupt: " << (info.irqEnable ? "True" : "False") << "  Timing: ";
 		if constexpr (dma9) {
 			switch (info.startTiming) {
-			case 0: log << "Immediately"; break;
-			case 1: log << "V-Blank"; break;
-			case 2: log << "H-Blank"; break;
-			case 3: log << "Synchronize to start of display"; break;
-			case 4: log << "Main memory display"; break;
-			case 5: log << "DS Cartridge Slot"; break;
-			case 6: log << "GBA Cartridge Slot"; break;
-			case 7: log << "Geometry Command FIFO"; break;
+			case 0: shared->log << "Immediately"; break;
+			case 1: shared->log << "V-Blank"; break;
+			case 2: shared->log << "H-Blank"; break;
+			case 3: shared->log << "Synchronize to start of display"; break;
+			case 4: shared->log << "Main memory display"; break;
+			case 5: shared->log << "DS Cartridge Slot"; break;
+			case 6: shared->log << "GBA Cartridge Slot"; break;
+			case 7: shared->log << "Geometry Command FIFO"; break;
 			}
 		} else {
 			switch (info.startTiming) {
-			case 0: log << "Immediately"; break;
-			case 1: log << "V-Blank"; break;
-			case 2: log << "DS Cartridge Slot"; break;
-			case 3: log << ((channelNum & 1) ? "GBA Cartridge Slot" : "Wireless interrupt"); break;
+			case 0: shared->log << "Immediately"; break;
+			case 1: shared->log << "V-Blank"; break;
+			case 2: shared->log << "DS Cartridge Slot"; break;
+			case 3: shared->log << ((channelNum & 1) ? "GBA Cartridge Slot" : "Wireless interrupt"); break;
 			}
 		}
-		log << "  Chunk Size: " << (16 << info.transferType) << "-bit  Repeat: " << (info.repeat ? "True" : "False") << "\n";
-		log << "Source Adjustment: ";
+		shared->log << "  Chunk Size: " << (16 << info.transferType) << "-bit  Repeat: " << (info.repeat ? "True" : "False") << "\n";
+		shared->log << "Source Adjustment: ";
 		switch (info.sourceControl) {
-		case 0: log << "Increment"; break;
-		case 1: log << "Decrement"; break;
-		case 2: log << "Fixed"; break;
-		case 3: log << "Prohibeted"; break;
+		case 0: shared->log << "Increment"; break;
+		case 1: shared->log << "Decrement"; break;
+		case 2: shared->log << "Fixed"; break;
+		case 3: shared->log << "Prohibeted"; break;
 		}
-		log << "  Destination Adjustment: ";
+		shared->log << "  Destination Adjustment: ";
 		switch (info.destinationControl) {
-		case 0: log << "Increment"; break;
-		case 1: log << "Decrement"; break;
-		case 2: log << "Fixed"; break;
-		case 3: log << "Increment/Reload"; break;
+		case 0: shared->log << "Increment"; break;
+		case 1: shared->log << "Decrement"; break;
+		case 2: shared->log << "Fixed"; break;
+		case 3: shared->log << "Increment/Reload"; break;
 		}
-		log << "\n";
+		shared->log << "\n";
 	}
 
 	// Get offsets
@@ -286,7 +286,7 @@ u8 DMA<dma9>::readIO9(u32 address) {
 	case 0x40000EF:
 		return (u8)(DMA3FILL >> 24);
 	default:
-		log << fmt::format("[NDS9 Bus][DMA] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS9 Bus][DMA] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -521,7 +521,7 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		DMA3FILL = (DMA3FILL & 0x00FFFFFF) | ((value & 0xFF) << 24);
 		break;
 	default:
-		log << fmt::format("[NDS9 Bus][DMA] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+		shared->log << fmt::format("[NDS9 Bus][DMA] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }
@@ -626,7 +626,7 @@ u8 DMA<dma9>::readIO7(u32 address) {
 	case 0x40000DF:
 		return (u8)(channel[3].DMACNT >> 24);
 	default:
-		log << fmt::format("[NDS7 Bus][DMA] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS7 Bus][DMA] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -813,7 +813,7 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		}
 		break;
 	default:
-		log << fmt::format("[NDS7 Bus][DMA] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+		shared->log << fmt::format("[NDS7 Bus][DMA] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }

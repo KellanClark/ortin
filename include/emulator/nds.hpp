@@ -2,6 +2,8 @@
 #ifndef ORTIN_NDS_HPP
 #define ORTIN_NDS_HPP
 
+#include <memory>
+
 #include "types.hpp"
 #include "busshared.hpp"
 #include "ipc.hpp"
@@ -20,13 +22,13 @@
 
 class NDS {
 public:
-	BusShared shared;
-	IPC ipc;
-	PPU ppu;
-	Gamecard gamecard;
-	BusARM9 nds9;
-	BusARM7 nds7;
-	std::stringstream log;
+	std::shared_ptr<BusShared> shared;
+	std::shared_ptr<IPC> ipc;
+	std::shared_ptr<PPU> ppu;
+	std::shared_ptr<Gamecard> gamecard;
+	std::shared_ptr<BusARM9> nds9;
+	std::shared_ptr<BusARM7> nds7;
+
 	ARM946EDisassembler disassembler9;
 	ARM7TDMIDisassembler disassembler7;
 

@@ -7,13 +7,12 @@
 
 class Gamecard {
 public:
-	BusShared &shared;
-	std::stringstream &log;
+	std::shared_ptr<BusShared> shared;
 
 	// External Use
 	bool logGamecard;
 
-	Gamecard(BusShared &shared, std::stringstream &log);
+	Gamecard(std::shared_ptr<BusShared> shared);
 	~Gamecard();
 	void reset();
 

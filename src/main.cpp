@@ -72,8 +72,8 @@ int main(int argc, char *argv[]) {
 		// Count FPS
 		if ((SDL_GetTicks() - lastFpsPoll) >= 1000) {
 			lastFpsPoll = SDL_GetTicks();
-			emuThreadFps = ortin.nds.ppu.frameCounter;
-			ortin.nds.ppu.frameCounter = 0;
+			emuThreadFps = ortin.nds.ppu->frameCounter;
+			ortin.nds.ppu->frameCounter = 0;
 		}
 
 		// Set window name
@@ -82,12 +82,12 @@ int main(int argc, char *argv[]) {
 
 		// Update display texture
 		//auto ppu = ortin.nds.ppu;
-		if (ortin.nds.ppu.updateScreen) {
+		if (ortin.nds.ppu->updateScreen) {
 			glBindTexture(GL_TEXTURE_2D, ortin.engineATexture);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, 256, 192, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, ortin.nds.ppu.framebufferA);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, 256, 192, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, ortin.nds.ppu->framebufferA);
 			glBindTexture(GL_TEXTURE_2D, ortin.engineBTexture);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, 256, 192, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, ortin.nds.ppu.framebufferB);
-			ortin.nds.ppu.updateScreen = false;
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB5_A1, 256, 192, 0, GL_RGBA, GL_UNSIGNED_SHORT_1_5_5_5_REV, ortin.nds.ppu->framebufferB);
+			ortin.nds.ppu->updateScreen = false;
 		}
 
 		ortin.drawFrame();

@@ -6,11 +6,10 @@
 
 class APU {
 public:
-	BusShared &shared;
-	std::stringstream &log;
+	std::shared_ptr<BusShared> shared;
 
 	// External Use
-	APU(BusShared &shared, std::stringstream &log);
+	APU(std::shared_ptr<BusShared> shared);
 	~APU();
 	void reset();
 

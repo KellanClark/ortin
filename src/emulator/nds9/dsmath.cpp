@@ -1,7 +1,7 @@
 
 #include "emulator/nds9/dsmath.hpp"
 
-DSMath::DSMath(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
+DSMath::DSMath(std::shared_ptr<BusShared> shared) : shared(shared) {
 	//
 }
 
@@ -21,7 +21,7 @@ u8 DSMath::readIO9(u32 address, bool final) {
 	case 0x4000280:
 		return (u8)(DIVCNT >> 0);
 	case 0x4000281:
-		divBusy = divFinishTimestamp < shared.currentTime;
+		divBusy = divFinishTimestamp < shared->currentTime;
 
 		return (u8)(DIVCNT >> 8);
 	case 0x4000282:
@@ -94,7 +94,7 @@ u8 DSMath::readIO9(u32 address, bool final) {
 	case 0x40002B0:
 		return (u8)(SQRTCNT >> 0);
 	case 0x40002B1:
-		sqrtBusy = sqrtFinishTimestamp < shared.currentTime;
+		sqrtBusy = sqrtFinishTimestamp < shared->currentTime;
 
 		return (u8)(SQRTCNT >> 8);
 	case 0x40002B2:
@@ -125,7 +125,7 @@ u8 DSMath::readIO9(u32 address, bool final) {
 	case 0x40002BF:
 		return (u8)(SQRT_PARAM >> 56);
 	default:
-		log << fmt::format("[NDS9 Bus][DSMath] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS9 Bus][DSMath] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -215,7 +215,7 @@ void DSMath::writeIO9(u32 address, u8 value, bool final) {
 		SQRT_PARAM = (SQRT_PARAM & 0x00FFFFFFFFFFFFFF) | ((u64)value << 56);
 		break;
 	default:
-		log << fmt::format("[NDS9 Bus][DSMath] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+		shared->log << fmt::format("[NDS9 Bus][DSMath] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 
@@ -226,7 +226,7 @@ void DSMath::writeIO9(u32 address, u8 value, bool final) {
 
 			switch (divMode) {
 			case 0: // 32/32 = 32,32
-				divFinishTimestamp = shared.currentTime + (18 * 2);
+				divFinishTimestamp = shared->currentTime + (18 * 2);
 
 				if ((i32)DIV_DENOM == 0) { [[unlikely]]
 					DIV_RESULT = ((i32)DIV_NUMER > -1) ? 0x00000000FFFFFFFF : 0xFFFFFFFF00000001;
@@ -241,7 +241,7 @@ void DSMath::writeIO9(u32 address, u8 value, bool final) {
 				break;
 			case 3:
 			case 1: // 64/32 = 64,32
-				divFinishTimestamp = shared.currentTime + (34 * 2);
+				divFinishTimestamp = shared->currentTime + (34 * 2);
 
 				if ((i32)DIV_DENOM == 0) { [[unlikely]]
 					DIV_RESULT = (DIV_NUMER > -1) ? -1 : 1;
@@ -255,7 +255,7 @@ void DSMath::writeIO9(u32 address, u8 value, bool final) {
 				}
 				break;
 			case 2: // 64/64 = 64,64
-				divFinishTimestamp = shared.currentTime + (34 * 2);
+				divFinishTimestamp = shared->currentTime + (34 * 2);
 
 				if (DIV_DENOM == 0) { [[unlikely]]
 					DIV_RESULT = (DIV_NUMER > -1) ? -1 : 1;
@@ -272,7 +272,7 @@ void DSMath::writeIO9(u32 address, u8 value, bool final) {
 		}
 
 		if (((address >= 0x40002B0) && (address <= 0x40002B3)) || ((address >= 0x40002B8) && (address <= 0x40002BF))) { // Write to square root register
-			sqrtFinishTimestamp = shared.currentTime + (13 * 2);
+			sqrtFinishTimestamp = shared->currentTime + (13 * 2);
 
 			if (sqrtMode) { // 64 bit
 				// I'm not going to write inline x87 just for a 64 bit mantissa, so software it is.

@@ -7,11 +7,10 @@
 
 class IPC {
 public:
-	BusShared& shared;
-	std::stringstream& log;
+	std::shared_ptr<BusShared> shared;
 
 	// External Use
-	IPC(BusShared &shared, std::stringstream &log);
+	IPC(std::shared_ptr<BusShared> shared);
 	~IPC();
 	void reset();
 

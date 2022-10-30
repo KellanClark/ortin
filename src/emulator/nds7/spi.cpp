@@ -9,7 +9,7 @@
 	} \
 } while (0)
 
-SPI::SPI(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
+SPI::SPI(std::shared_ptr<BusShared> shared) : shared(shared) {
 	logSpi = false;
 
 	firmware.logFirmware = false;
@@ -58,7 +58,7 @@ u8 SPI::readIO7(u32 address) {
 	case 0x40001C3:
 		return 0;
 	default:
-		log << fmt::format("[NDS7 Bus][SPI] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS7 Bus][SPI] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -79,14 +79,14 @@ void SPI::writeIO7(u32 address, u8 value) {
 
 		if (spiBusEnable) {
 			if (logSpi) {
-				log << fmt::format("[NDS7][SPI] Transferring {:0>2X} to ", SPIDATA);
+				shared->log << fmt::format("[NDS7][SPI] Transferring {:0>2X} to ", SPIDATA);
 				switch (deviceSelect) {
-				case 0: log << "Power Manager"; break;
-				case 1: log << "Firmware"; break;
-				case 2: log << "Touchscreen"; break;
-				case 3: log << "Reserved"; break;
+				case 0: shared->log << "Power Manager"; break;
+				case 1: shared->log << "Firmware"; break;
+				case 2: shared->log << "Touchscreen"; break;
+				case 3: shared->log << "Reserved"; break;
 				}
-				log << fmt::format(" with control register {:0>4X}\n", SPICNT);
+				shared->log << fmt::format(" with control register {:0>4X}\n", SPICNT);
 			}
 
 			switch (deviceSelect) {
@@ -104,7 +104,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 				case 0x06: // WREN - Write Enable
 					if (writeNumber == 0) {
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0x06: WREN - Write Enable\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0x06: WREN - Write Enable\n";
 
 						firmware.writeEnableLatch = true;
 					}
@@ -112,7 +112,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 				case 0x04: // WRDI - Write Disable
 					if (writeNumber == 0) {
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0x04: WRDI - Write Disable\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0x04: WRDI - Write Disable\n";
 
 						firmware.writeEnableLatch = false;
 					}
@@ -123,34 +123,34 @@ void SPI::writeIO7(u32 address, u8 value) {
 						rejectIfWrite();
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0x95: RDID - Read JEDEC Identification\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0x95: RDID - Read JEDEC Identification\n";
 						break;
 					case 1: // Manufacturer Identification
 						SPIDATA = 0x20;
 
 						if (firmware.logFirmware) {
-							log << "[NDS7][SPI][Firmware] Read Manufacturer Identification: 0x20\n";
+							shared->log << "[NDS7][SPI][Firmware] Read Manufacturer Identification: 0x20\n";
 						}
 						break;
 					case 2: // Memory Type
 						SPIDATA = 0x40;
 
 						if (firmware.logFirmware) {
-							log << "[NDS7][SPI][Firmware] Read Memory Type: 0x40\n";
+							shared->log << "[NDS7][SPI][Firmware] Read Memory Type: 0x40\n";
 						}
 						break;
 					case 3: // Manufacturer Identification
 						SPIDATA = 0x12;
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Read Memory Capacity: 0x12\n";
+							shared->log << "[NDS7][SPI][Firmware] Read Memory Capacity: 0x12\n";
 						break;
 					}
 					break;
 				case 0x05: // RDSR - Read Status Register
 					if (writeNumber == 0) {
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0x05: RDSR - Read Status Register\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0x05: RDSR - Read Status Register\n";
 					} else {
 						SPIDATA = firmware.status;
 					}
@@ -162,21 +162,21 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.address = 0;
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0x03: READ - Read Data Bytes\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0x03: READ - Read Data Bytes\n";
 						break;
 					case 1 ... 3: // Address
 						firmware.address = (firmware.address << 8) | SPIDATA;
 						firmware.address &= 0x3FFFF;
 
 						if (firmware.logFirmware && (writeNumber == 3))
-							log << fmt::format("[NDS7][SPI][Firmware] Selected Address: 0x{:0>5X}\n", firmware.address);
+							shared->log << fmt::format("[NDS7][SPI][Firmware] Selected Address: 0x{:0>5X}\n", firmware.address);
 						break;
 					default: // Continuously read bytes
 						SPIDATA = firmware.data[firmware.address++];
 						firmware.address &= 0x3FFFF;
 
 						if (firmware.logFirmware)
-							log << fmt::format("[NDS7][SPI][Firmware] Read Byte: 0x{:0>2X}\n", SPIDATA);
+							shared->log << fmt::format("[NDS7][SPI][Firmware] Read Byte: 0x{:0>2X}\n", SPIDATA);
 						break;
 					}
 					break;
@@ -187,14 +187,14 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.address = 0;
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0x0B: FAST - Read Data Bytes at Higher Speed\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0x0B: FAST - Read Data Bytes at Higher Speed\n";
 						break;
 					case 1 ... 3: // Address
 						firmware.address = (firmware.address << 8) | SPIDATA;
 						firmware.address &= 0x3FFFF;
 
 						if (firmware.logFirmware && (writeNumber == 3))
-							log << fmt::format("[NDS7][SPI][Firmware] Selected Address: 0x{:0>5X}\n", firmware.address);
+							shared->log << fmt::format("[NDS7][SPI][Firmware] Selected Address: 0x{:0>5X}\n", firmware.address);
 						break;
 					case 4: // Dummy byte
 						break;
@@ -203,7 +203,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.address &= 0x3FFFF;
 
 						if (firmware.logFirmware)
-							log << fmt::format("[NDS7][SPI][Firmware] Read Byte: 0x{:0>2X}\n", SPIDATA);
+							shared->log << fmt::format("[NDS7][SPI][Firmware] Read Byte: 0x{:0>2X}\n", SPIDATA);
 						break;
 					}
 					break;
@@ -214,14 +214,14 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.address = 0;
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0x0A: PW - Page Write\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0x0A: PW - Page Write\n";
 						break;
 					case 1 ... 3: // Address
 						firmware.address = (firmware.address << 8) | SPIDATA;
 						firmware.address &= 0x3FFFF;
 
 						if (firmware.logFirmware && (writeNumber == 3))
-							log << fmt::format("[NDS7][SPI][Firmware] Selected Address: 0x{:0>5X}\n", firmware.address);
+							shared->log << fmt::format("[NDS7][SPI][Firmware] Selected Address: 0x{:0>5X}\n", firmware.address);
 						break;
 					case 4: // Erase page
 						if (!firmware.writeEnableLatch || (firmware.writeProtect && ((firmware.address >> 16) == 0))) {
@@ -238,7 +238,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.address = (firmware.address & 0x3FF00) | ((firmware.address + 1) & 0xFF);
 
 						if (firmware.logFirmware)
-							log << fmt::format("[NDS7][SPI][Firmware] Wrote Byte: 0x{:0>2X}\n", SPIDATA);
+							shared->log << fmt::format("[NDS7][SPI][Firmware] Wrote Byte: 0x{:0>2X}\n", SPIDATA);
 						break;
 					}
 					break;
@@ -249,14 +249,14 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.address = 0;
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0x02: PP - Page Program\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0x02: PP - Page Program\n";
 						break;
 					case 1 ... 3: // Address
 						firmware.address = (firmware.address << 8) | SPIDATA;
 						firmware.address &= 0x3FFFF;
 
 						if (firmware.logFirmware && (writeNumber == 3))
-							log << fmt::format("[NDS7][SPI][Firmware] Selected Address: 0x{:0>5X}\n", firmware.address);
+							shared->log << fmt::format("[NDS7][SPI][Firmware] Selected Address: 0x{:0>5X}\n", firmware.address);
 						break;
 					case 4:
 						if (!firmware.writeEnableLatch || (firmware.writeProtect && ((firmware.address >> 16) == 0))) {
@@ -269,7 +269,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.address = (firmware.address & 0x3FF00) | ((firmware.address + 1) & 0xFF);
 
 						if (firmware.logFirmware)
-							log << fmt::format("[NDS7][SPI][Firmware] Programmed Byte: 0x{:0>2X}\n", SPIDATA);
+							shared->log << fmt::format("[NDS7][SPI][Firmware] Programmed Byte: 0x{:0>2X}\n", SPIDATA);
 						break;
 					}
 					break;
@@ -280,7 +280,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.address = 0;
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0xDB: PE - Page Erase 100h bytes\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0xDB: PE - Page Erase 100h bytes\n";
 						break;
 					case 1 ... 3: // Address
 						firmware.address = (firmware.address << 8) | SPIDATA;
@@ -298,7 +298,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 							}
 
 							if (firmware.logFirmware)
-								log << fmt::format("[NDS7][SPI][Firmware] Selected Page: 0x{:0>3X}\n", firmware.address >> 8);
+								shared->log << fmt::format("[NDS7][SPI][Firmware] Selected Page: 0x{:0>3X}\n", firmware.address >> 8);
 						}
 						break;
 					}
@@ -310,7 +310,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.address = 0;
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0xD8: SE - Sector Erase 10000h bytes\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0xD8: SE - Sector Erase 10000h bytes\n";
 						break;
 					case 1 ... 3: // Address
 						firmware.address = (firmware.address << 8) | SPIDATA;
@@ -328,7 +328,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 							}
 
 							if (firmware.logFirmware)
-								log << fmt::format("[NDS7][SPI][Firmware] Selected Sector: {}\n", firmware.address >> 16);
+								shared->log << fmt::format("[NDS7][SPI][Firmware] Selected Sector: {}\n", firmware.address >> 16);
 						}
 						break;
 					}
@@ -344,7 +344,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.powerUpPending = true;
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0xB9: DP - Deep Power-down\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0xB9: DP - Deep Power-down\n";
 					} else {
 						firmware.powerUpPending = false;
 					}
@@ -360,7 +360,7 @@ void SPI::writeIO7(u32 address, u8 value) {
 						firmware.powerDownPending = true;
 
 						if (firmware.logFirmware)
-							log << "[NDS7][SPI][Firmware] Command 0xAB: RDP - Release from Deep Power-down\n";
+							shared->log << "[NDS7][SPI][Firmware] Command 0xAB: RDP - Release from Deep Power-down\n";
 					} else {
 						firmware.powerDownPending = false;
 					}
@@ -405,13 +405,13 @@ void SPI::writeIO7(u32 address, u8 value) {
 				chipSelectLow();
 			}
 			if (interruptRequest)
-				shared.addEvent(0, SPI_FINISHED);
+				shared->addEvent(0, SPI_FINISHED);
 		}
 		break;
 	case 0x40001C3:
 		break;
 	default:
-		log << fmt::format("[NDS7 Bus][SPI] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+		shared->log << fmt::format("[NDS7 Bus][SPI] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }

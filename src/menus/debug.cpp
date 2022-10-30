@@ -4,6 +4,16 @@
 
 #include <fstream>
 
+// NDS Components
+#include "emulator/dma.hpp"
+#include "emulator/timer.hpp"
+#include "arm946e/arm946e.hpp"
+#include "emulator/nds9/dsmath.hpp"
+#include "arm7tdmi/arm7tdmi.hpp"
+#include "emulator/nds7/rtc.hpp"
+#include "emulator/nds7/spi.hpp"
+#include "emulator/nds7/apu.hpp"
+
 DebugMenu::DebugMenu() {
 	showLogs = false;
 	showArm9Debug = false;
@@ -64,19 +74,19 @@ void DebugMenu::logsWindow() {
 	ImGui::SameLine();
 	if (ImGui::Button("Save Logs")) {
 		std::ofstream systemLogFileStream{"log", std::ios::trunc};
-		systemLogFileStream << ortin.nds.log.str();
+		systemLogFileStream << ortin.nds.shared->log.str();
 		systemLogFileStream.close();
 	}
 
-	ImGui::Checkbox("Log DMA9", &ortin.nds.nds9.dma.logDma);
-	ImGui::Checkbox("Log DMA7", &ortin.nds.nds7.dma.logDma);
+	ImGui::Checkbox("Log DMA9", &ortin.nds.nds9->dma->logDma);
+	ImGui::Checkbox("Log DMA7", &ortin.nds.nds7->dma->logDma);
 	ImGui::SameLine();
-	ImGui::Checkbox("Log RTC", &ortin.nds.nds7.rtc.logRtc);
+	ImGui::Checkbox("Log RTC", &ortin.nds.nds7->rtc->logRtc);
 	ImGui::SameLine();
-	ImGui::Checkbox("Log SPI", &ortin.nds.nds7.spi.logSpi);
+	ImGui::Checkbox("Log SPI", &ortin.nds.nds7->spi->logSpi);
 	ImGui::SameLine();
-	ImGui::Checkbox("Log Firmware", &ortin.nds.nds7.spi.firmware.logFirmware);
-	ImGui::Checkbox("Log Gamecard", &ortin.nds.gamecard.logGamecard);
+	ImGui::Checkbox("Log Firmware", &ortin.nds.nds7->spi->firmware.logFirmware);
+	ImGui::Checkbox("Log Gamecard", &ortin.nds.gamecard->logGamecard);
 
 	if (ImGui::TreeNode("ARM9 Disassembler Options")) {
 		ImGui::Checkbox("Show AL Condition", (bool *)&arm9disasm.options.showALCondition);
@@ -105,7 +115,7 @@ void DebugMenu::logsWindow() {
 
 	if (ImGui::TreeNode("Log")) {
 		ImGui::BeginChild("logS", ImVec2(0, 0), false, ImGuiWindowFlags_HorizontalScrollbar);
-		ImGui::TextUnformatted(ortin.nds.log.str().c_str());
+		ImGui::TextUnformatted(ortin.nds.shared->log.str().c_str());
 		if (shouldAutoscroll)
 			ImGui::SetScrollHereY(1.0f);
 		ImGui::EndChild();
@@ -116,7 +126,7 @@ void DebugMenu::logsWindow() {
 }
 
 void DebugMenu::arm9DebugWindow() {
-	auto& cpu = ortin.nds.nds9.cpu;
+	auto& cpu = ortin.nds.nds9->cpu;
 
 	ImGui::SetNextWindowSize(ImVec2(760, 480));
 	ImGui::Begin("ARM9 CPU Status", &showArm9Debug);
@@ -142,7 +152,7 @@ void DebugMenu::arm9DebugWindow() {
 	{
 		ImGui::BeginChild("ChildL#arm9", ImVec2(525, 0), false);
 
-		std::string tmp = arm9disasm.disassemble(cpu.reg.R[15] - (cpu.reg.thumbMode ? 4 : 8), cpu.pipelineOpcode3, cpu.reg.thumbMode);
+		std::string tmp = arm9disasm.disassemble(cpu->reg.R[15] - (cpu->reg.thumbMode ? 4 : 8), cpu->pipelineOpcode3, cpu->reg.thumbMode);
 		ImGui::Text("Current Opcode:  %s", tmp.c_str());
 		ImGui::Spacing();
 		if (ImGui::BeginTable("registers9", 8, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
@@ -166,188 +176,188 @@ void DebugMenu::arm9DebugWindow() {
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r0:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[0]);
+			ImGui::Text("%08X", cpu->reg.R[0]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r1:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[1]);
+			ImGui::Text("%08X", cpu->reg.R[1]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r2:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[2]);
+			ImGui::Text("%08X", cpu->reg.R[2]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r3:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[3]);
+			ImGui::Text("%08X", cpu->reg.R[3]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r4:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[4]);
+			ImGui::Text("%08X", cpu->reg.R[4]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r5:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[5]);
+			ImGui::Text("%08X", cpu->reg.R[5]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r6:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[6]);
+			ImGui::Text("%08X", cpu->reg.R[6]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r7:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[7]);
+			ImGui::Text("%08X", cpu->reg.R[7]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r8:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[8]);
+			ImGui::Text("%08X", cpu->reg.R[8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R8_user);
+			ImGui::Text("%08X", cpu->reg.R8_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R8_fiq);
+			ImGui::Text("%08X", cpu->reg.R8_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r9:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[9]);
+			ImGui::Text("%08X", cpu->reg.R[9]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R9_user);
+			ImGui::Text("%08X", cpu->reg.R9_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R9_fiq);
+			ImGui::Text("%08X", cpu->reg.R9_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r10:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[10]);
+			ImGui::Text("%08X", cpu->reg.R[10]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R10_user);
+			ImGui::Text("%08X", cpu->reg.R10_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R10_fiq);
+			ImGui::Text("%08X", cpu->reg.R10_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r11:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[11]);
+			ImGui::Text("%08X", cpu->reg.R[11]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R11_user);
+			ImGui::Text("%08X", cpu->reg.R11_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R11_fiq);
+			ImGui::Text("%08X", cpu->reg.R11_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r12:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[12]);
+			ImGui::Text("%08X", cpu->reg.R[12]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R12_user);
+			ImGui::Text("%08X", cpu->reg.R12_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R12_fiq);
+			ImGui::Text("%08X", cpu->reg.R12_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r13:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[13]);
+			ImGui::Text("%08X", cpu->reg.R[13]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_user);
+			ImGui::Text("%08X", cpu->reg.R13_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_fiq);
+			ImGui::Text("%08X", cpu->reg.R13_fiq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_irq);
+			ImGui::Text("%08X", cpu->reg.R13_irq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_svc);
+			ImGui::Text("%08X", cpu->reg.R13_svc);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_abt);
+			ImGui::Text("%08X", cpu->reg.R13_abt);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_und);
+			ImGui::Text("%08X", cpu->reg.R13_und);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r14:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[14]);
+			ImGui::Text("%08X", cpu->reg.R[14]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_user);
+			ImGui::Text("%08X", cpu->reg.R14_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_fiq);
+			ImGui::Text("%08X", cpu->reg.R14_fiq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_irq);
+			ImGui::Text("%08X", cpu->reg.R14_irq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_svc);
+			ImGui::Text("%08X", cpu->reg.R14_svc);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_abt);
+			ImGui::Text("%08X", cpu->reg.R14_abt);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_und);
+			ImGui::Text("%08X", cpu->reg.R14_und);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r15:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[15]);
+			ImGui::Text("%08X", cpu->reg.R[15]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("SPSR:");
 			ImGui::TableSetColumnIndex(3);
-			ImGui::Text("%08X", cpu.reg.SPSR_fiq);
+			ImGui::Text("%08X", cpu->reg.SPSR_fiq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.SPSR_irq);
+			ImGui::Text("%08X", cpu->reg.SPSR_irq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.SPSR_svc);
+			ImGui::Text("%08X", cpu->reg.SPSR_svc);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.SPSR_abt);
+			ImGui::Text("%08X", cpu->reg.SPSR_abt);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.SPSR_und);
+			ImGui::Text("%08X", cpu->reg.SPSR_und);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("CPSR:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.CPSR);
+			ImGui::Text("%08X", cpu->reg.CPSR);
 			ImGui::TableNextRow();
 
 			ImGui::EndTable();
 		}
 		ImGui::Spacing();
-		bool n = cpu.reg.flagN;
+		bool n = cpu->reg.flagN;
 		ImGui::Checkbox("N", &n);
 		ImGui::SameLine();
-		bool z = cpu.reg.flagZ;
+		bool z = cpu->reg.flagZ;
 		ImGui::Checkbox("Z", &z);
 		ImGui::SameLine();
-		bool c = cpu.reg.flagC;
+		bool c = cpu->reg.flagC;
 		ImGui::Checkbox("C", &c);
 		ImGui::SameLine();
-		bool v = cpu.reg.flagV;
+		bool v = cpu->reg.flagV;
 		ImGui::Checkbox("V", &v);
 		ImGui::SameLine();
-		bool q = cpu.reg.flagQ;
+		bool q = cpu->reg.flagQ;
 		ImGui::Checkbox("Q", &q);
 		ImGui::SameLine();
-		bool i = cpu.reg.irqDisable;
+		bool i = cpu->reg.irqDisable;
 		ImGui::Checkbox("I", &i);
 		ImGui::SameLine();
-		bool f = cpu.reg.fiqDisable;
+		bool f = cpu->reg.fiqDisable;
 		ImGui::Checkbox("F", &f);
 		ImGui::SameLine();
-		bool t = cpu.reg.thumbMode;
+		bool t = cpu->reg.thumbMode;
 		ImGui::Checkbox("T", &t);
 
 		ImGui::EndChild();
@@ -377,14 +387,14 @@ void DebugMenu::arm9DebugWindow() {
 			}
 
 			if (!match) {
-				cpu.addBreakpoint(breakpointAddress);
+				cpu->addBreakpoint(breakpointAddress);
 				breakpoints.push_back(breakpointAddress);
 			}
 		}
 
 		if (ImGui::Button("Delete Selected")) {
 			if (selectedBreakpoint != -1) {
-				cpu.removeBreakpoint(breakpoints[selectedBreakpoint]);
+				cpu->removeBreakpoint(breakpoints[selectedBreakpoint]);
 				breakpoints.erase(breakpoints.begin() + selectedBreakpoint);
 				selectedBreakpoint = -1;
 			}
@@ -402,7 +412,7 @@ void DebugMenu::arm9DebugWindow() {
 }
 
 void DebugMenu::arm7DebugWindow() {
-	auto& cpu = ortin.nds.nds7.cpu;
+	auto& cpu = ortin.nds.nds7->cpu;
 
 	ImGui::SetNextWindowSize(ImVec2(760, 480));
 	ImGui::Begin("ARM7 CPU Status", &showArm7Debug);
@@ -428,7 +438,7 @@ void DebugMenu::arm7DebugWindow() {
 	{
 		ImGui::BeginChild("ChildL#arm7", ImVec2(525, 0), false);
 
-		std::string tmp = arm9disasm.disassemble(cpu.reg.R[15] - (cpu.reg.thumbMode ? 4 : 8), cpu.pipelineOpcode3, cpu.reg.thumbMode);
+		std::string tmp = arm9disasm.disassemble(cpu->reg.R[15] - (cpu->reg.thumbMode ? 4 : 8), cpu->pipelineOpcode3, cpu->reg.thumbMode);
 		ImGui::Text("Current Opcode:  %s", tmp.c_str());
 		ImGui::Spacing();
 		if (ImGui::BeginTable("registers7", 8, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_BordersInnerV)) {
@@ -452,185 +462,185 @@ void DebugMenu::arm7DebugWindow() {
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r0:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[0]);
+			ImGui::Text("%08X", cpu->reg.R[0]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r1:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[1]);
+			ImGui::Text("%08X", cpu->reg.R[1]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r2:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[2]);
+			ImGui::Text("%08X", cpu->reg.R[2]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r3:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[3]);
+			ImGui::Text("%08X", cpu->reg.R[3]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r4:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[4]);
+			ImGui::Text("%08X", cpu->reg.R[4]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r5:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[5]);
+			ImGui::Text("%08X", cpu->reg.R[5]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r6:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[6]);
+			ImGui::Text("%08X", cpu->reg.R[6]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r7:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[7]);
+			ImGui::Text("%08X", cpu->reg.R[7]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r8:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[8]);
+			ImGui::Text("%08X", cpu->reg.R[8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R8_user);
+			ImGui::Text("%08X", cpu->reg.R8_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R8_fiq);
+			ImGui::Text("%08X", cpu->reg.R8_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r9:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[9]);
+			ImGui::Text("%08X", cpu->reg.R[9]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R9_user);
+			ImGui::Text("%08X", cpu->reg.R9_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R9_fiq);
+			ImGui::Text("%08X", cpu->reg.R9_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r10:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[10]);
+			ImGui::Text("%08X", cpu->reg.R[10]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R10_user);
+			ImGui::Text("%08X", cpu->reg.R10_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R10_fiq);
+			ImGui::Text("%08X", cpu->reg.R10_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r11:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[11]);
+			ImGui::Text("%08X", cpu->reg.R[11]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R11_user);
+			ImGui::Text("%08X", cpu->reg.R11_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R11_fiq);
+			ImGui::Text("%08X", cpu->reg.R11_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r12:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[12]);
+			ImGui::Text("%08X", cpu->reg.R[12]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R12_user);
+			ImGui::Text("%08X", cpu->reg.R12_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R12_fiq);
+			ImGui::Text("%08X", cpu->reg.R12_fiq);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r13:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[13]);
+			ImGui::Text("%08X", cpu->reg.R[13]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_user);
+			ImGui::Text("%08X", cpu->reg.R13_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_fiq);
+			ImGui::Text("%08X", cpu->reg.R13_fiq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_irq);
+			ImGui::Text("%08X", cpu->reg.R13_irq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_svc);
+			ImGui::Text("%08X", cpu->reg.R13_svc);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_abt);
+			ImGui::Text("%08X", cpu->reg.R13_abt);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R13_und);
+			ImGui::Text("%08X", cpu->reg.R13_und);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r14:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[14]);
+			ImGui::Text("%08X", cpu->reg.R[14]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_user);
+			ImGui::Text("%08X", cpu->reg.R14_user);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_fiq);
+			ImGui::Text("%08X", cpu->reg.R14_fiq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_irq);
+			ImGui::Text("%08X", cpu->reg.R14_irq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_svc);
+			ImGui::Text("%08X", cpu->reg.R14_svc);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_abt);
+			ImGui::Text("%08X", cpu->reg.R14_abt);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R14_und);
+			ImGui::Text("%08X", cpu->reg.R14_und);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("r15:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.R[15]);
+			ImGui::Text("%08X", cpu->reg.R[15]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("SPSR:");
 			ImGui::TableSetColumnIndex(3);
-			ImGui::Text("%08X", cpu.reg.SPSR_fiq);
+			ImGui::Text("%08X", cpu->reg.SPSR_fiq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.SPSR_irq);
+			ImGui::Text("%08X", cpu->reg.SPSR_irq);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.SPSR_svc);
+			ImGui::Text("%08X", cpu->reg.SPSR_svc);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.SPSR_abt);
+			ImGui::Text("%08X", cpu->reg.SPSR_abt);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.SPSR_und);
+			ImGui::Text("%08X", cpu->reg.SPSR_und);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("CPSR:");
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu.reg.CPSR);
+			ImGui::Text("%08X", cpu->reg.CPSR);
 			ImGui::TableNextRow();
 
 			ImGui::EndTable();
 		}
 		ImGui::Spacing();
-		bool n = cpu.reg.flagN;
+		bool n = cpu->reg.flagN;
 		ImGui::Checkbox("N", &n);
 		ImGui::SameLine();
-		bool z = cpu.reg.flagZ;
+		bool z = cpu->reg.flagZ;
 		ImGui::Checkbox("Z", &z);
 		ImGui::SameLine();
-		bool c = cpu.reg.flagC;
+		bool c = cpu->reg.flagC;
 		ImGui::Checkbox("C", &c);
 		ImGui::SameLine();
-		bool v = cpu.reg.flagV;
+		bool v = cpu->reg.flagV;
 		ImGui::Checkbox("V", &v);
 		ImGui::SameLine();
-		bool i = cpu.reg.irqDisable;
+		bool i = cpu->reg.irqDisable;
 		ImGui::Checkbox("I", &i);
 		ImGui::SameLine();
-		bool f = cpu.reg.fiqDisable;
+		bool f = cpu->reg.fiqDisable;
 		ImGui::Checkbox("F", &f);
 		ImGui::SameLine();
-		bool t = cpu.reg.thumbMode;
+		bool t = cpu->reg.thumbMode;
 		ImGui::Checkbox("T", &t);
 
 		ImGui::EndChild();
@@ -660,14 +670,14 @@ void DebugMenu::arm7DebugWindow() {
 			}
 
 			if (!match) {
-				cpu.addBreakpoint(breakpointAddress);
+				cpu->addBreakpoint(breakpointAddress);
 				breakpoints.push_back(breakpointAddress);
 			}
 		}
 
 		if (ImGui::Button("Delete Selected")) {
 			if (selectedBreakpoint != -1) {
-				cpu.removeBreakpoint(breakpoints[selectedBreakpoint]);
+				cpu->removeBreakpoint(breakpoints[selectedBreakpoint]);
 				breakpoints.erase(breakpoints.begin() + selectedBreakpoint);
 				selectedBreakpoint = -1;
 			}
@@ -697,30 +707,30 @@ void DebugMenu::memEditorWindow() {
 
 	const static std::array<MemoryRegion, 23> memoryRegions = {{
 		{"--Shared--", NULL, 0, true},
-		{"PSRAM/Main Memory (4MB mirrored 0x2000000 to 0x3000000)", ortin.nds.shared.psram, 0x400000, false},
-		{"Shared WRAM (32KB)", ortin.nds.shared.wram, 0x8000, false},
+		{"PSRAM/Main Memory (4MB mirrored 0x2000000 to 0x3000000)", ortin.nds.shared->psram, 0x400000, false},
+		{"Shared WRAM (32KB)", ortin.nds.shared->wram, 0x8000, false},
 
 		{"--ARM9 Only--", NULL, 0, true},
-		{"Instruction TCM (32KB)", ortin.nds.nds9.cpu.cp15.itcm, 0x8000, false},
-		{"Data TCM (16KB)", ortin.nds.nds9.cpu.cp15.dtcm, 0x4000, false},
-		{"Standard Palettes (2KB mirrored 0x5000000 to 0x6000000)", ortin.nds.ppu.pram, 0x800, false},
-		{"OAM (2KB mirrored 0x6000000 to 0x7000000)", ortin.nds.ppu.oam, 0x800, false},
-		{"ARM9 BIOS (4KB)", ortin.nds.nds9.bios, 0x1000, false},
+		{"Instruction TCM (32KB)", ortin.nds.nds9->cpu->cp15.itcm, 0x8000, false},
+		{"Data TCM (16KB)", ortin.nds.nds9->cpu->cp15.dtcm, 0x4000, false},
+		{"Standard Palettes (2KB mirrored 0x5000000 to 0x6000000)", ortin.nds.ppu->pram, 0x800, false},
+		{"OAM (2KB mirrored 0x6000000 to 0x7000000)", ortin.nds.ppu->oam, 0x800, false},
+		{"ARM9 BIOS (4KB)", ortin.nds.nds9->bios, 0x1000, false},
 
 		{"--ARM7 Only--", NULL, 0, true},
-		{"ARM7 BIOS (16KB 0x0000000 to 0x0004000)", ortin.nds.nds7.bios, 0x4000, false},
-		{"ARM7 WRAM (64KB mirrored 0x3800000 to 0x4000000)", ortin.nds.nds7.wram, 0x10000, false},
+		{"ARM7 BIOS (16KB 0x0000000 to 0x0004000)", ortin.nds.nds7->bios, 0x4000, false},
+		{"ARM7 WRAM (64KB mirrored 0x3800000 to 0x4000000)", ortin.nds.nds7->wram, 0x10000, false},
 
 		{"--VRAM Banks--", NULL, 0, true},
-		{"VRAM Bank A (128K)", ortin.nds.ppu.vramA, 0x20000},
-		{"VRAM Bank B (128K)", ortin.nds.ppu.vramB, 0x20000},
-		{"VRAM Bank C (128K)", ortin.nds.ppu.vramC, 0x20000},
-		{"VRAM Bank D (128K)", ortin.nds.ppu.vramD, 0x20000},
-		{"VRAM Bank E (64K)", ortin.nds.ppu.vramE, 0x10000},
-		{"VRAM Bank F (16K)", ortin.nds.ppu.vramF, 0x4000},
-		{"VRAM Bank G (16K)", ortin.nds.ppu.vramG, 0x4000},
-		{"VRAM Bank H (32K)", ortin.nds.ppu.vramH, 0x8000},
-		{"VRAM Bank I (16K)", ortin.nds.ppu.vramI, 0x4000},
+		{"VRAM Bank A (128K)", ortin.nds.ppu->vramA, 0x20000},
+		{"VRAM Bank B (128K)", ortin.nds.ppu->vramB, 0x20000},
+		{"VRAM Bank C (128K)", ortin.nds.ppu->vramC, 0x20000},
+		{"VRAM Bank D (128K)", ortin.nds.ppu->vramD, 0x20000},
+		{"VRAM Bank E (64K)", ortin.nds.ppu->vramE, 0x10000},
+		{"VRAM Bank F (16K)", ortin.nds.ppu->vramF, 0x4000},
+		{"VRAM Bank G (16K)", ortin.nds.ppu->vramG, 0x4000},
+		{"VRAM Bank H (32K)", ortin.nds.ppu->vramH, 0x8000},
+		{"VRAM Bank I (16K)", ortin.nds.ppu->vramI, 0x4000},
 
 		{"--Unmapped--", NULL, 0, true},
 	}};
@@ -1356,101 +1366,101 @@ static const std::array<IoRegister, 95> registers9 = {{
 
 void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 	static std::array<void *, 95> registerPointers9 = {
-		&ortin.nds.ppu.engineA.DISPCNT,
-		&ortin.nds.ppu.DISPSTAT9,
-		&ortin.nds.ppu.VCOUNT,
-		&ortin.nds.ppu.engineA.bg[0].BGCNT,
-		&ortin.nds.ppu.engineA.bg[1].BGCNT,
-		&ortin.nds.ppu.engineA.bg[2].BGCNT,
-		&ortin.nds.ppu.engineA.bg[3].BGCNT,
-		&ortin.nds.ppu.engineA.bg[0].BGHOFS,
-		&ortin.nds.ppu.engineA.bg[0].BGVOFS,
-		&ortin.nds.ppu.engineA.bg[1].BGHOFS,
-		&ortin.nds.ppu.engineA.bg[1].BGVOFS,
-		&ortin.nds.ppu.engineA.bg[2].BGHOFS,
-		&ortin.nds.ppu.engineA.bg[2].BGVOFS,
-		&ortin.nds.ppu.engineA.bg[3].BGHOFS,
-		&ortin.nds.ppu.engineA.bg[3].BGVOFS,
-		&ortin.nds.ppu.engineA.bg[2].BGPA,
-		&ortin.nds.ppu.engineA.bg[2].BGPB,
-		&ortin.nds.ppu.engineA.bg[2].BGPC,
-		&ortin.nds.ppu.engineA.bg[2].BGPD,
-		&ortin.nds.ppu.engineA.bg[2].BGX,
-		&ortin.nds.ppu.engineA.bg[2].BGY,
-		&ortin.nds.ppu.engineA.bg[3].BGPA,
-		&ortin.nds.ppu.engineA.bg[3].BGPB,
-		&ortin.nds.ppu.engineA.bg[3].BGPC,
-		&ortin.nds.ppu.engineA.bg[3].BGPD,
-		&ortin.nds.ppu.engineA.bg[3].BGX,
-		&ortin.nds.ppu.engineA.bg[3].BGY,
-		&ortin.nds.ppu.engineA.MOSAIC,
-		&ortin.nds.ppu.engineA.MASTER_BRIGHT,
-		&ortin.nds.nds9.dma.channel[0].DMASAD,
-		&ortin.nds.nds9.dma.channel[0].DMADAD,
-		&ortin.nds.nds9.dma.channel[0].DMACNT,
-		&ortin.nds.nds9.dma.channel[1].DMASAD,
-		&ortin.nds.nds9.dma.channel[1].DMADAD,
-		&ortin.nds.nds9.dma.channel[1].DMACNT,
-		&ortin.nds.nds9.dma.channel[2].DMASAD,
-		&ortin.nds.nds9.dma.channel[2].DMADAD,
-		&ortin.nds.nds9.dma.channel[2].DMACNT,
-		&ortin.nds.nds9.dma.channel[3].DMASAD,
-		&ortin.nds.nds9.dma.channel[3].DMADAD,
-		&ortin.nds.nds9.dma.channel[3].DMACNT,
-		&ortin.nds.nds9.dma.DMA0FILL,
-		&ortin.nds.nds9.dma.DMA1FILL,
-		&ortin.nds.nds9.dma.DMA2FILL,
-		&ortin.nds.nds9.dma.DMA3FILL,
-		&ortin.nds.nds9.timer.timer[0].TIMCNT_L,
-		&ortin.nds.nds9.timer.timer[0].TIMCNT_H,
-		&ortin.nds.nds9.timer.timer[1].TIMCNT_L,
-		&ortin.nds.nds9.timer.timer[1].TIMCNT_H,
-		&ortin.nds.nds9.timer.timer[2].TIMCNT_L,
-		&ortin.nds.nds9.timer.timer[2].TIMCNT_H,
-		&ortin.nds.nds9.timer.timer[3].TIMCNT_L,
-		&ortin.nds.nds9.timer.timer[3].TIMCNT_H,
-		&ortin.nds.shared.KEYINPUT,
-		&ortin.nds.shared.KEYCNT9,
-		&ortin.nds.ipc.IPCSYNC9,
-		&ortin.nds.ipc.IPCFIFOCNT9,
-		&ortin.nds.gamecard.AUXSPICNT,
-		&ortin.nds.gamecard.ROMCTRL,
-		&ortin.nds.gamecard.key2Seed0Low7,
-		&ortin.nds.gamecard.key2Seed1Low7,
-		&ortin.nds.gamecard.key2Seed0High7,
-		&ortin.nds.gamecard.key2Seed1High7,
-		&ortin.nds.shared.EXMEMCNT,
-		&ortin.nds.nds9.IME,
-		&ortin.nds.nds9.IE,
-		&ortin.nds.nds9.IF,
-		&ortin.nds.ppu.VRAMCNT_A,
-		&ortin.nds.ppu.VRAMCNT_B,
-		&ortin.nds.ppu.VRAMCNT_C,
-		&ortin.nds.ppu.VRAMCNT_D,
-		&ortin.nds.ppu.VRAMCNT_E,
-		&ortin.nds.ppu.VRAMCNT_F,
-		&ortin.nds.ppu.VRAMCNT_G,
-		&ortin.nds.shared.WRAMCNT,
-		&ortin.nds.ppu.VRAMCNT_H,
-		&ortin.nds.ppu.VRAMCNT_I,
-		&ortin.nds.nds9.dsmath.DIVCNT,
-		&ortin.nds.nds9.dsmath.SQRTCNT,
-		&ortin.nds.nds9.dsmath.SQRT_RESULT,
-		&ortin.nds.ppu.engineB.DISPCNT,
-		&ortin.nds.ppu.engineB.bg[0].BGCNT,
-		&ortin.nds.ppu.engineB.bg[1].BGCNT,
-		&ortin.nds.ppu.engineB.bg[2].BGCNT,
-		&ortin.nds.ppu.engineB.bg[3].BGCNT,
-		&ortin.nds.ppu.engineB.bg[0].BGHOFS,
-		&ortin.nds.ppu.engineB.bg[0].BGVOFS,
-		&ortin.nds.ppu.engineB.bg[1].BGHOFS,
-		&ortin.nds.ppu.engineB.bg[1].BGVOFS,
-		&ortin.nds.ppu.engineB.bg[2].BGHOFS,
-		&ortin.nds.ppu.engineB.bg[2].BGVOFS,
-		&ortin.nds.ppu.engineB.bg[3].BGHOFS,
-		&ortin.nds.ppu.engineB.bg[3].BGVOFS,
-		&ortin.nds.ppu.engineB.MOSAIC,
-		&ortin.nds.ppu.engineB.MASTER_BRIGHT,
+		&ortin.nds.ppu->engineA.DISPCNT,
+		&ortin.nds.ppu->DISPSTAT9,
+		&ortin.nds.ppu->VCOUNT,
+		&ortin.nds.ppu->engineA.bg[0].BGCNT,
+		&ortin.nds.ppu->engineA.bg[1].BGCNT,
+		&ortin.nds.ppu->engineA.bg[2].BGCNT,
+		&ortin.nds.ppu->engineA.bg[3].BGCNT,
+		&ortin.nds.ppu->engineA.bg[0].BGHOFS,
+		&ortin.nds.ppu->engineA.bg[0].BGVOFS,
+		&ortin.nds.ppu->engineA.bg[1].BGHOFS,
+		&ortin.nds.ppu->engineA.bg[1].BGVOFS,
+		&ortin.nds.ppu->engineA.bg[2].BGHOFS,
+		&ortin.nds.ppu->engineA.bg[2].BGVOFS,
+		&ortin.nds.ppu->engineA.bg[3].BGHOFS,
+		&ortin.nds.ppu->engineA.bg[3].BGVOFS,
+		&ortin.nds.ppu->engineA.bg[2].BGPA,
+		&ortin.nds.ppu->engineA.bg[2].BGPB,
+		&ortin.nds.ppu->engineA.bg[2].BGPC,
+		&ortin.nds.ppu->engineA.bg[2].BGPD,
+		&ortin.nds.ppu->engineA.bg[2].BGX,
+		&ortin.nds.ppu->engineA.bg[2].BGY,
+		&ortin.nds.ppu->engineA.bg[3].BGPA,
+		&ortin.nds.ppu->engineA.bg[3].BGPB,
+		&ortin.nds.ppu->engineA.bg[3].BGPC,
+		&ortin.nds.ppu->engineA.bg[3].BGPD,
+		&ortin.nds.ppu->engineA.bg[3].BGX,
+		&ortin.nds.ppu->engineA.bg[3].BGY,
+		&ortin.nds.ppu->engineA.MOSAIC,
+		&ortin.nds.ppu->engineA.MASTER_BRIGHT,
+		&ortin.nds.nds9->dma->channel[0].DMASAD,
+		&ortin.nds.nds9->dma->channel[0].DMADAD,
+		&ortin.nds.nds9->dma->channel[0].DMACNT,
+		&ortin.nds.nds9->dma->channel[1].DMASAD,
+		&ortin.nds.nds9->dma->channel[1].DMADAD,
+		&ortin.nds.nds9->dma->channel[1].DMACNT,
+		&ortin.nds.nds9->dma->channel[2].DMASAD,
+		&ortin.nds.nds9->dma->channel[2].DMADAD,
+		&ortin.nds.nds9->dma->channel[2].DMACNT,
+		&ortin.nds.nds9->dma->channel[3].DMASAD,
+		&ortin.nds.nds9->dma->channel[3].DMADAD,
+		&ortin.nds.nds9->dma->channel[3].DMACNT,
+		&ortin.nds.nds9->dma->DMA0FILL,
+		&ortin.nds.nds9->dma->DMA1FILL,
+		&ortin.nds.nds9->dma->DMA2FILL,
+		&ortin.nds.nds9->dma->DMA3FILL,
+		&ortin.nds.nds9->timer->timer[0].TIMCNT_L,
+		&ortin.nds.nds9->timer->timer[0].TIMCNT_H,
+		&ortin.nds.nds9->timer->timer[1].TIMCNT_L,
+		&ortin.nds.nds9->timer->timer[1].TIMCNT_H,
+		&ortin.nds.nds9->timer->timer[2].TIMCNT_L,
+		&ortin.nds.nds9->timer->timer[2].TIMCNT_H,
+		&ortin.nds.nds9->timer->timer[3].TIMCNT_L,
+		&ortin.nds.nds9->timer->timer[3].TIMCNT_H,
+		&ortin.nds.shared->KEYINPUT,
+		&ortin.nds.shared->KEYCNT9,
+		&ortin.nds.ipc->IPCSYNC9,
+		&ortin.nds.ipc->IPCFIFOCNT9,
+		&ortin.nds.gamecard->AUXSPICNT,
+		&ortin.nds.gamecard->ROMCTRL,
+		&ortin.nds.gamecard->key2Seed0Low7,
+		&ortin.nds.gamecard->key2Seed1Low7,
+		&ortin.nds.gamecard->key2Seed0High7,
+		&ortin.nds.gamecard->key2Seed1High7,
+		&ortin.nds.shared->EXMEMCNT,
+		&ortin.nds.nds9->IME,
+		&ortin.nds.nds9->IE,
+		&ortin.nds.nds9->IF,
+		&ortin.nds.ppu->VRAMCNT_A,
+		&ortin.nds.ppu->VRAMCNT_B,
+		&ortin.nds.ppu->VRAMCNT_C,
+		&ortin.nds.ppu->VRAMCNT_D,
+		&ortin.nds.ppu->VRAMCNT_E,
+		&ortin.nds.ppu->VRAMCNT_F,
+		&ortin.nds.ppu->VRAMCNT_G,
+		&ortin.nds.shared->WRAMCNT,
+		&ortin.nds.ppu->VRAMCNT_H,
+		&ortin.nds.ppu->VRAMCNT_I,
+		&ortin.nds.nds9->dsmath->DIVCNT,
+		&ortin.nds.nds9->dsmath->SQRTCNT,
+		&ortin.nds.nds9->dsmath->SQRT_RESULT,
+		&ortin.nds.ppu->engineB.DISPCNT,
+		&ortin.nds.ppu->engineB.bg[0].BGCNT,
+		&ortin.nds.ppu->engineB.bg[1].BGCNT,
+		&ortin.nds.ppu->engineB.bg[2].BGCNT,
+		&ortin.nds.ppu->engineB.bg[3].BGCNT,
+		&ortin.nds.ppu->engineB.bg[0].BGHOFS,
+		&ortin.nds.ppu->engineB.bg[0].BGVOFS,
+		&ortin.nds.ppu->engineB.bg[1].BGHOFS,
+		&ortin.nds.ppu->engineB.bg[1].BGVOFS,
+		&ortin.nds.ppu->engineB.bg[2].BGHOFS,
+		&ortin.nds.ppu->engineB.bg[2].BGVOFS,
+		&ortin.nds.ppu->engineB.bg[3].BGHOFS,
+		&ortin.nds.ppu->engineB.bg[3].BGVOFS,
+		&ortin.nds.ppu->engineB.MOSAIC,
+		&ortin.nds.ppu->engineB.MASTER_BRIGHT,
 	};
 
 	static int selected = 0;
@@ -1554,15 +1564,15 @@ void DebugMenu::ioReg9Window() { // Shamefully stolen from the ImGui demo
 
 		if (ImGui::Button("Write")) {
 			if (size == 4) {
-				ortin.nds.nds9.writeIO(address | 0, (u8)(value >> 0), false);
-				ortin.nds.nds9.writeIO(address | 1, (u8)(value >> 8), false);
-				ortin.nds.nds9.writeIO(address | 2, (u8)(value >> 16), false);
-				ortin.nds.nds9.writeIO(address | 3, (u8)(value >> 24), true);
+				ortin.nds.nds9->writeIO(address | 0, (u8)(value >> 0), false);
+				ortin.nds.nds9->writeIO(address | 1, (u8)(value >> 8), false);
+				ortin.nds.nds9->writeIO(address | 2, (u8)(value >> 16), false);
+				ortin.nds.nds9->writeIO(address | 3, (u8)(value >> 24), true);
 			} else if (size == 2) {
-				ortin.nds.nds9.writeIO(address | 0, (u8)(value >> 0), false);
-				ortin.nds.nds9.writeIO(address | 1, (u8)(value >> 8), true);
+				ortin.nds.nds9->writeIO(address | 0, (u8)(value >> 0), false);
+				ortin.nds.nds9->writeIO(address | 1, (u8)(value >> 8), true);
 			} else {
-				ortin.nds.nds9.writeIO(address, (u8)value, true);
+				ortin.nds.nds9->writeIO(address, (u8)value, true);
 			}
 
 			tmpRefresh = true;
@@ -2272,137 +2282,137 @@ static const std::array<IoRegister, 131> registers7 = {{
 
 void DebugMenu::ioReg7Window() {
 	static std::array<void *, 131> registerPointers7 = {
-		&ortin.nds.ppu.DISPSTAT7,
-		&ortin.nds.ppu.VCOUNT,
-		&ortin.nds.nds7.dma.channel[0].DMASAD,
-		&ortin.nds.nds7.dma.channel[0].DMADAD,
-		&ortin.nds.nds7.dma.channel[0].DMACNT,
-		&ortin.nds.nds7.dma.channel[1].DMASAD,
-		&ortin.nds.nds7.dma.channel[1].DMADAD,
-		&ortin.nds.nds7.dma.channel[1].DMACNT,
-		&ortin.nds.nds7.dma.channel[2].DMASAD,
-		&ortin.nds.nds7.dma.channel[2].DMADAD,
-		&ortin.nds.nds7.dma.channel[2].DMACNT,
-		&ortin.nds.nds7.dma.channel[3].DMASAD,
-		&ortin.nds.nds7.dma.channel[3].DMADAD,
-		&ortin.nds.nds7.dma.channel[3].DMACNT,
-		&ortin.nds.nds7.timer.timer[0].TIMCNT_L,
-		&ortin.nds.nds7.timer.timer[0].TIMCNT_H,
-		&ortin.nds.nds7.timer.timer[1].TIMCNT_L,
-		&ortin.nds.nds7.timer.timer[1].TIMCNT_H,
-		&ortin.nds.nds7.timer.timer[2].TIMCNT_L,
-		&ortin.nds.nds7.timer.timer[2].TIMCNT_H,
-		&ortin.nds.nds7.timer.timer[3].TIMCNT_L,
-		&ortin.nds.nds7.timer.timer[3].TIMCNT_H,
-		&ortin.nds.shared.KEYINPUT,
-		&ortin.nds.shared.KEYCNT7,
-		&ortin.nds.shared.EXTKEYIN,
-		&ortin.nds.nds7.rtc.bus,
-		&ortin.nds.ipc.IPCSYNC7,
-		&ortin.nds.ipc.IPCFIFOCNT7,
-		&ortin.nds.gamecard.AUXSPICNT,
-		&ortin.nds.gamecard.ROMCTRL,
-		&ortin.nds.gamecard.key2Seed0Low7,
-		&ortin.nds.gamecard.key2Seed1Low7,
-		&ortin.nds.gamecard.key2Seed0High7,
-		&ortin.nds.gamecard.key2Seed1High7,
-		&ortin.nds.nds7.spi.SPICNT,
-		&ortin.nds.nds7.spi.SPIDATA,
-		&ortin.nds.shared.EXMEMSTAT,
-		&ortin.nds.nds7.IME,
-		&ortin.nds.nds7.IE,
-		&ortin.nds.nds7.IF,
-		&ortin.nds.ppu.VRAMSTAT,
-		&ortin.nds.shared.WRAMCNT,
-		&ortin.nds.nds7.HALTCNT,
-		&ortin.nds.nds7.apu.channel[0].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[0].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[0].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[0].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[0].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[1].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[1].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[1].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[1].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[1].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[2].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[2].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[2].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[2].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[2].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[3].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[3].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[3].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[3].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[3].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[4].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[4].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[4].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[4].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[4].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[5].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[5].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[5].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[5].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[5].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[6].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[6].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[6].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[6].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[6].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[7].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[7].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[7].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[7].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[7].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[8].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[8].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[8].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[8].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[8].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[9].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[9].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[9].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[9].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[9].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[10].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[10].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[10].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[10].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[10].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[11].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[11].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[11].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[11].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[11].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[12].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[12].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[12].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[12].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[12].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[13].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[13].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[13].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[13].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[13].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[14].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[14].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[14].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[14].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[14].SOUNDLEN,
-		&ortin.nds.nds7.apu.channel[15].SOUNDCNT,
-		&ortin.nds.nds7.apu.channel[15].SOUNDSAD,
-		&ortin.nds.nds7.apu.channel[15].SOUNDTMR,
-		&ortin.nds.nds7.apu.channel[15].SOUNDPNT,
-		&ortin.nds.nds7.apu.channel[15].SOUNDLEN,
-		&ortin.nds.nds7.apu.SOUNDCNT,
-		&ortin.nds.nds7.apu.SOUNDBIAS,
-		&ortin.nds.nds7.apu.SNDCAP0CNT,
-		&ortin.nds.nds7.apu.SNDCAP1CNT,
-		&ortin.nds.nds7.apu.SNDCAP0DAD,
-		&ortin.nds.nds7.apu.SNDCAP0LEN,
-		&ortin.nds.nds7.apu.SNDCAP1DAD,
-		&ortin.nds.nds7.apu.SNDCAP1LEN
+		&ortin.nds.ppu->DISPSTAT7,
+		&ortin.nds.ppu->VCOUNT,
+		&ortin.nds.nds7->dma->channel[0].DMASAD,
+		&ortin.nds.nds7->dma->channel[0].DMADAD,
+		&ortin.nds.nds7->dma->channel[0].DMACNT,
+		&ortin.nds.nds7->dma->channel[1].DMASAD,
+		&ortin.nds.nds7->dma->channel[1].DMADAD,
+		&ortin.nds.nds7->dma->channel[1].DMACNT,
+		&ortin.nds.nds7->dma->channel[2].DMASAD,
+		&ortin.nds.nds7->dma->channel[2].DMADAD,
+		&ortin.nds.nds7->dma->channel[2].DMACNT,
+		&ortin.nds.nds7->dma->channel[3].DMASAD,
+		&ortin.nds.nds7->dma->channel[3].DMADAD,
+		&ortin.nds.nds7->dma->channel[3].DMACNT,
+		&ortin.nds.nds7->timer->timer[0].TIMCNT_L,
+		&ortin.nds.nds7->timer->timer[0].TIMCNT_H,
+		&ortin.nds.nds7->timer->timer[1].TIMCNT_L,
+		&ortin.nds.nds7->timer->timer[1].TIMCNT_H,
+		&ortin.nds.nds7->timer->timer[2].TIMCNT_L,
+		&ortin.nds.nds7->timer->timer[2].TIMCNT_H,
+		&ortin.nds.nds7->timer->timer[3].TIMCNT_L,
+		&ortin.nds.nds7->timer->timer[3].TIMCNT_H,
+		&ortin.nds.shared->KEYINPUT,
+		&ortin.nds.shared->KEYCNT7,
+		&ortin.nds.shared->EXTKEYIN,
+		&ortin.nds.nds7->rtc->bus,
+		&ortin.nds.ipc->IPCSYNC7,
+		&ortin.nds.ipc->IPCFIFOCNT7,
+		&ortin.nds.gamecard->AUXSPICNT,
+		&ortin.nds.gamecard->ROMCTRL,
+		&ortin.nds.gamecard->key2Seed0Low7,
+		&ortin.nds.gamecard->key2Seed1Low7,
+		&ortin.nds.gamecard->key2Seed0High7,
+		&ortin.nds.gamecard->key2Seed1High7,
+		&ortin.nds.nds7->spi->SPICNT,
+		&ortin.nds.nds7->spi->SPIDATA,
+		&ortin.nds.shared->EXMEMSTAT,
+		&ortin.nds.nds7->IME,
+		&ortin.nds.nds7->IE,
+		&ortin.nds.nds7->IF,
+		&ortin.nds.ppu->VRAMSTAT,
+		&ortin.nds.shared->WRAMCNT,
+		&ortin.nds.nds7->HALTCNT,
+		&ortin.nds.nds7->apu->channel[0].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[0].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[0].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[0].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[0].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[1].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[1].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[1].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[1].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[1].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[2].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[2].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[2].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[2].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[2].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[3].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[3].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[3].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[3].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[3].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[4].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[4].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[4].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[4].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[4].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[5].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[5].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[5].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[5].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[5].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[6].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[6].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[6].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[6].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[6].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[7].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[7].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[7].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[7].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[7].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[8].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[8].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[8].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[8].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[8].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[9].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[9].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[9].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[9].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[9].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[10].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[10].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[10].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[10].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[10].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[11].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[11].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[11].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[11].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[11].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[12].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[12].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[12].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[12].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[12].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[13].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[13].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[13].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[13].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[13].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[14].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[14].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[14].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[14].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[14].SOUNDLEN,
+		&ortin.nds.nds7->apu->channel[15].SOUNDCNT,
+		&ortin.nds.nds7->apu->channel[15].SOUNDSAD,
+		&ortin.nds.nds7->apu->channel[15].SOUNDTMR,
+		&ortin.nds.nds7->apu->channel[15].SOUNDPNT,
+		&ortin.nds.nds7->apu->channel[15].SOUNDLEN,
+		&ortin.nds.nds7->apu->SOUNDCNT,
+		&ortin.nds.nds7->apu->SOUNDBIAS,
+		&ortin.nds.nds7->apu->SNDCAP0CNT,
+		&ortin.nds.nds7->apu->SNDCAP1CNT,
+		&ortin.nds.nds7->apu->SNDCAP0DAD,
+		&ortin.nds.nds7->apu->SNDCAP0LEN,
+		&ortin.nds.nds7->apu->SNDCAP1DAD,
+		&ortin.nds.nds7->apu->SNDCAP1LEN
 	};
 
 	static int selected = 0;
@@ -2490,15 +2500,15 @@ void DebugMenu::ioReg7Window() {
 
 		if (ImGui::Button("Write")) {
 			if (size == 4) {
-				ortin.nds.nds7.writeIO(address | 0, (u8)(value >> 0), false);
-				ortin.nds.nds7.writeIO(address | 1, (u8)(value >> 8), false);
-				ortin.nds.nds7.writeIO(address | 2, (u8)(value >> 16), false);
-				ortin.nds.nds7.writeIO(address | 3, (u8)(value >> 24), true);
+				ortin.nds.nds7->writeIO(address | 0, (u8)(value >> 0), false);
+				ortin.nds.nds7->writeIO(address | 1, (u8)(value >> 8), false);
+				ortin.nds.nds7->writeIO(address | 2, (u8)(value >> 16), false);
+				ortin.nds.nds7->writeIO(address | 3, (u8)(value >> 24), true);
 			} else if (size == 2) {
-				ortin.nds.nds7.writeIO(address | 0, (u8)(value >> 0), false);
-				ortin.nds.nds7.writeIO(address | 1, (u8)(value >> 8), true);
+				ortin.nds.nds7->writeIO(address | 0, (u8)(value >> 0), false);
+				ortin.nds.nds7->writeIO(address | 1, (u8)(value >> 8), true);
 			} else {
-				ortin.nds.nds7.writeIO(address, (u8)value, true);
+				ortin.nds.nds7->writeIO(address, (u8)value, true);
 			}
 
 			tmpRefresh = true;

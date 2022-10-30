@@ -1,6 +1,17 @@
 
 #include "emulator/nds7/busarm7.hpp"
 
+#include "emulator/ipc.hpp"
+#include "emulator/ppu.hpp"
+#include "emulator/cartridge/gamecard.hpp"
+
+#include "arm7tdmi/arm7tdmi.hpp"
+#include "emulator/dma.hpp"
+#include "emulator/timer.hpp"
+#include "emulator/nds7/rtc.hpp"
+#include "emulator/nds7/spi.hpp"
+#include "emulator/nds7/apu.hpp"
+
 static constexpr u32 toPage(u32 address) {
 	return address >> 14; // Pages are 16KB
 }
@@ -9,18 +20,19 @@ static constexpr u32 toAddress(u32 page) {
 	return page << 14;
 }
 
-BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, Gamecard &gamecard, std::stringstream &log) :
-	cpu(*this),
+BusARM7::BusARM7(std::shared_ptr<BusShared> shared, std::shared_ptr<IPC> ipc, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamecard> gamecard) :
 	shared(shared),
-	log(log),
+	log(shared->log),
 	ipc(ipc),
 	ppu(ppu),
-	gamecard(gamecard),
-	dma(shared, log, *this),
-	timer(false, shared, log),
-	rtc(shared, log),
-	spi(shared, log),
-	apu(shared, log) {
+	gamecard(gamecard) {
+	cpu = std::make_unique<ARM7TDMI<BusARM7>>(*this);
+	dma = std::make_unique<DMA<false>>(shared, *this);
+	timer = std::make_unique<Timer>(false, shared);
+	rtc = std::make_unique<RTC>(shared);
+	spi = std::make_unique<SPI>(shared);
+	apu = std::make_unique<APU>(shared);
+
 	wram = new u8[0x10000]; // 64KB
 	memset(wram, 0, 0x10000);
 	bios = new u8[0x4000]; // 16KB
@@ -32,7 +44,7 @@ BusARM7::BusARM7(BusShared &shared, IPC &ipc, PPU &ppu, Gamecard &gamecard, std:
 
 	// PSRAM/Main Memory (4MB mirrored 0x2000000 - 0x3000000)
 	for (int i = toPage(0x2000000); i < toPage(0x3000000); i++) {
-		readTable[i] = writeTable[i] = shared.psram + (((toAddress(i) - 0x2000000)) % 0x400000);
+		readTable[i] = writeTable[i] = shared->psram + (((toAddress(i) - 0x2000000)) % 0x400000);
 	}
 
 	// ARM7 WRAM (64KB mirrored 0x3800000 - 0x4000000)
@@ -49,17 +61,17 @@ BusARM7::~BusARM7() {
 }
 
 void BusARM7::reset() {
-	log.str("");
 	delay = 0;
 
 	IME = false;
 	IE = IF = 0;
 	HALTCNT = 0;
 
-	dma.reset();
-	rtc.reset();
-	spi.reset();
-	cpu.resetARM7TDMI();
+	dma->reset();
+	rtc->reset();
+	spi->reset();
+	apu->reset();
+	cpu->resetARM7TDMI();
 }
 
 void BusARM7::requestInterrupt(InterruptType type) {
@@ -73,15 +85,15 @@ void BusARM7::refreshInterrupts() {
 		HALTCNT = 0;
 
 	if (IME && (IE & IF)) {
-		cpu.processIrq = true;
+		cpu->processIrq = true;
 	} else {
-		cpu.processIrq = false;
+		cpu->processIrq = false;
 	}
 }
 
 void BusARM7::refreshWramPages() {
 	// Set the first two pages in one table
-	switch (shared.WRAMCNT) { // > ARM9/ARM7 (0-3 = 32K/0K, 2nd 16K/1st 16K, 1st 16K/2nd 16K, 0K/32K)
+	switch (shared->WRAMCNT) { // > ARM9/ARM7 (0-3 = 32K/0K, 2nd 16K/1st 16K, 1st 16K/2nd 16K, 0K/32K)
 	case 0:
 		readTable[toPage(0x3000000)] = wram + 0x0000;
 		readTable[toPage(0x3004000)] = wram + 0x4000;
@@ -89,22 +101,22 @@ void BusARM7::refreshWramPages() {
 		readTable[toPage(0x300C000)] = wram + 0xC000;
 		break;
 	case 1:
-		readTable[toPage(0x3000000)] = shared.wram;
-		readTable[toPage(0x3004000)] = shared.wram;
-		readTable[toPage(0x3008000)] = shared.wram;
-		readTable[toPage(0x300C000)] = shared.wram;
+		readTable[toPage(0x3000000)] = shared->wram;
+		readTable[toPage(0x3004000)] = shared->wram;
+		readTable[toPage(0x3008000)] = shared->wram;
+		readTable[toPage(0x300C000)] = shared->wram;
 		break;
 	case 2:
-		readTable[toPage(0x3000000)] = shared.wram + 0x4000;
-		readTable[toPage(0x3004000)] = shared.wram + 0x4000;
-		readTable[toPage(0x3008000)] = shared.wram + 0x4000;
-		readTable[toPage(0x300C000)] = shared.wram + 0x4000;
+		readTable[toPage(0x3000000)] = shared->wram + 0x4000;
+		readTable[toPage(0x3004000)] = shared->wram + 0x4000;
+		readTable[toPage(0x3008000)] = shared->wram + 0x4000;
+		readTable[toPage(0x300C000)] = shared->wram + 0x4000;
 		break;
 	case 3:
-		readTable[toPage(0x3000000)] = shared.wram;
-		readTable[toPage(0x3004000)] = shared.wram + 0x4000;
-		readTable[toPage(0x3008000)] = shared.wram;
-		readTable[toPage(0x300C000)] = shared.wram + 0x4000;
+		readTable[toPage(0x3000000)] = shared->wram;
+		readTable[toPage(0x3004000)] = shared->wram + 0x4000;
+		readTable[toPage(0x3008000)] = shared->wram;
+		readTable[toPage(0x300C000)] = shared->wram + 0x4000;
 		break;
 	}
 
@@ -123,24 +135,24 @@ void BusARM7::refreshVramPages() {
 		readTable[i] = nullptr;
 
 	// Hopefully temporary
-	if ((ppu.vramCMapped7 != ppu.vramDMapped7) || (ppu.vramCOffset != ppu.vramDOffset)) { // No overlap
-		if (ppu.vramCMapped7) {
-			if (ppu.vramCOffset) {
+	if ((ppu->vramCMapped7 != ppu->vramDMapped7) || (ppu->vramCOffset != ppu->vramDOffset)) { // No overlap
+		if (ppu->vramCMapped7) {
+			if (ppu->vramCOffset) {
 				for (int i = 0; i < toPage(0x20000); i++)
-					readTable[toPage(0x6020000) + i] = ppu.vramC + toAddress(i);
+					readTable[toPage(0x6020000) + i] = ppu->vramC + toAddress(i);
 			} else {
 				for (int i = 0; i < toPage(0x20000); i++)
-					readTable[toPage(0x6000000) + i] = ppu.vramC + toAddress(i);
+					readTable[toPage(0x6000000) + i] = ppu->vramC + toAddress(i);
 			}
 		}
 
-		if (ppu.vramDMapped7) {
-			if (ppu.vramDOffset) {
+		if (ppu->vramDMapped7) {
+			if (ppu->vramDOffset) {
 				for (int i = 0; i < toPage(0x20000); i++)
-					readTable[toPage(0x6020000) + i] = ppu.vramD + toAddress(i);
+					readTable[toPage(0x6020000) + i] = ppu->vramD + toAddress(i);
 			} else {
 				for (int i = 0; i < toPage(0x20000); i++)
-					readTable[toPage(0x6000000) + i] = ppu.vramD + toAddress(i);
+					readTable[toPage(0x6000000) + i] = ppu->vramD + toAddress(i);
 			}
 		}
 	}
@@ -156,7 +168,7 @@ void BusARM7::refreshRomPages() {
 }
 
 void BusARM7::hacf() {
-	shared.addEvent(0, EventType::STOP);
+	shared->addEvent(0, EventType::STOP);
 }
 
 template <typename T, bool code>
@@ -192,13 +204,13 @@ T BusARM7::read(u32 address, bool sequential) {
 		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap
 			offset = alignedAddress & 0x1FFFF;
 
-			if (ppu.vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu.vramCOffset & 1)))
-				memcpy(&val, ppu.vramC + offset, sizeof(T));
-			if (ppu.vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu.vramDOffset & 1)))
-				memcpy(&val, ppu.vramD + offset, sizeof(T));
+			if (ppu->vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramCOffset & 1)))
+				memcpy(&val, ppu->vramC + offset, sizeof(T));
+			if (ppu->vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramDOffset & 1)))
+				memcpy(&val, ppu->vramD + offset, sizeof(T));
 			break;
 		default:
-			log << fmt::format("[NDS7 Bus] Read from unknown location 0x{:0>8X}\n", address);
+			shared->log << fmt::format("[NDS7 Bus] Read from unknown location 0x{:0>8X}\n", address);
 			break;
 		}
 	}
@@ -240,13 +252,13 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap ... unless I don't feel like doing the page table
 			offset = alignedAddress & 0x1FFFF;
 
-			if (ppu.vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu.vramCOffset & 1)))
-				memcpy(ppu.vramC + offset, &value, sizeof(T));
-			if (ppu.vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu.vramDOffset & 1)))
-				memcpy(ppu.vramD + offset, &value, sizeof(T));
+			if (ppu->vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramCOffset & 1)))
+				memcpy(ppu->vramC + offset, &value, sizeof(T));
+			if (ppu->vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramDOffset & 1)))
+				memcpy(ppu->vramD + offset, &value, sizeof(T));
 			break;
 		default:
-			log << fmt::format("[NDS7 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
+			shared->log << fmt::format("[NDS7 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
 			break;
 		}
 	}
@@ -260,7 +272,7 @@ void BusARM7::iCycle(int cycles) {
 }
 
 void BusARM7::breakpoint() {
-	shared.addEvent(0, EventType::STOP);
+	shared->addEvent(0, EventType::STOP);
 }
 
 u8 BusARM7::readIO(u32 address, bool final) {
@@ -268,34 +280,34 @@ u8 BusARM7::readIO(u32 address, bool final) {
 	case 0x4000130 ... 0x4000137:
 	case 0x4000204: case 0x4000205:
 	case 0x4000241:
-		return shared.readIO7(address);
+		return shared->readIO7(address);
 
 	case 0x4000180 ... 0x4000187:
 	case 0x4100000 ... 0x4100003:
-		return ipc.readIO7(address, final);
+		return ipc->readIO7(address, final);
 
 	case 0x4000004 ... 0x4000007:
 	case 0x4000240:
-		return ppu.readIO7(address);
+		return ppu->readIO7(address);
 
 	case 0x40001A0 ... 0x40001BB:
 	case 0x4100010 ... 0x4100014:
-		return gamecard.readIO7(address, final);
+		return gamecard->readIO7(address, final);
 
 	case 0x40000B0 ... 0x40000DF:
-		return dma.readIO7(address);
+		return dma->readIO7(address);
 
 	case 0x4000100 ... 0x400010F:
-		return timer.readIO(address);
+		return timer->readIO(address);
 
 	case 0x4000138:
-		return rtc.readIO7();
+		return rtc->readIO7();
 
 	case 0x40001C0 ... 0x40001C3:
-		return spi.readIO7(address);
+		return spi->readIO7(address);
 
 	case 0x4000400 ... 0x400051F:
-		return apu.readIO7(address);
+		return apu->readIO7(address);
 
 	case 0x4000208:
 		return (u8)IME;
@@ -323,7 +335,7 @@ u8 BusARM7::readIO(u32 address, bool final) {
 		return HALTCNT;
 
 	default:
-		log << fmt::format("[NDS7 Bus] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS7 Bus] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -332,40 +344,40 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 	switch (address) {
 	case 0x4000130 ... 0x4000137:
 	case 0x4000204: case 0x4000205:
-		shared.writeIO7(address, value);
+		shared->writeIO7(address, value);
 		break;
 
 	case 0x4000180 ... 0x400018B:
-		ipc.writeIO7(address, value, final);
+		ipc->writeIO7(address, value, final);
 		break;
 
 	case 0x4000004 ... 0x4000007:
-		ppu.writeIO7(address, value);
+		ppu->writeIO7(address, value);
 		break;
 
 	case 0x40001A0 ... 0x40001BB:
 	case 0x4100010 ... 0x4100014:
-		gamecard.writeIO7(address, value);
+		gamecard->writeIO7(address, value);
 		break;
 
 	case 0x40000B0 ... 0x40000DF:
-		dma.writeIO7(address, value);
+		dma->writeIO7(address, value);
 		break;
 
 	case 0x4000100 ... 0x400010F:
-		timer.writeIO(address, value);
+		timer->writeIO(address, value);
 		break;
 
 	case 0x4000138:
-		rtc.writeIO7(value);
+		rtc->writeIO7(value);
 		break;
 
 	case 0x40001C0 ... 0x40001C3:
-		spi.writeIO7(address, value);
+		spi->writeIO7(address, value);
 		break;
 
 	case 0x4000400 ... 0x400051F:
-		apu.writeIO7(address, value);
+		apu->writeIO7(address, value);
 		break;
 
 	case 0x4000208:
@@ -407,7 +419,7 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 		refreshInterrupts();
 		break;
 	case 0x4000300:
-		if (cpu.reg.R[15] <= 0x7FFF) {
+		if (cpu->reg.R[15] <= 0x7FFF) {
 			POSTFLG |= value & 1;
 		}
 		break;
@@ -415,16 +427,16 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 		HALTCNT = value & 0xC0;
 
 		if (HALTCNT == 0x40) { [[unlikely]]
-			log << "[NDS7 Bus] Attempt to switch to GBA mode\n";
+			shared->log << "[NDS7 Bus] Attempt to switch to GBA mode\n";
 			hacf();
 		} else if (HALTCNT == 0xC0) { [[unlikely]]
-			log << "[NDS7 Bus] Attempt to switch to Sleep mode\n";
+			shared->log << "[NDS7 Bus] Attempt to switch to Sleep mode\n";
 			hacf();
 		}
 		break;
 
 	default:
-		log << fmt::format("[NDS7 Bus] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+		shared->log << fmt::format("[NDS7 Bus] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }

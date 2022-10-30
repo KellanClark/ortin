@@ -6,31 +6,31 @@
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
-#include "emulator/ipc.hpp"
-#include "emulator/ppu.hpp"
-#include "emulator/cartridge/gamecard.hpp"
-#include "emulator/dma.hpp"
-#include "emulator/timer.hpp"
-#include "emulator/nds9/dsmath.hpp"
-#include "arm946e/arm946e.hpp"
+
+class BusShared;
+class IPC;
+class PPU;
+class Gamecard;
+template <class> class ARM946E;
+template <bool> class DMA;
+class Timer;
+class DSMath;
 
 class BusARM9 {
 public:
 	// Connected components
-	ARM946E<BusARM9> cpu;
-	IPC& ipc;
-	PPU& ppu;
-	Gamecard& gamecard;
-	DMA<true> dma;
-	Timer timer;
-	DSMath dsmath;
+	std::shared_ptr<BusShared> shared;
+	std::shared_ptr<IPC> ipc;
+	std::shared_ptr<PPU> ppu;
+	std::shared_ptr<Gamecard> gamecard;
+	std::unique_ptr<ARM946E<BusARM9>> cpu;
+	std::unique_ptr<DMA<true>> dma;
+	std::unique_ptr<Timer> timer;
+	std::unique_ptr<DSMath> dsmath;
 	u8 *bios;
 
-	BusShared& shared;
-	std::stringstream& log;
-
 	// For external use
-	BusARM9(BusShared &shared, std::stringstream &log, IPC &ipc, PPU &ppu, Gamecard &gamecard);
+	BusARM9(std::shared_ptr<BusShared> shared, std::shared_ptr<IPC> ipc, std::shared_ptr<PPU> ppu, std::shared_ptr<Gamecard> gamecard);
 	~BusARM9();
 	void reset();
 
@@ -75,6 +75,7 @@ public:
 	void refreshVramPages();
 	void refreshRomPages();
 
+	std::stringstream &log;
 	void hacf(); // TODO: Document this interface
 	template <typename T, bool code> T read(u32 address, bool sequential);
 	template <typename T> void write(u32 address, T value, bool sequential);

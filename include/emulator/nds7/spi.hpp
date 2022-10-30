@@ -6,11 +6,10 @@
 
 class SPI {
 public:
-	BusShared &shared;
-	std::stringstream &log;
+	std::shared_ptr<BusShared> shared;
 
 	// External Use
-	SPI(BusShared &shared, std::stringstream &log);
+	SPI(std::shared_ptr<BusShared> shared);
 	~SPI();
 	void reset();
 

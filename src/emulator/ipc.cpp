@@ -1,7 +1,7 @@
 
 #include "emulator/ipc.hpp"
 
-IPC::IPC(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
+IPC::IPC(std::shared_ptr<BusShared> shared) : shared(shared) {
 	//
 }
 
@@ -51,7 +51,7 @@ u8 IPC::readIO9(u32 address, bool final) {
 		val = (u8)(IPCFIFORECV9 >> 24);
 		break;
 	default:
-		log << fmt::format("[NDS9 Bus][IPC] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS9 Bus][IPC] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 
@@ -84,7 +84,7 @@ u8 IPC::readIO9(u32 address, bool final) {
 		}
 
 		if (!sendIrq7Status && sendFifoEmptyIrq7 && sendFifoEmpty7)
-			shared.addEvent(0, EventType::IPC_SEND_FIFO7);
+			shared->addEvent(0, EventType::IPC_SEND_FIFO7);
 		sendIrq7Status = sendFifoEmptyIrq7 && sendFifoEmpty7;
 	}
 
@@ -103,7 +103,7 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 			sendIrq9 = false;
 
 			if (enableIrq7)
-				shared.addEvent(0, EventType::IPC_SYNC7);
+				shared->addEvent(0, EventType::IPC_SYNC7);
 		}
 		return;
 	case 0x4000182:
@@ -127,7 +127,7 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 		}
 
 		if (!sendIrq9Status && sendFifoEmptyIrq9 && sendFifoEmpty9)
-			shared.addEvent(0, EventType::IPC_SEND_FIFO9);
+			shared->addEvent(0, EventType::IPC_SEND_FIFO9);
 		sendIrq9Status = sendFifoEmptyIrq9 && sendFifoEmpty9;
 		return;
 	case 0x4000185:
@@ -137,7 +137,7 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 		IPCFIFOCNT9 = (IPCFIFOCNT9 & 0x43FF) | ((value & 0x84) << 8);
 
 		if (!recvIrq9Status && receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9)
-			shared.addEvent(0, EventType::IPC_RECV_FIFO9);
+			shared->addEvent(0, EventType::IPC_RECV_FIFO9);
 		recvIrq9Status = receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9;
 		return;
 	case 0x4000186:
@@ -160,7 +160,7 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 		sendMask9 |= 0xFF000000;
 		break;
 	default:
-		log << fmt::format("[NDS9 Bus][IPC] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+		shared->log << fmt::format("[NDS9 Bus][IPC] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		return;
 	}
 
@@ -194,7 +194,7 @@ void IPC::writeIO9(u32 address, u8 value, bool final) {
 			}
 
 			if (!recvIrq7Status && receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7)
-				shared.addEvent(0, EventType::IPC_RECV_FIFO7);
+				shared->addEvent(0, EventType::IPC_RECV_FIFO7);
 			recvIrq7Status = receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7;
 		}
 
@@ -233,7 +233,7 @@ u8 IPC::readIO7(u32 address, bool final) {
 		val = (u8)(IPCFIFORECV7 >> 24);
 		break;
 	default:
-		log << fmt::format("[NDS7 Bus][IPC] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS7 Bus][IPC] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 
@@ -266,7 +266,7 @@ u8 IPC::readIO7(u32 address, bool final) {
 		}
 
 		if (!sendIrq9Status && sendFifoEmptyIrq9 && sendFifoEmpty9)
-			shared.addEvent(0, EventType::IPC_SEND_FIFO9);
+			shared->addEvent(0, EventType::IPC_SEND_FIFO9);
 		sendIrq9Status = sendFifoEmptyIrq9 && sendFifoEmpty9;
 	}
 
@@ -285,7 +285,7 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 			sendIrq7 = false;
 
 			if (enableIrq9)
-				shared.addEvent(0, EventType::IPC_SYNC9);
+				shared->addEvent(0, EventType::IPC_SYNC9);
 		}
 		return;
 	case 0x4000182:
@@ -309,7 +309,7 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 		}
 
 		if (!sendIrq7Status && sendFifoEmptyIrq7 && sendFifoEmpty7)
-			shared.addEvent(0, EventType::IPC_SEND_FIFO7);
+			shared->addEvent(0, EventType::IPC_SEND_FIFO7);
 		sendIrq7Status = sendFifoEmptyIrq7 && sendFifoEmpty7;
 		return;
 	case 0x4000185:
@@ -319,7 +319,7 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 		IPCFIFOCNT7 = (IPCFIFOCNT7 & 0x43FF) | ((value & 0x84) << 8);
 
 		if (!recvIrq7Status && receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7)
-			shared.addEvent(0, EventType::IPC_RECV_FIFO7);
+			shared->addEvent(0, EventType::IPC_RECV_FIFO7);
 		recvIrq7Status = receiveFifoNotEmptyIrq7 && !receiveFifoEmpty7;
 		return;
 	case 0x4000186:
@@ -342,7 +342,7 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 		sendMask7 |= 0xFF000000;
 		break;
 	default:
-		log << fmt::format("[NDS7 Bus][IPC] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+		shared->log << fmt::format("[NDS7 Bus][IPC] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		return;
 	}
 
@@ -380,7 +380,7 @@ void IPC::writeIO7(u32 address, u8 value, bool final) {
 		sendMask7 = 0;
 
 		if (!recvIrq9Status && receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9)
-			shared.addEvent(0, EventType::IPC_RECV_FIFO9);
+			shared->addEvent(0, EventType::IPC_RECV_FIFO9);
 		recvIrq9Status = receiveFifoNotEmptyIrq9 && !receiveFifoEmpty9;
 	}
 }

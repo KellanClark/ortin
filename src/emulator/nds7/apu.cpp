@@ -1,6 +1,7 @@
+
 #include "emulator/nds7/apu.hpp"
 
-APU::APU(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
+APU::APU(std::shared_ptr<BusShared> shared) : shared(shared) {
 	//
 }
 
@@ -71,7 +72,7 @@ u8 APU::readIO7(u32 address) {
 	case 0x400051B:
 		return (u8)(SNDCAP0DAD >> 24);
 	default:
-		log << fmt::format("[NDS7 Bus][APU] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS7 Bus][APU] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -194,7 +195,7 @@ void APU::writeIO7(u32 address, u8 value) {
 	case 0x400051F:
 		break;
 	default:
-		log << fmt::format("[NDS7 Bus][APU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+		shared->log << fmt::format("[NDS7 Bus][APU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }

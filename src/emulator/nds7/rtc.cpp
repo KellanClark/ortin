@@ -27,7 +27,7 @@ static constexpr u64 fromRtcTime(u64 time) {
 	return time << 10;
 }
 
-RTC::RTC(BusShared &shared, std::stringstream &log) : shared(shared), log(log) {
+RTC::RTC(std::shared_ptr<BusShared> shared) : shared(shared) {
 	logRtc = false;
 }
 
@@ -79,12 +79,12 @@ static const int monthLengths[] = {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 3
 
 template <bool scheduled> // My code really should be structured to work without this, but it allows me to ignore a lot of special cases in normal operation.
 void RTC::refresh() {
-	if (scheduled && (toRtcTime(shared.currentTime) == rtcTime))
+	if (scheduled && (toRtcTime(shared->currentTime) == rtcTime))
 		return;
-	rtcTime = toRtcTime(shared.currentTime);
+	rtcTime = toRtcTime(shared->currentTime);
 	bool oldInterruptRequested = interrupt1Flag || interrupt2Flag;
 
-	bool newSecond = (toRtcTime(shared.currentTime) & 0xFFFF) == 0; // One second has passed
+	bool newSecond = (toRtcTime(shared->currentTime) & 0xFFFF) == 0; // One second has passed
 	if (newSecond) { // Update time
 		second = fromBcd(second) + 1;
 		if (second == 60) {
@@ -133,7 +133,7 @@ void RTC::refresh() {
 			second = fromBcd(second);
 		}
 
-		shared.addEvent(fromRtcTime(0x10000), RTC_REFRESH);
+		shared->addEvent(fromRtcTime(0x10000), RTC_REFRESH);
 	}
 
 	switch (interrupt1Mode) {
@@ -151,13 +151,13 @@ void RTC::refresh() {
 			interrupt1Flag = true;
 			//u64 temp = _pdep_u64((_pext_u64(rtcTime, ~adjustedFrequency) + (1 << std::countr_zero(adjustedFrequency))) & ~((1 << std::countr_zero(adjustedFrequency)) - 1), ~adjustedFrequency) | adjustedFrequency;
 			u64 temp = (((rtcTime | adjustedFrequency) + (adjustedFrequency & -adjustedFrequency)) | adjustedFrequency) & mask;
-			shared.addEventAbsolute(fromRtcTime(temp), RTC_REFRESH);
-			if (scheduled) shared.addEvent(0, SERIAL_INTERRUPT); // Stupid workaround
+			shared->addEventAbsolute(fromRtcTime(temp), RTC_REFRESH);
+			if (scheduled) shared->addEvent(0, SERIAL_INTERRUPT); // Stupid workaround
 			//printf("%02llX  %016llX  %016llX\n", adjustedFrequency, rtcTime, temp);
 		} else {
 			interrupt1Flag = false;
 			u64 temp = (rtcTime | adjustedFrequency) & mask;
-			shared.addEventAbsolute(fromRtcTime(temp), RTC_REFRESH);
+			shared->addEventAbsolute(fromRtcTime(temp), RTC_REFRESH);
 			//printf("%02llX  %016llX  %016llX\n", adjustedFrequency, rtcTime, temp);
 		}
 		} break;
@@ -180,14 +180,14 @@ void RTC::refresh() {
 		// Documentation says 7.9ms high. I'm going with 7.8125 because it makes more sense.
 		if ((second == 0) && ((rtcTime & 0xFFFF) < 512)) {
 			interrupt1Flag = true;
-			shared.addEvent(fromRtcTime(512 - (rtcTime & 0xFFFF)), RTC_REFRESH);
+			shared->addEvent(fromRtcTime(512 - (rtcTime & 0xFFFF)), RTC_REFRESH);
 		} else {
 			interrupt1Flag = false;
 		}
 		break;
 	case 0b1000 ... 0b1111: // 32kHz interrupt
 		interrupt1Flag = rtcTime & 1;
-		shared.addEvent(fromRtcTime(1), RTC_REFRESH);
+		shared->addEvent(fromRtcTime(1), RTC_REFRESH);
 		break;
 	}
 
@@ -202,7 +202,7 @@ void RTC::refresh() {
 	}
 
 	if (!oldInterruptRequested && (interrupt1Flag || interrupt2Flag))
-		shared.addEvent(0, SERIAL_INTERRUPT);
+		shared->addEvent(0, SERIAL_INTERRUPT);
 }
 template void RTC::refresh<false>();
 template void RTC::refresh<true>();
@@ -213,7 +213,7 @@ u8 RTC::readIO7() {
 		return bus;
 	} else {
 		if (logRtc)
-			log << fmt::format("[NDS7][RTC] Read bit: {}\n", readBuf & 1);
+			shared->log << fmt::format("[NDS7][RTC] Read bit: {}\n", readBuf & 1);
 		return (bus & 0xFE) | (readBuf & 1);
 	}
 }
@@ -241,9 +241,9 @@ void RTC::writeIO7(u8 value) {
 						if ((commandRegister & 0xF0) != 0b0110'0000)
 							commandRegister = reverseBits(commandRegister);
 						if ((commandRegister & 0xF0) != 0b0110'0000)
-							log << fmt::format("[NDS7][RTC] Invalid control command {:0>8b}\n", reverseBits(commandRegister));
+							shared->log << fmt::format("[NDS7][RTC] Invalid control command {:0>8b}\n", reverseBits(commandRegister));
 						if (logRtc)
-							log << fmt::format("[NDS7][RTC] Command: {:0>8b} {} register {}\n", commandRegister, parameterReadWrite ? "Reading" : "Writing", (u8)command);
+							shared->log << fmt::format("[NDS7][RTC] Command: {:0>8b} {} register {}\n", commandRegister, parameterReadWrite ? "Reading" : "Writing", (u8)command);
 
 						if (parameterReadWrite) { // Reading register
 							switch (command) {
@@ -290,7 +290,7 @@ void RTC::writeIO7(u8 value) {
 					} else {
 						u8 writtenData = sentData >> (bitsSent - 8);
 						if (logRtc)
-							log << fmt::format("[NDS7][RTC] Parameter: {:0>8b}\n", writtenData);
+							shared->log << fmt::format("[NDS7][RTC] Parameter: {:0>8b}\n", writtenData);
 
 						switch (command) {
 						case 0:

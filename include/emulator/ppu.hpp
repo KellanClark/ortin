@@ -7,8 +7,7 @@
 
 class PPU {
 public:
-	BusShared& shared;
-	std::stringstream& log;
+	std::shared_ptr<BusShared> shared;
 
 	// External Use
 	int frameCounter;
@@ -18,12 +17,11 @@ public:
 	bool vBlankIrq9, hBlankIrq9, vCounterIrq9;
 	bool vBlankIrq7, hBlankIrq7, vCounterIrq7;
 
-	PPU(BusShared &shared, std::stringstream &log);
+	PPU(std::shared_ptr<BusShared> shared);
 	~PPU();
 	void reset();
 
 	// Types
-
 	union VramInfoEntry {
 		struct {
 			u32 enableA : 1;

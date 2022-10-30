@@ -7,11 +7,10 @@
 
 class DSMath {
 public:
-	BusShared &shared;
-	std::stringstream &log;
+	std::shared_ptr<BusShared> shared;
 
 	// External Use
-	DSMath(BusShared &shared, std::stringstream &log);
+	DSMath(std::shared_ptr<BusShared> shared);
 	~DSMath();
 	void reset();
 
