@@ -31,9 +31,10 @@ NDS::~NDS() {
 
 void NDS::reset() {
 	running = false;
+	nds7->apu->soundRunning = false;
 
 	shared->reset();
-	ipc.reset();
+	ipc->reset();
 	ppu->reset();
 	gamecard->reset();
 	nds9->reset();
@@ -43,10 +44,12 @@ void NDS::reset() {
 	nds7->refreshWramPages();
 	nds9->refreshVramPages();
 
-	//directBoot();
+	directBoot();
 
 	nds9->delay = 0;
 	nds7->delay = 0;
+
+	nds7->apu->soundRunning = true;
 }
 
 void NDS::directBoot() {
@@ -73,6 +76,10 @@ void NDS::directBoot() {
 	nds7->cpu->reg.R13_irq = 0x300FF80;
 	nds7->cpu->reg.R13_svc = 0x300FFC0;
 
+	// Copy header into memory
+	for (int i = 0; i < 0x170; i++)
+		nds9->write<u8>(0x27FFE00 + i, romMap[i], false);
+
 	// User Settings (normally loaded from firmware)
 	nds9->write<u16>(0x27FFC80 + 0x58, 0x0000, false); // Touch-screen calibration point (adc.x1,y1) 12bit ADC-position
 	nds9->write<u16>(0x27FFC80 + 0x5A, 0x0000, false);
@@ -93,7 +100,7 @@ void NDS::run() {
 	u64 nds9timestamp = 0;
 	u64 nds7timestamp = 0;
 	while (true) {
-		while (running) { [[likely]]
+		while (running && nds7->apu->soundRunning) { [[likely]]
 			if (nds9timestamp <= shared->currentTime) {
 				/*if (nds9->cpu->reg.thumbMode) {
 					std::string disasm = disassembler9.disassemble(nds9->cpu->reg.R[15] - 4, nds9->cpu->pipelineOpcode3, true);
@@ -207,6 +214,9 @@ void NDS::run() {
 					}
 					//nds7->requestInterrupt(BusARM7::INT_NDS_SLOT_DATA);
 					//nds9->requestInterrupt(BusARM9::INT_NDS_SLOT_DATA);
+					break;
+				case APU_SAMPLE:
+					nds7->apu->doSample();
 					break;
 				}
 			}

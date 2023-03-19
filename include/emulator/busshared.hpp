@@ -1,6 +1,9 @@
 #ifndef ORTIN_BUSSHARED_HPP
 #define ORTIN_BUSSHARED_HPP
 
+#define BUS_CLOCK_SPEED 33554432
+#define INTERNAL_CLOCK_SPEED 67108864
+
 #include "types.hpp"
 
 #include <queue>
@@ -23,7 +26,8 @@ enum EventType {
 	SERIAL_INTERRUPT,
 	TIMER_OVERFLOW_9,
 	TIMER_OVERFLOW_7,
-	GAMECARD_TRANSFER_READY
+	GAMECARD_TRANSFER_READY,
+	APU_SAMPLE
 };
 
 // This class is not the same as BusARM9 and BusARM7.

@@ -68,7 +68,7 @@ void Gamecard::sendCommand() {
 		case 0xA0 ... 0xAF: shared->log << "Enter Main Data Mode\n"; break;
 		case 0xB7: shared->log << "Get Data\n"; break;
 		case 0xB8: shared->log << "KEY2 Get ROM Chip ID\n"; break;
-		default: { u64 tmp = currentCommand; level2.decrypt(&tmp); shared->log << /*"Unknown\n"*/ fmt::format("Unknown 0x{:0>16X}\n", tmp); } break;
+		default: { u64 tmp = currentCommand; level2.decrypt(&tmp); shared->log << fmt::format("Unknown 0x{:0>16X}\n", tmp); } break;
 		}
 	}
 
@@ -80,6 +80,7 @@ void Gamecard::readMoreData() {
 	case UNENCRYPTED:
 		switch (currentCommand >> 56) {
 		case 0x00: // Get Header (from address 00000000h)
+			shared->log << fmt::format("[Gamecard] Address 0x{:0>4X}\n", (bytesRead & 0xFFF));
 			memcpy(&cartridgeReadData, romData + (bytesRead & 0xFFF), 4);
 			break;
 		case 0x3C: // Activate KEY1 Encryption Mode
@@ -165,9 +166,9 @@ void Gamecard::readMoreData() {
 }
 
 u8 Gamecard::readIO9(u32 address, bool final) {
-	//if (shared->
-	//ndsSlotAccess)
+	//if (shared->ndsSlotAccess)
 	//	return 0;
+	//shared->log << fmt::format("[NDS9 Bus][Gamecard] Read from IO register 0x{:0>7X}\n", address);
 
 	u8 val = 0;
 	switch (address) {
@@ -225,6 +226,7 @@ u8 Gamecard::readIO9(u32 address, bool final) {
 }
 
 void Gamecard::writeIO9(u32 address, u8 value) {
+	shared->log << fmt::format("[NDS9 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 	if (shared->ndsSlotAccess) {
 		shared->log << fmt::format("[NDS9 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X} when access is set to NDS7\n", address, value);
 		return;
@@ -327,11 +329,11 @@ void Gamecard::writeIO9(u32 address, u8 value) {
 }
 
 u8 Gamecard::readIO7(u32 address, bool final) {
+	shared->log << fmt::format("[NDS7 Bus][Gamecard] Read from IO register 0x{:0>7X}\n", address);
 	if (!shared->ndsSlotAccess) {
 		shared->log << fmt::format("[NDS7 Bus][Gamecard] Read from IO register 0x{:0>7X} when access is set to NDS9\n", address);
 		return 0;
 	}
-	//std::cout << fmt::format("[NDS7 Bus][Gamecard] Read from unknown IO register 0x{:0>7X}\n", address);
 
 	u8 val = 0;
 	switch (address) {
@@ -389,11 +391,11 @@ u8 Gamecard::readIO7(u32 address, bool final) {
 }
 
 void Gamecard::writeIO7(u32 address, u8 value) {
+	shared->log << fmt::format("[NDS7 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 	if (!shared->ndsSlotAccess) {
 		shared->log << fmt::format("[NDS7 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X} when access is set to NDS9\n", address, value);
 		return;
 	}
-	shared->log << fmt::format("[NDS7 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 
 	switch (address) {
 	case 0x40001A0:

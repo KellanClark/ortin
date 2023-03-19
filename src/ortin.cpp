@@ -7,7 +7,7 @@ Ortin::Ortin() : emuThread(&NDS::run, std::ref(nds)) {
 	error = false;
 	penDown = false;
 
-	if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+	if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
 		printf("Error: %s\n", SDL_GetError());
 		error = true;
 		return;

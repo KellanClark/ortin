@@ -3,7 +3,7 @@
 
 template <bool dma9>
 DMA<dma9>::DMA(std::shared_ptr<BusShared> shared, ArchBus &bus) : shared(shared), bus(bus) {
-	logDma = false;
+	logDma = true;
 }
 
 template <bool dma9>
@@ -32,15 +32,15 @@ void DMA<dma9>::checkDma(DmaStart event) {
 	for (int i = 0; i < 4; i++) {
 		if (channel[i].enable) {
 			if constexpr (dma9) {
-				if (channel[i].startTiming == (int)event) {
+				if ((channel[i].startTiming == (int)event) ||
+					((channel[i].startTiming == DMA_DS_SLOT) && (event == DMA_IMMEDIATE)))
 					doDma(i);
-				}
 			} else {
 				if (((event == DMA_IMMEDIATE) && (channel[i].startTiming == 0)) ||
-					((event == DMA_VBLANK) && (channel[i].startTiming == 1)) ||
-					((event == DMA_DS_SLOT) && (channel[i].startTiming == 2)) ||
-					((event == DMA_WIRELESS) && (channel[i].startTiming == 3) && !(i & 1)) ||
-					((event == DMA_GBA_SLOT) && (channel[i].startTiming == 3) && (i & 1)))
+					((event == DMA_VBLANK) && (channel[i].startTiming == 2)) ||
+					((event == DMA_IMMEDIATE) && (channel[i].startTiming == 4)) ||
+					((event == DMA_WIRELESS) && (channel[i].startTiming == 6) && !(i & 1)) ||
+					((event == DMA_GBA_SLOT) && (channel[i].startTiming == 6) && (i & 1)))
 					doDma(i);
 			}
 		}
@@ -634,6 +634,7 @@ u8 DMA<dma9>::readIO7(u32 address) {
 template <bool dma9>
 void DMA<dma9>::writeIO7(u32 address, u8 value) {
 	bool oldEnable;
+	shared->log << fmt::format("[NDS7 Bus][DMA] Write to IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 
 	switch (address) {
 	case 0x40000B0:
@@ -810,6 +811,8 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 
 			if (channel[3].startTiming == 0) // Immediately
 				checkDma(DMA_IMMEDIATE);
+			if (channel[3].startTiming == 4) // Make cartridge DMA instant for now
+				checkDma(DMA_DS_SLOT);
 		}
 		break;
 	default:

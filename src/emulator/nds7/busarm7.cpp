@@ -31,7 +31,7 @@ BusARM7::BusARM7(std::shared_ptr<BusShared> shared, std::shared_ptr<IPC> ipc, st
 	timer = std::make_unique<Timer>(false, shared);
 	rtc = std::make_unique<RTC>(shared);
 	spi = std::make_unique<SPI>(shared);
-	apu = std::make_unique<APU>(shared);
+	apu = std::make_unique<APU>(shared, *this);
 
 	wram = new u8[0x10000]; // 64KB
 	memset(wram, 0, 0x10000);

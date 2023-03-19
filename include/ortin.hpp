@@ -9,6 +9,7 @@
 #include <backends/imgui_impl_sdl.h>
 #include <backends/imgui_impl_opengl3.h>
 #include <SDL.h>
+#include <SDL_audio.h>
 #include <SDL_opengl.h>
 
 #include "emulator/nds.hpp"

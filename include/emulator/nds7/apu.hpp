@@ -3,15 +3,30 @@
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
+#include "emulator/nds7/busarm7.hpp"
+
+#define SAMPLE_BUFFER_SIZE 1024
 
 class APU {
 public:
 	std::shared_ptr<BusShared> shared;
+	BusARM7& bus;
 
 	// External Use
-	APU(std::shared_ptr<BusShared> shared);
+	volatile bool soundRunning;
+	i16 newSamples[SAMPLE_BUFFER_SIZE * 2];
+	i16 outputSamples[SAMPLE_BUFFER_SIZE * 2];
+
+	APU(std::shared_ptr<BusShared> shared, BusARM7& bus);
 	~APU();
 	void reset();
+
+	// Internal use
+	int sampleIndex;
+
+	void doSample();
+	void fillFifo(int chanNum);
+	void startChannel(int chanNum);
 
 	// Memory Interface
 	u8 readIO7(u32 address);
@@ -39,6 +54,15 @@ public:
 		u16 SOUNDTMR; // NDS7 - 0x40004x8
 		u16 SOUNDPNT; // NDS7 - 0x40004xA
 		u32 SOUNDLEN; // NDS7 - 0x40004xC
+
+		std::queue<u32> inFifo;
+		int fifoOffset;
+		u32 wordsRead;
+
+		i16 lastSample;
+		u64 lastSampleTimestamp;
+		int timerPeriod;
+		u16 lfsr;
 	} channel[16];
 	union {
 		struct {

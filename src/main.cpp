@@ -1,5 +1,7 @@
 
 #include "ortin.hpp"
+#include "emulator/nds7/apu.hpp"
+#include "wavfile/wavfile.hpp"
 
 #include "ini.h"
 
@@ -21,6 +23,19 @@ SDL_Scancode keymap[12] = {
 };
 u32 lastJoypad;
 
+WavFile<i16> wavFile;
+SDL_AudioSpec desiredAudioSpec, audioSpec;
+SDL_AudioDeviceID audioDevice;
+void audioCallback(void *userdata, uint8_t *stream, int len) {
+	if (!ortin.nds.running)
+		return;
+
+	ortin.nds.nds7->apu->soundRunning = true; // What's thread safety?
+
+	SDL_memcpy(stream, ortin.nds.nds7->apu->outputSamples, len); // Copy samples to SDL's buffer
+	wavFile.write((u8 *)ortin.nds.nds7->apu->outputSamples, len); // Write samples to file
+}
+
 int main(int argc, char *argv[]) {
 	if (ortin.error)
 		return -1;
@@ -41,6 +56,19 @@ int main(int argc, char *argv[]) {
 		static std::filesystem::path path = ini["files"]["firmwarepath"];
 		ortin.nds.addThreadEvent(NDS::LOAD_FIRMWARE, &path);
 	}
+
+	// Setup Audio
+	desiredAudioSpec = {
+		.freq = 32768,
+		.format = AUDIO_U16,
+		.channels = 2,
+		.samples = SAMPLE_BUFFER_SIZE,
+		.callback = audioCallback,
+		.userdata = nullptr
+	};
+	audioDevice = SDL_OpenAudioDevice(nullptr, 0, &desiredAudioSpec, &audioSpec, 0);
+	SDL_PauseAudioDevice(audioDevice, 0);
+	wavFile.open("output.wav", audioSpec.freq, audioSpec.channels);
 
 	int emuThreadFps = 0;
 	u32 lastFpsPoll = 0;
@@ -92,6 +120,9 @@ int main(int argc, char *argv[]) {
 
 		ortin.drawFrame();
 	}
+
+	SDL_CloseAudioDevice(audioDevice);
+	wavFile.close();
 
 	return 0;
 }
