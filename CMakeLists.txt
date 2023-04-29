@@ -59,23 +59,23 @@ add_executable(Ortin
 
 target_compile_definitions(fmt PUBLIC FMT_EXCEPTIONS=0)
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
-	target_compile_options(Ortin PRIVATE
-		/clang:-ftemplate-depth=20000
-		/clang:-fconstexpr-depth=20000
-		/clang:-MMD
-		/clang:-MP
-		/clang:-mbmi2
-		#-Wall
-		#-fsanitize=address
-		#-fsanitize=leak
-		#-fsanitize=pointer-compare
-		#-fsanitize=pointer-subtract
-		#-fstack-protector-all
-		#-fsanitize=undefined
-		#-fsanitize=thread
-	)
+target_compile_options(Ortin PRIVATE
+	-ftemplate-depth=20000
+	-fconstexpr-depth=20000
+	-MMD
+	-MP
+	-mbmi2
+	#-Wall
+	#-fsanitize=address
+	#-fsanitize=leak
+	#-fsanitize=pointer-compare
+	#-fsanitize=pointer-subtract
+	#-fstack-protector-all
+	#-fsanitize=undefined
+	#-fsanitize=thread
+)
 
+if (WIN32)
 	target_link_libraries(Ortin PRIVATE
 		SDL2::SDL2
 		SDL2::SDL2main
@@ -92,22 +92,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIA
 		#-fsanitize=thread
 	)
 else()
-	target_compile_options(Ortin PRIVATE
-		-ftemplate-depth=20000
-		-fconstexpr-depth=20000
-		-MMD
-		-MP
-		-mbmi2
-		#-Wall
-		#-fsanitize=address
-		#-fsanitize=leak
-		#-fsanitize=pointer-compare
-		#-fsanitize=pointer-subtract
-		#-fstack-protector-all
-		#-fsanitize=undefined
-		#-fsanitize=thread
-	)
-
 	target_link_libraries(Ortin PRIVATE
 		SDL2::SDL2
 		SDL2::SDL2main
