@@ -30,7 +30,7 @@ add_executable(Ortin
 	modules/imgui/imgui_tables.cpp
 	modules/imgui/imgui_widgets.cpp
 	modules/imgui/imgui.cpp
-	modules/imgui/backends/imgui_impl_sdl.cpp
+	modules/imgui/backends/imgui_impl_sdl2.cpp
 	modules/imgui/backends/imgui_impl_opengl3.cpp
 
 	src/ortin.cpp

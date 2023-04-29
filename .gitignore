@@ -34,4 +34,6 @@
 # Extra
 build/
 .idea/
+.vscode/
+.cache/
 cmake-*
