@@ -1,4 +1,3 @@
-
 #include "menus/file.hpp"
 #include "emulator/nds.hpp"
 

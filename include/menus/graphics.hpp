@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_MENU_GRAPHICS_HPP
-#define ORTIN_MENU_GRAPHICS_HPP
+#pragma once
 
 #include "ortin.hpp"
 
@@ -16,5 +14,3 @@ private:
 
 	void paletteWindow();
 };
-
-#endif //ORTIN_MENU_GRAPHICS_HPP

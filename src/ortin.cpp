@@ -1,4 +1,3 @@
-
 #include "ortin.hpp"
 
 #include "emulator/nds7/spi.hpp"

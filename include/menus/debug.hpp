@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_MENU_DEBUG_HPP
-#define ORTIN_MENU_DEBUG_HPP
+#pragma once
 
 #include "ortin.hpp"
 #include "arm946e/arm946edisasm.hpp"
@@ -31,5 +29,3 @@ private:
 	ARM946EDisassembler arm9disasm{};
 	ARM7TDMIDisassembler arm7disasm{};
 };
-
-#endif //ORTIN_MENU_DEBUG_HPP

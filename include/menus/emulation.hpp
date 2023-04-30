@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_MENU_EMULATION_HPP
-#define ORTIN_MENU_EMULATION_HPP
+#pragma once
 
 #include "ortin.hpp"
 
@@ -13,5 +11,3 @@ public:
 
 private:
 };
-
-#endif //ORTIN_EMULATION_FILE_HPP

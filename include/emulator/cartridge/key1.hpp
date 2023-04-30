@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_KEY1_HPP
-#define ORTIN_KEY1_HPP
+#pragma once
 
 #include "types.hpp"
 
@@ -14,5 +12,3 @@ public:
 	void applyKeycode(u8 modulo);
 	void initKeycode(u32 idcode, int level, u8 modulo);
 };
-
-#endif //ORTIN_KEY1_HPP

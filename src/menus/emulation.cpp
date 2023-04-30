@@ -1,4 +1,3 @@
-
 #include "menus/emulation.hpp"
 
 EmulationMenu::EmulationMenu() {

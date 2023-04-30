@@ -1,5 +1,4 @@
-#ifndef ORTIN_GAMECARD_HPP
-#define ORTIN_GAMECARD_HPP
+#pragma once
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -95,5 +94,3 @@ public:
 	u16 key2Seed1High7; // NDS7 0x40001BA
 	u32 cartridgeReadData; // NDS9/NDS7 0x4100010
 };
-
-#endif //ORTIN_GAMECARD_HPP

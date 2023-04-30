@@ -1,5 +1,4 @@
-#ifndef ORTIN_SPI_HPP
-#define ORTIN_SPI_HPP
+#pragma once
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -77,5 +76,3 @@ public:
 		u8 *data;
 	} firmware;
 };
-
-#endif //ORTIN_SPI_HPP

@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_DSMATH_HPP
-#define ORTIN_DSMATH_HPP
+#pragma once
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -47,5 +45,3 @@ public:
 	u64 divFinishTimestamp;
 	u64 sqrtFinishTimestamp;
 };
-
-#endif //ORTIN_DSMATH_HPP

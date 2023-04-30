@@ -1,4 +1,3 @@
-
 #include "emulator/busshared.hpp"
 
 BusShared::BusShared() {

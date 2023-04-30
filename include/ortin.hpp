@@ -1,8 +1,5 @@
+#pragma once
 
-#ifndef ORTIN_ORTIN_HPP
-#define ORTIN_ORTIN_HPP
-
-#include <stdio.h>
 #include <thread>
 
 #include <imgui.h>
@@ -51,5 +48,3 @@ public:
 };
 
 extern Ortin ortin;
-
-#endif //ORTIN_ORTIN_HPP

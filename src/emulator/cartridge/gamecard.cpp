@@ -80,7 +80,7 @@ void Gamecard::readMoreData() {
 	case UNENCRYPTED:
 		switch (currentCommand >> 56) {
 		case 0x00: // Get Header (from address 00000000h)
-			shared->log << fmt::format("[Gamecard] Address 0x{:0>4X}\n", (bytesRead & 0xFFF));
+			//shared->log << fmt::format("[Gamecard] Address 0x{:0>4X}\n", (bytesRead & 0xFFF));
 			memcpy(&cartridgeReadData, romData + (bytesRead & 0xFFF), 4);
 			break;
 		case 0x3C: // Activate KEY1 Encryption Mode
@@ -226,7 +226,7 @@ u8 Gamecard::readIO9(u32 address, bool final) {
 }
 
 void Gamecard::writeIO9(u32 address, u8 value) {
-	shared->log << fmt::format("[NDS9 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+	//shared->log << fmt::format("[NDS9 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 	if (shared->ndsSlotAccess) {
 		shared->log << fmt::format("[NDS9 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X} when access is set to NDS7\n", address, value);
 		return;
@@ -329,7 +329,7 @@ void Gamecard::writeIO9(u32 address, u8 value) {
 }
 
 u8 Gamecard::readIO7(u32 address, bool final) {
-	shared->log << fmt::format("[NDS7 Bus][Gamecard] Read from IO register 0x{:0>7X}\n", address);
+	//shared->log << fmt::format("[NDS7 Bus][Gamecard] Read from IO register 0x{:0>7X}\n", address);
 	if (!shared->ndsSlotAccess) {
 		shared->log << fmt::format("[NDS7 Bus][Gamecard] Read from IO register 0x{:0>7X} when access is set to NDS9\n", address);
 		return 0;
@@ -391,7 +391,7 @@ u8 Gamecard::readIO7(u32 address, bool final) {
 }
 
 void Gamecard::writeIO7(u32 address, u8 value) {
-	shared->log << fmt::format("[NDS7 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
+	//shared->log << fmt::format("[NDS7 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 	if (!shared->ndsSlotAccess) {
 		shared->log << fmt::format("[NDS7 Bus][Gamecard] Write to IO register 0x{:0>7X} with value 0x{:0>2X} when access is set to NDS9\n", address, value);
 		return;

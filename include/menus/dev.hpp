@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_MENU_DEV_HPP
-#define ORTIN_MENU_DEV_HPP
+#pragma once
 
 #include "ortin.hpp"
 
@@ -14,5 +12,3 @@ public:
 private:
 	bool showDemoWindow;
 };
-
-#endif //ORTIN_MENU_DEV_HPP

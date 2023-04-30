@@ -1,5 +1,4 @@
-#ifndef ORTIN_TIMER_HPP
-#define ORTIN_TIMER_HPP
+#pragma once
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -43,5 +42,3 @@ public:
 		bool interruptRequested;
 	} timer[4];
 };
-
-#endif //ORTIN_TIMER_HPP

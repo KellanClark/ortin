@@ -1,4 +1,3 @@
-
 #include "emulator/nds7/apu.hpp"
 
 const int indexTable[8] = {-1, -1, -1, -1, 2, 4, 6, 8};

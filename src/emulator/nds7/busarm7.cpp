@@ -1,4 +1,3 @@
-
 #include "emulator/nds7/busarm7.hpp"
 
 #include "emulator/ipc.hpp"
@@ -176,7 +175,6 @@ void BusARM7::refreshVramPages() {
 
 	// Mirror and copy to write table
 	for (int i = toPage(0x6000000); i < toPage(0x7000000); i++)
-		//printf("0x%07X\n", toAddress(i & toPage(0xF03FFFF)));
 		readTable[i] = writeTable[i] = readTable[i & toPage(0xF03FFFF)];
 }
 
@@ -253,7 +251,6 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 	u32 offset = alignedAddress & 0x3FFF;
 
 	delay += waitstates[0][sequential][sizeof(T) == 4][(alignedAddress >> 24) & 0xF];
-	//delay += 2;
 
 	u8 *ptr = writeTable[page];
 	if ((address < 0x10000000) && (ptr != NULL)) { [[likely]]
@@ -286,7 +283,7 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 			break;
 		default:
 			delay -= waitstates[0][sequential][sizeof(T) == 4][(alignedAddress >> 24) & 0xF] + 2;
-			shared->log << fmt::format("[NDS7 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
+			shared->log << fmt::format("[NDS7 Bus] Write to unknown location 0x{:0>8X} with {} byte value 0x{:0>{}X}\n", address, sizeof(T), value, sizeof(T) * 2);
 			break;
 		}
 	}
@@ -330,6 +327,8 @@ u8 BusARM7::readIO(u32 address, bool final) {
 
 	case 0x4000138:
 		return rtc->readIO7();
+	case 0x4000139:
+		return 0;
 
 	case 0x40001C0 ... 0x40001C3:
 		return spi->readIO7(address);
@@ -398,6 +397,8 @@ void BusARM7::writeIO(u32 address, u8 value, bool final) {
 
 	case 0x4000138:
 		rtc->writeIO7(value);
+		break;
+	case 0x4000139:
 		break;
 
 	case 0x40001C0 ... 0x40001C3:

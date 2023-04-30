@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_PPU_HPP
-#define ORTIN_PPU_HPP
+#pragma once
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -403,6 +401,3 @@ public:
 		u16 POWCNT1; // NDS9 - 0x4000304
 	};
 };
-
-
-#endif //ORTIN_PPU_HPP

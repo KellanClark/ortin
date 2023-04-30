@@ -1,5 +1,4 @@
-#ifndef ORTIN_APU_HPP
-#define ORTIN_APU_HPP
+#pragma once
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -105,5 +104,3 @@ public:
 	u32 SNDCAP1DAD; // NDS7 - 0x4000518
 	u16 SNDCAP1LEN; // NDS7 - 0x400051C
 };
-
-#endif //ORTIN_APU_HPP

@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_NDS_HPP
-#define ORTIN_NDS_HPP
+#pragma once
 
 #include <memory>
 
@@ -100,5 +98,3 @@ public:
 	int loadBios7(std::filesystem::path bios7FilePath);
 	int loadFirmware(std::filesystem::path firmwareFilePath);
 };
-
-#endif //ORTIN_NDS_HPP

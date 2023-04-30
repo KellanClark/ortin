@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_BUSARM9_HPP
-#define ORTIN_BUSARM9_HPP
+#pragma once
 
 #define ARM946E_DISABLE_FIQ
 
@@ -89,5 +87,3 @@ public:
 	u32 coprocessorRead(u32 copNum, u32 copOpc, u32 copSrcDestReg, u32 copOpReg, u32 copOpcType);
 	void coprocessorWrite(u32 copNum, u32 copOpc, u32 copSrcDestReg, u32 copOpReg, u32 copOpcType, u32 value);
 };
-
-#endif //ORTIN_BUSARM9_HPP

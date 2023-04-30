@@ -1,4 +1,3 @@
-
 #include "emulator/dma.hpp"
 
 template <bool dma9>

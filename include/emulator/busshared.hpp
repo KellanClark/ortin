@@ -1,5 +1,4 @@
-#ifndef ORTIN_BUSSHARED_HPP
-#define ORTIN_BUSSHARED_HPP
+#pragma once
 
 #define BUS_CLOCK_SPEED 33554432
 #define INTERNAL_CLOCK_SPEED 67108864
@@ -91,5 +90,3 @@ public:
 	u64 currentTime;
 	std::priority_queue<Event, std::vector<Event>, eventSorter> eventQueue;
 };
-
-#endif //ORTIN_BUSSHARED_HPP

@@ -1,5 +1,4 @@
-#ifndef ORTIN_RTC_HPP
-#define ORTIN_RTC_HPP
+#pragma once
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -119,5 +118,3 @@ public:
 
 	u8 freeRegister; // Command 7
 };
-
-#endif //ORTIN_RTC_HPP

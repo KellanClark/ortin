@@ -1,4 +1,3 @@
-
 #include "emulator/nds.hpp"
 
 #include "emulator/dma.hpp"
@@ -67,14 +66,15 @@ void NDS::directBoot() {
 	// Register values after boot
 	nds9->cpu->reg.R[12] = nds9->cpu->reg.R[14] = romInfo.arm9EntryPoint;
 	nds9->cpu->reg.R[13] = 0x3002F7C;
-	nds9->cpu->reg.R13_irq = 0x3003F80;
-	nds9->cpu->reg.R13_svc = 0x3003FC0;
+	nds9->cpu->reg.R_irq[13 - 8] = 0x3003F80;
+	nds9->cpu->reg.R_svc[13 - 8] = 0x3003FC0;
+	nds9->cpu->reg.CPSR = 0xDF;
 	nds9->coprocessorWrite(15, 0, 9, 1, 0, 0x0080000A);
 	nds9->coprocessorWrite(15, 0, 9, 1, 1, 0x0000000C);
 	nds7->cpu->reg.R[12] = nds7->cpu->reg.R[14] = romInfo.arm7EntryPoint;
 	nds7->cpu->reg.R[13] = 0x300FD80;
-	nds7->cpu->reg.R13_irq = 0x300FF80;
-	nds7->cpu->reg.R13_svc = 0x300FFC0;
+	nds7->cpu->reg.R_irq[13 - 8] = 0x300FF80;
+	nds7->cpu->reg.R_svc[13 - 8] = 0x300FFC0;
 
 	// Copy header into memory
 	for (int i = 0; i < 0x170; i++)

@@ -1,4 +1,3 @@
-
 #include "menus/debug.hpp"
 #include "imgui_memory_editor.h"
 
@@ -226,9 +225,9 @@ void DebugMenu::arm9DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R8_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[8 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R8_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[8 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -236,9 +235,9 @@ void DebugMenu::arm9DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[9]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R9_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[9 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R9_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[9 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -246,9 +245,9 @@ void DebugMenu::arm9DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[10]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R10_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[10 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R10_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[10 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -256,9 +255,9 @@ void DebugMenu::arm9DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[11]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R11_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[11 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R11_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[11 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -266,9 +265,9 @@ void DebugMenu::arm9DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[12]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R12_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[12 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R12_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[12 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -276,17 +275,17 @@ void DebugMenu::arm9DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[13]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_irq);
+			ImGui::Text("%08X", cpu->reg.R_irq[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_svc);
+			ImGui::Text("%08X", cpu->reg.R_svc[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_abt);
+			ImGui::Text("%08X", cpu->reg.R_abt[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_und);
+			ImGui::Text("%08X", cpu->reg.R_und[13 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -294,17 +293,17 @@ void DebugMenu::arm9DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[14]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_irq);
+			ImGui::Text("%08X", cpu->reg.R_irq[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_svc);
+			ImGui::Text("%08X", cpu->reg.R_svc[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_abt);
+			ImGui::Text("%08X", cpu->reg.R_abt[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_und);
+			ImGui::Text("%08X", cpu->reg.R_und[14 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -316,15 +315,15 @@ void DebugMenu::arm9DebugWindow() {
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("SPSR:");
 			ImGui::TableSetColumnIndex(3);
-			ImGui::Text("%08X", cpu->reg.SPSR_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[7]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.SPSR_irq);
+			ImGui::Text("%08X", cpu->reg.R_irq[7]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.SPSR_svc);
+			ImGui::Text("%08X", cpu->reg.R_svc[7]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.SPSR_abt);
+			ImGui::Text("%08X", cpu->reg.R_abt[7]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.SPSR_und);
+			ImGui::Text("%08X", cpu->reg.R_und[7]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -512,9 +511,9 @@ void DebugMenu::arm7DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R8_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[8 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R8_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[8 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -522,9 +521,9 @@ void DebugMenu::arm7DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[9]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R9_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[9 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R9_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[9 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -532,9 +531,9 @@ void DebugMenu::arm7DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[10]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R10_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[10 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R10_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[10 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -542,9 +541,9 @@ void DebugMenu::arm7DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[11]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R11_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[11 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R11_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[11 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -552,9 +551,9 @@ void DebugMenu::arm7DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[12]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R12_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[12 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R12_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[12 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -562,17 +561,17 @@ void DebugMenu::arm7DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[13]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_irq);
+			ImGui::Text("%08X", cpu->reg.R_irq[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_svc);
+			ImGui::Text("%08X", cpu->reg.R_svc[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_abt);
+			ImGui::Text("%08X", cpu->reg.R_abt[13 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R13_und);
+			ImGui::Text("%08X", cpu->reg.R_und[13 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -580,17 +579,17 @@ void DebugMenu::arm7DebugWindow() {
 			ImGui::TableNextColumn();
 			ImGui::Text("%08X", cpu->reg.R[14]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_user);
+			ImGui::Text("%08X", cpu->reg.R_usr[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_irq);
+			ImGui::Text("%08X", cpu->reg.R_irq[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_svc);
+			ImGui::Text("%08X", cpu->reg.R_svc[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_abt);
+			ImGui::Text("%08X", cpu->reg.R_abt[14 - 8]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.R14_und);
+			ImGui::Text("%08X", cpu->reg.R_und[14 - 8]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);
@@ -602,15 +601,15 @@ void DebugMenu::arm7DebugWindow() {
 			ImGui::TableSetColumnIndex(0);
 			ImGui::Text("SPSR:");
 			ImGui::TableSetColumnIndex(3);
-			ImGui::Text("%08X", cpu->reg.SPSR_fiq);
+			ImGui::Text("%08X", cpu->reg.R_fiq[7]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.SPSR_irq);
+			ImGui::Text("%08X", cpu->reg.R_irq[7]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.SPSR_svc);
+			ImGui::Text("%08X", cpu->reg.R_svc[7]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.SPSR_abt);
+			ImGui::Text("%08X", cpu->reg.R_abt[7]);
 			ImGui::TableNextColumn();
-			ImGui::Text("%08X", cpu->reg.SPSR_und);
+			ImGui::Text("%08X", cpu->reg.R_und[7]);
 			ImGui::TableNextRow();
 
 			ImGui::TableSetColumnIndex(0);

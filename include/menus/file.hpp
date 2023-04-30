@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_MENU_FILE_HPP
-#define ORTIN_MENU_FILE_HPP
+#pragma once
 
 #include "ortin.hpp"
 #include "nfd.hpp"
@@ -27,5 +25,3 @@ private:
 	void firmwareFileDialog();
 	void romInfoWindow();
 };
-
-#endif //ORTIN_MENU_FILE_HPP

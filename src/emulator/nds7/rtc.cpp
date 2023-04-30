@@ -1,7 +1,4 @@
-
 #include "emulator/nds7/rtc.hpp"
-
-#include <cassert>
 
 // https://stackoverflow.com/a/2602885
 u8 reverseBits(u8 b) {
@@ -305,8 +302,6 @@ void RTC::writeIO7(u8 value) {
 							refresh<false>();
 							break;
 						case 4:
-							//assert(((interrupt1Mode & 7) == 4) || ((interrupt1Mode & 3) == 1));
-
 							if (interrupt1Mode & 4) {
 								readBuf = alarm1.raw;
 								switch (byteNum) {

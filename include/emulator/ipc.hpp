@@ -1,6 +1,4 @@
-
-#ifndef ORTIN_IPC_HPP
-#define ORTIN_IPC_HPP
+#pragma once
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -94,5 +92,3 @@ public:
 	std::queue<u32> fifo9to7;
 	std::queue<u32> fifo7to9;
 };
-
-#endif //ORTIN_IPC_HPP

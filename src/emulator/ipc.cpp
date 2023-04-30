@@ -1,4 +1,3 @@
-
 #include "emulator/ipc.hpp"
 
 IPC::IPC(std::shared_ptr<BusShared> shared) : shared(shared) {

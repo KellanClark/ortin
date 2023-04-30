@@ -1,4 +1,3 @@
-
 #include "emulator/cartridge/key1.hpp"
 
 // KEY1 functions are adapted from GBATEK

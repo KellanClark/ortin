@@ -1,5 +1,4 @@
-#ifndef ORTIN_DMA_HPP
-#define ORTIN_DMA_HPP
+#pragma once
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -79,5 +78,3 @@ public:
 
 #include "emulator/nds9/busarm9.hpp"
 #include "emulator/nds7/busarm7.hpp"
-
-#endif //ORTIN_DMA_HPP

@@ -1,4 +1,3 @@
-
 #include "menus/dev.hpp"
 
 DevMenu::DevMenu() {

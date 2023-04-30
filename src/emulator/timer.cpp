@@ -1,4 +1,3 @@
-
 #include "emulator/timer.hpp"
 
 Timer::Timer(bool timer9, std::shared_ptr<BusShared> shared) : timer9(timer9), shared(shared) {

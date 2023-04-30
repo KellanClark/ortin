@@ -1,4 +1,3 @@
-
 #include "emulator/ppu.hpp"
 
 #define convertColor(x) ((x) | 0x8000)

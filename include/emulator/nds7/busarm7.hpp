@@ -1,10 +1,6 @@
-
-#ifndef ORTIN_BUSARM7_HPP
-#define ORTIN_BUSARM7_HPP
+#pragma once
 
 #define ARM7TDMI_DISABLE_FIQ
-
-#include <memory>
 
 #include "types.hpp"
 #include "emulator/busshared.hpp"
@@ -96,5 +92,3 @@ public:
 	u8 readIO(u32 address, bool final);
 	void writeIO(u32 address, u8 value, bool final);
 };
-
-#endif //ORTIN_BUSARM7_HPP

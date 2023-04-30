@@ -1,4 +1,3 @@
-
 #include "emulator/nds9/busarm9.hpp"
 
 #include "emulator/ipc.hpp"
@@ -296,7 +295,7 @@ void BusARM9::write(u32 address, T value, bool sequential) {
 			memcpy(ppu->oam + (alignedAddress & 0x7FF), &value, sizeof(T));
 			break;
 		default:
-			shared->log << fmt::format("[NDS9 Bus] Write to unknown location 0x{:0>8X} with value 0x{:0>8X} of size {}\n", address, value, sizeof(T));
+			shared->log << fmt::format("[NDS9 Bus] Write to unknown location 0x{:0>8X} with {} byte value 0x{:0>{}X}\n", address, sizeof(T), value, sizeof(T) * 2);
 			break;
 		}
 	}

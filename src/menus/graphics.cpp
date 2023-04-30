@@ -1,4 +1,3 @@
-
 #include "menus/graphics.hpp"
 
 GraphicsMenu::GraphicsMenu() {
