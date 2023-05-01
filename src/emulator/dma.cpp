@@ -30,18 +30,8 @@ template <bool dma9>
 void DMA<dma9>::checkDma(DmaStart event) {
 	for (int i = 0; i < 4; i++) {
 		if (channel[i].enable) {
-			if constexpr (dma9) {
-				if ((channel[i].startTiming == (int)event) ||
-					((channel[i].startTiming == DMA_DS_SLOT) && (event == DMA_IMMEDIATE)))
-					doDma(i);
-			} else {
-				if (((event == DMA_IMMEDIATE) && (channel[i].startTiming == 0)) ||
-					((event == DMA_VBLANK) && (channel[i].startTiming == 2)) ||
-					((event == DMA_IMMEDIATE) && (channel[i].startTiming == 4)) ||
-					((event == DMA_WIRELESS) && (channel[i].startTiming == 6) && !(i & 1)) ||
-					((event == DMA_GBA_SLOT) && (channel[i].startTiming == 6) && (i & 1)))
-					doDma(i);
-			}
+			if (channel[i].startTiming == (int)event)
+				doDma(i);
 		}
 	}
 }
@@ -81,9 +71,9 @@ void DMA<dma9>::doDma(int channelNum) {
 		} else {
 			switch (info.startTiming) {
 			case 0: shared->log << "Immediately"; break;
-			case 1: shared->log << "V-Blank"; break;
-			case 2: shared->log << "DS Cartridge Slot"; break;
-			case 3: shared->log << ((channelNum & 1) ? "GBA Cartridge Slot" : "Wireless interrupt"); break;
+			case 2: shared->log << "V-Blank"; break;
+			case 4: shared->log << "DS Cartridge Slot"; break;
+			case 6: shared->log << ((channelNum & 1) ? "GBA Cartridge Slot" : "Wireless interrupt"); break;
 			}
 		}
 		shared->log << "  Chunk Size: " << (16 << info.transferType) << "-bit  Repeat: " << (info.repeat ? "True" : "False") << "\n";
@@ -335,8 +325,10 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(0);
 
-			if (channel[0].startTiming == 0) // Immediately
-				checkDma(DMA_IMMEDIATE);
+			if (channel[0].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
+				checkDma(DmaStart::DMA_IMMEDIATE);
+			if (channel[0].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
+				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000BC:
@@ -379,8 +371,10 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(1);
 
-			if (channel[1].startTiming == 0) // Immediately
-				checkDma(DMA_IMMEDIATE);
+			if (channel[1].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
+				checkDma(DmaStart::DMA_IMMEDIATE);
+			if (channel[1].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
+				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000C8:
@@ -423,8 +417,10 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(2);
 
-			if (channel[2].startTiming == 0) // Immediately
-				checkDma(DMA_IMMEDIATE);
+			if (channel[2].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
+				checkDma(DmaStart::DMA_IMMEDIATE);
+			if (channel[2].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
+				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000D4:
@@ -467,8 +463,10 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(3);
 
-			if (channel[3].startTiming == 0) // Immediately
-				checkDma(DMA_IMMEDIATE);
+			if (channel[3].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
+				checkDma(DmaStart::DMA_IMMEDIATE);
+			if (channel[3].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
+				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000E0:
@@ -633,7 +631,6 @@ u8 DMA<dma9>::readIO7(u32 address) {
 template <bool dma9>
 void DMA<dma9>::writeIO7(u32 address, u8 value) {
 	bool oldEnable;
-	shared->log << fmt::format("[NDS7 Bus][DMA] Write to IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 
 	switch (address) {
 	case 0x40000B0:
@@ -676,8 +673,10 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(0);
 
-			if (channel[0].startTiming == 0) // Immediately
-				checkDma(DMA_IMMEDIATE);
+			if (channel[0].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
+				checkDma(DmaStart::DMA_IMMEDIATE);
+			if (channel[0].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
+				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000BC:
@@ -720,8 +719,10 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(1);
 
-			if (channel[1].startTiming == 0) // Immediately
-				checkDma(DMA_IMMEDIATE);
+			if (channel[1].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
+				checkDma(DmaStart::DMA_IMMEDIATE);
+			if (channel[1].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
+				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000C8:
@@ -764,8 +765,10 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(2);
 
-			if (channel[2].startTiming == 0) // Immediately
-				checkDma(DMA_IMMEDIATE);
+			if (channel[2].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
+				checkDma(DmaStart::DMA_IMMEDIATE);
+			if (channel[2].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
+				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000D4:
@@ -808,10 +811,10 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 		if ((value & 0x80) && !oldEnable) {
 			reloadInternalRegisters(3);
 
-			if (channel[3].startTiming == 0) // Immediately
-				checkDma(DMA_IMMEDIATE);
-			if (channel[3].startTiming == 4) // Make cartridge DMA instant for now
-				checkDma(DMA_DS_SLOT);
+			if (channel[3].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
+				checkDma(DmaStart::DMA_IMMEDIATE);
+			if (channel[3].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
+				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	default:

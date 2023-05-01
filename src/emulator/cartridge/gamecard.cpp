@@ -157,9 +157,14 @@ void Gamecard::readMoreData() {
 		break;
 	}
 
-	if ((bytesRead == dataBlockSizeBytes) && transferReadyIrq) {
+	shared->log << fmt::format("[Gamecard] Bytes read: 0x{:0>8X} - Data: 0x{:0>8X}\n", bytesRead, cartridgeReadData);
+	if (bytesRead >= dataBlockSizeBytes) {
 		blockStart = false;
-		shared->addEvent(0, GAMECARD_TRANSFER_READY);
+		shared->log << fmt::format("[Gamecard] Transfer ready\n");
+		if (transferReadyIrq)
+			shared->addEvent(0, GAMECARD_COMMAND_COMPLETE);
+	} else {
+		shared->addEvent(0, GAMECARD_TRANSFER_READY); // All reads are instant
 	}
 
 	bytesRead += 4;

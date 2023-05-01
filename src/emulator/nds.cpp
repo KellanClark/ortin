@@ -1,5 +1,6 @@
 #include "emulator/nds.hpp"
 
+#include "emulator/busshared.hpp"
 #include "emulator/dma.hpp"
 #include "emulator/timer.hpp"
 #include "arm946e/arm946e.hpp"
@@ -43,7 +44,7 @@ void NDS::reset() {
 	nds7->refreshWramPages();
 	nds9->refreshVramPages();
 
-	directBoot();
+	//directBoot();
 
 	nds9->delay = 0;
 	nds7->delay = 0;
@@ -160,8 +161,8 @@ void NDS::run() {
 					if (ppu->vCounterIrq7) { nds7->requestInterrupt(BusARM7::INT_VCOUNT); ppu->vCounterIrq7 = false; }
 
 					if (ppu->currentScanline == 192) {
-						nds9->dma->checkDma(DMA_VBLANK);
-						nds7->dma->checkDma(DMA_VBLANK);
+						nds9->dma->checkDma(DMA<true>::DmaStart::DMA_VBLANK);
+						nds7->dma->checkDma(DMA<false>::DmaStart::DMA_VBLANK);
 					}
 
 					if (ppu->currentScanline == 0)
@@ -174,7 +175,7 @@ void NDS::run() {
 					if (ppu->hBlankIrq7) { nds7->requestInterrupt(BusARM7::INT_HBLANK); ppu->hBlankIrq7 = false; }
 
 					if (ppu->currentScanline < 192)
-						nds9->dma->checkDma(DMA_HBLANK);
+						nds9->dma->checkDma(DMA<true>::DmaStart::DMA_HBLANK);
 					break;
 				case REFRESH_WRAM_PAGES:
 					nds9->refreshWramPages();
@@ -207,6 +208,13 @@ void NDS::run() {
 					if (nds7->timer->timer[3].interruptRequested) { nds7->timer->timer[3].interruptRequested = false; nds7->requestInterrupt(BusARM7::INT_TIMER_3); }
 					break;
 				case GAMECARD_TRANSFER_READY:
+					if (shared->ndsSlotAccess) {
+						nds7->dma->checkDma(DMA<false>::DmaStart::DMA_DS_SLOT);
+					} else {
+						nds9->dma->checkDma(DMA<true>::DmaStart::DMA_DS_SLOT);
+					}
+					break;
+				case GAMECARD_COMMAND_COMPLETE:
 					if (shared->ndsSlotAccess) {
 						nds7->requestInterrupt(BusARM7::INT_NDS_SLOT_DATA);
 					} else {

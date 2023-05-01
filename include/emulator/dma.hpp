@@ -1,24 +1,12 @@
 #pragma once
 
+#include "emulator/dma.hpp"
 #include "types.hpp"
 #include "emulator/busshared.hpp"
 
 // Forward declarations
 class BusARM9;
 class BusARM7;
-
-// These match up with 9 and will need an if chain for 7
-enum DmaStart {
-	DMA_IMMEDIATE = 0,
-	DMA_VBLANK = 1,
-	DMA_HBLANK = 2,
-	DMA_DISPLAY_START = 3,
-	DMA_MAIN_MEMORY_DISPLAY = 4,
-	DMA_DS_SLOT = 5,
-	DMA_GBA_SLOT = 6,
-	DMA_GEOMETRY_FIFO = 7,
-	DMA_WIRELESS
-};
 
 template <bool dma9>
 class DMA {
@@ -29,6 +17,25 @@ public:
 
 	// External Use
 	bool logDma;
+
+	enum class DmaStart9 {
+		DMA_IMMEDIATE = 0,
+		DMA_VBLANK = 1,
+		DMA_HBLANK = 2,
+		DMA_DISPLAY_START = 3,
+		DMA_MAIN_MEMORY_DISPLAY = 4,
+		DMA_DS_SLOT = 5,
+		DMA_GBA_SLOT = 6,
+		DMA_GEOMETRY_FIFO = 7
+	};
+	enum class DmaStart7 {
+		DMA_IMMEDIATE = 0,
+		DMA_VBLANK = 2,
+		DMA_DS_SLOT = 4,
+		DMA_WIRELESS = 6,
+		DMA_GBA_SLOT = 6
+	};
+	using DmaStart = std::conditional_t<dma9, DmaStart9, DmaStart7>;
 
 	DMA(std::shared_ptr<BusShared> shared, ArchBus &bus);
 	~DMA();

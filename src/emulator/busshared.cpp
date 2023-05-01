@@ -94,6 +94,9 @@ u8 BusShared::readIO7(u32 address) {
 		return (u8)KEYCNT7;
 	case 0x4000133:
 		return (u8)(KEYCNT7 >> 8);
+	case 0x4000134:
+	case 0x4000135:
+		return 0; // Shut up serial
 	case 0x4000136:
 		return (u8)EXTKEYIN;
 	case 0x4000137:
@@ -118,6 +121,9 @@ void BusShared::writeIO7(u32 address, u8 value) {
 	case 0x4000133:
 		KEYCNT7 = (KEYCNT7 & 0x00FF) | ((value & 0xC3) << 8);
 		break;
+	case 0x4000134:
+	case 0x4000135:
+		break; // Shut up serial
 	case 0x4000204:
 		EXMEMSTAT = (EXMEMCNT & 0xFF80) | ((value & 0x7F) << 0);
 		break;
