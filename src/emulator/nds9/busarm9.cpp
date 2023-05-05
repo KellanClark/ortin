@@ -225,6 +225,13 @@ T BusARM9::read(u32 address, bool sequential) {
 		case 0x7000000 ... 0x7FFFFFF: // OAM
 			memcpy(&val, ppu->oam + (alignedAddress & 0x7FF), sizeof(T));
 			break;
+		case 0x8000000 ... 0x9FFFFFF: // GBA Slot ROM (open bus for now)
+			if (sizeof(T) == 4) {
+				val = ((alignedAddress / 2) & 0xFFFF) | (((alignedAddress / 2) + 1) & 0xFFFF);
+			} else {
+				val = (T)(alignedAddress / 2);
+			}
+			break;
 		case 0xFFFF0000 ... 0xFFFFFFFF: // ARM9-BIOS
 			memcpy(&val, bios + (alignedAddress - 0xFFFF0000), sizeof(T));
 			break;

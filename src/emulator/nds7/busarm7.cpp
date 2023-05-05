@@ -228,6 +228,13 @@ T BusARM7::read(u32 address, bool sequential) {
 			if (!(ppu->vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramCOffset & 1))) && !(ppu->vramDMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramDOffset & 1))))
 				delay -= waitstates[code][sequential][sizeof(T) == 4][0x6] + 2;
 			break;
+		case 0x8000000 ... 0x9FFFFFF: // GBA Slot ROM (open bus for now)
+			if (sizeof(T) == 4) {
+				val = ((alignedAddress / 2) & 0xFFFF) | (((alignedAddress / 2) + 1) & 0xFFFF);
+			} else {
+				val = (T)(alignedAddress / 2);
+			}
+			break;
 		default:
 			delay -= waitstates[code][sequential][sizeof(T) == 4][(alignedAddress >> 24) & 0xF] + 2;
 
