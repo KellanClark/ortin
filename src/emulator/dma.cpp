@@ -2,7 +2,7 @@
 
 template <bool dma9>
 DMA<dma9>::DMA(std::shared_ptr<BusShared> shared, ArchBus &bus) : shared(shared), bus(bus) {
-	logDma = true;
+	logDma = false;
 }
 
 template <bool dma9>

@@ -33,7 +33,7 @@ void Gamecard::reset() {
 	cartridgeReadData = 0xFFFFFFFF;
 
 	// Initialize encryption and secure area
-	level2.initKeycode(*(u32 *)(romData + 0xC), 2, 0x8); // `*(u16 *)(romData + 0xC)` is the gamecode stored in the header
+	level2.initKeycode(*(u32 *)(romData + 0xC), 2, 0x8); // `*(u32 *)(romData + 0xC)` is the gamecode stored in the header
 	level3.initKeycode(*(u32 *)(romData + 0xC), 2, 0x8);
 
 	for (int i = 0; i < 0x800; i += 8)
@@ -135,7 +135,7 @@ void Gamecard::readMoreData() {
 	case KEY2:
 		switch (currentCommand >> 56) {
 		case 0xB7: { // Get Data
-			u32 address = (currentCommand >> 6) & 0xFFFFFFFF;
+			u32 address = (currentCommand >> 24) & 0xFFFFFFFF;
 			address = (address & 0xFFFFF000) | ((address + bytesRead) & 0xFFF) & (romSizeMax - 1);
 
 			if (address <= 0x7FFF) [[unlikely]] // Secure area can't be read
@@ -157,10 +157,10 @@ void Gamecard::readMoreData() {
 		break;
 	}
 
-	shared->log << fmt::format("[Gamecard] Bytes read: 0x{:0>8X} - Data: 0x{:0>8X}\n", bytesRead, cartridgeReadData);
+	//shared->log << fmt::format("[Gamecard] Bytes read: 0x{:0>8X} - Data: 0x{:0>8X}\n", bytesRead, cartridgeReadData);
 	if (bytesRead >= dataBlockSizeBytes) {
 		blockStart = false;
-		shared->log << fmt::format("[Gamecard] Transfer ready\n");
+		//shared->log << fmt::format("[Gamecard] Transfer ready\n");
 		if (transferReadyIrq)
 			shared->addEvent(0, GAMECARD_COMMAND_COMPLETE);
 	} else {
@@ -243,6 +243,8 @@ void Gamecard::writeIO9(u32 address, u8 value) {
 		break;
 	case 0x40001A1:
 		AUXSPICNT = (AUXSPICNT & 0x00FF) | ((value & 0xE0) << 8);
+		break;
+	case 0x40001A3:
 		break;
 	case 0x40001A4:
 		ROMCTRL = (ROMCTRL & 0xFFFFFF00) | ((value & 0xFF) << 0);
@@ -408,6 +410,8 @@ void Gamecard::writeIO7(u32 address, u8 value) {
 		break;
 	case 0x40001A1:
 		AUXSPICNT = (AUXSPICNT & 0x00FF) | ((value & 0xE0) << 8);
+		break;
+	case 0x40001A3:
 		break;
 	case 0x40001A4:
 		ROMCTRL = (ROMCTRL & 0xFFFFFF00) | ((value & 0xFF) << 0);

@@ -15,6 +15,7 @@ class Timer;
 class RTC;
 class SPI;
 class APU;
+class WiFi;
 
 class BusARM7 {
 public:
@@ -29,6 +30,7 @@ public:
 	std::unique_ptr<RTC> rtc;
 	std::unique_ptr<SPI> spi;
 	std::unique_ptr<APU> apu;
+	std::unique_ptr<WiFi> wifi;
 	u8 *wram;
 	u8 *bios;
 

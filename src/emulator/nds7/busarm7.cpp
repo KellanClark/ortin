@@ -10,6 +10,7 @@
 #include "emulator/nds7/rtc.hpp"
 #include "emulator/nds7/spi.hpp"
 #include "emulator/nds7/apu.hpp"
+#include "emulator/nds7/wifi.hpp"
 
 static constexpr u32 toPage(u32 address) {
 	return address >> 14; // Pages are 16KB
@@ -31,6 +32,7 @@ BusARM7::BusARM7(std::shared_ptr<BusShared> shared, std::shared_ptr<IPC> ipc, st
 	rtc = std::make_unique<RTC>(shared);
 	spi = std::make_unique<SPI>(shared);
 	apu = std::make_unique<APU>(shared, *this);
+	wifi = std::make_unique<WiFi>(shared);
 
 	wram = new u8[0x10000]; // 64KB
 	memset(wram, 0, 0x10000);
@@ -75,6 +77,8 @@ BusARM7::~BusARM7() {
 void BusARM7::reset() {
 	delay = 0;
 
+	memset(wram, 0, 0x10000);
+
 	IME = false;
 	IE = IF = 0;
 	HALTCNT = 0;
@@ -87,6 +91,7 @@ void BusARM7::reset() {
 	rtc->reset();
 	spi->reset();
 	apu->reset();
+	wifi->reset();
 	cpu->resetARM7TDMI();
 }
 
@@ -204,7 +209,7 @@ T BusARM7::read(u32 address, bool sequential) {
 		case 0x0000000 ... 0x0004000: // ARM7-BIOS
 			memcpy(&val, bios + alignedAddress, sizeof(T));
 			break;
-		case 0x4000000 ... 0x4FFFFFF: // ARM7-I/O Ports
+		case 0x4000000 ... 0x47FFFFF: // ARM7-I/O Ports
 			if constexpr (sizeof(T) == 4) {
 				val |= (readIO(alignedAddress | 0, false) << 0);
 				val |= (readIO(alignedAddress | 1, false) << 8);
@@ -217,7 +222,15 @@ T BusARM7::read(u32 address, bool sequential) {
 				val = readIO(alignedAddress, true);
 			}
 			break;
-		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap
+		case 0x4800000 ... 0x4808FFF: // Wifi
+			if constexpr (sizeof(T) == 2) {
+				val = wifi->readIO7(alignedAddress);
+			} else if constexpr (sizeof(T) == 4) {
+				val = wifi->readIO7(alignedAddress) | (wifi->readIO7(alignedAddress + 2) << 16); // Split into 16-bit reads
+			}
+			// Byte reads aren't allowed
+			break;
+		case 0x6000000 ... 0x6FFFFFF: // Fallback for when VRAM banks overlap
 			offset = alignedAddress & 0x1FFFF;
 
 			if (ppu->vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramCOffset & 1)))
@@ -264,7 +277,7 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 		memcpy(ptr + offset, &value, sizeof(T));
 	} else {
 		switch (address) {
-		case 0x4000000 ... 0x4FFFFFF:
+		case 0x4000000 ... 0x47FFFFF: // I/O
 			if constexpr (sizeof(T) == 4) {
 				writeIO(alignedAddress | 0, (u8)(value >> 0), false);
 				writeIO(alignedAddress | 1, (u8)(value >> 8), false);
@@ -277,7 +290,16 @@ void BusARM7::write(u32 address, T value, bool sequential) {
 				writeIO(alignedAddress, value, true);
 			}
 			break;
-		case 0x6000000 ... 0x6FFFFFF: // Fallback for when banks overlap
+		case 0x4800000 ... 0x4808FFF: // Wifi
+			if constexpr (sizeof(T) == 2) {
+				wifi->writeIO7(alignedAddress, value);
+			} else if constexpr (sizeof(T) == 4) {
+				wifi->writeIO7(alignedAddress, (u16)value); // Split into 16-bit writes
+				wifi->writeIO7(alignedAddress + 2, (u16)(value >> 16));
+			}
+			// Byte writes aren't allowed
+			break;
+		case 0x6000000 ... 0x6FFFFFF: // Fallback for when VRAM banks overlap
 			offset = alignedAddress & 0x1FFFF;
 
 			if (ppu->vramCMapped7 && (((alignedAddress >> 17) & 1) == (ppu->vramCOffset & 1)))

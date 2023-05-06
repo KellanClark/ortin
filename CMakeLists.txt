@@ -55,6 +55,7 @@ add_executable(Ortin
 	src/emulator/nds7/rtc.cpp
 	src/emulator/nds7/spi.cpp
 	src/emulator/nds7/apu.cpp
+	src/emulator/nds7/wifi.cpp
 )
 
 target_compile_definitions(fmt PUBLIC FMT_EXCEPTIONS=0)

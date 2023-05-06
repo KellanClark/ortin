@@ -8,6 +8,7 @@
 #include "emulator/nds7/rtc.hpp"
 #include "emulator/nds7/spi.hpp"
 #include "emulator/nds7/apu.hpp"
+#include "emulator/nds7/wifi.hpp"
 
 NDS::NDS() {
 	shared = std::make_shared<BusShared>();

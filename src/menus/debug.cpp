@@ -12,6 +12,7 @@
 #include "emulator/nds7/rtc.hpp"
 #include "emulator/nds7/spi.hpp"
 #include "emulator/nds7/apu.hpp"
+#include "emulator/nds7/wifi.hpp"
 
 DebugMenu::DebugMenu() {
 	showLogs = false;
@@ -704,7 +705,7 @@ void DebugMenu::memEditorWindow() {
 	static MemoryEditor memEditor;
 	static int selectedRegion = 0;
 
-	const static std::array<MemoryRegion, 23> memoryRegions = {{
+	const static std::array<MemoryRegion, 24> memoryRegions = {{
 		{"--Shared--", NULL, 0, true},
 		{"PSRAM/Main Memory (4MB mirrored 0x2000000 to 0x3000000)", ortin.nds.shared->psram, 0x400000, false},
 		{"Shared WRAM (32KB)", ortin.nds.shared->wram, 0x8000, false},
@@ -719,6 +720,7 @@ void DebugMenu::memEditorWindow() {
 		{"--ARM7 Only--", NULL, 0, true},
 		{"ARM7 BIOS (16KB 0x0000000 to 0x0004000)", ortin.nds.nds7->bios, 0x4000, false},
 		{"ARM7 WRAM (64KB mirrored 0x3800000 to 0x4000000)", ortin.nds.nds7->wram, 0x10000, false},
+		{"Wi-Fi RAM (8KB 0x4804000 to 0x4006000)", ortin.nds.nds7->wifi->wifiRam, 0x2000, false},
 
 		{"--VRAM Banks--", NULL, 0, true},
 		{"VRAM Bank A (128K)", ortin.nds.ppu->vramA, 0x20000},
