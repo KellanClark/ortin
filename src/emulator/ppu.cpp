@@ -107,8 +107,8 @@ void PPU::lineStart() {
 		engineB.bg[3].internalBGX = (float)((i32)(engineB.bg[3].BGX << 4) >> 4) / 256;
 		engineB.bg[3].internalBGY = (float)((i32)(engineB.bg[3].BGY << 4) >> 4) / 256;
 
-		memset(engineA.objInfoBuf, 0, sizeof(engineA.objInfoBuf));
-		memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
+		//memset(engineA.objInfoBuf, 0, sizeof(engineA.objInfoBuf));
+		//memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
 		break;
 	}
 
@@ -135,6 +135,22 @@ void PPU::hBlank() {
 
 	if (currentScanline < 192) {
 		drawLine();
+	}
+	if ((currentScanline < 192) || (currentScanline == 262)) {
+		memset(engineA.objInfoBuf, 0, sizeof(engineA.objInfoBuf));
+		if (engineA.displayMode == 1 && engineA.displayBgObj)
+			drawObjects<true>();
+		memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
+		if (engineB.displayMode == 1 && engineB.displayBgObj)
+			drawObjects<false>();
+	} else if (currentScanline == 262) {
+		// Draw first line of objects for next frame
+		/*memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
+		if (engineA.displayMode == 1 && engineA.displayBgObj)
+			drawObjects<true>();
+		memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
+		if (engineB.displayMode == 1 && engineB.displayBgObj)
+			drawObjects<false>();*/
 	}
 }
 
@@ -197,9 +213,6 @@ void PPU::drawLine() {
 
 		// Combine everything
 		combineLayers<true>();
-		memset(engineA.objInfoBuf, 0, sizeof(engineA.objInfoBuf));
-		if (engineA.displayBgObj)
-			drawObjects<true>();
 		break;
 	case 2: // VRAM Display
 		u16 *bank;
@@ -267,9 +280,6 @@ void PPU::drawLine() {
 
 		// Combine everything
 		combineLayers<false>();
-		memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
-		if (engineB.displayBgObj)
-			drawObjects<false>();
 	} else { // Display off
 		for (int i = 0; i < 256; i++)
 			framebufferB[currentScanline][i] = 0xFFFF;
@@ -495,7 +505,7 @@ void PPU::drawObjects() {
 	GraphicsEngine& engine = useEngineA ? engineA : engineB;
 	auto& objects = useEngineA ? oamA.objects : oamB.objects;
 	auto& matrices = useEngineA ? oamA.objectMatrices : oamB.objectMatrices;
-	const int realLine = currentScanline + 1;
+	const int realLine = (currentScanline == 262) ? 0 : currentScanline + 1;
 
 	for (int priority = 3; priority >= 0; priority--) {
 		for (int objNum = 127; objNum >= 0; objNum--) {
@@ -921,7 +931,7 @@ u8 PPU::readIO9(u32 address) {
 	case 0x400106F:
 		return 0;
 	default:
-		shared->log << fmt::format("[ARM9 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS9 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -1437,7 +1447,7 @@ void PPU::writeIO9(u32 address, u8 value) {
 	case 0x400106F:
 		break;
 	default:
-		shared->log << fmt::format("[ARM9 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>8X}\n", address, value);
+		shared->log << fmt::format("[NDS9 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }
@@ -1455,7 +1465,7 @@ u8 PPU::readIO7(u32 address) {
 	case 0x4000240:
 		return VRAMSTAT;
 	default:
-		shared->log << fmt::format("[ARM7 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
+		shared->log << fmt::format("[NDS7 Bus][PPU] Read from unknown IO register 0x{:0>7X}\n", address);
 		return 0;
 	}
 }
@@ -1469,7 +1479,7 @@ void PPU::writeIO7(u32 address, u8 value) {
 		DISPSTAT7 = (DISPSTAT7 & 0x00FF) | ((value & 0xFF) << 8);
 		break;
 	default:
-		shared->log << fmt::format("[ARM7 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>8X}\n", address, value);
+		shared->log << fmt::format("[NDS7 Bus][PPU] Write to unknown IO register 0x{:0>7X} with value 0x{:0>2X}\n", address, value);
 		break;
 	}
 }
