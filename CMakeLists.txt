@@ -61,11 +61,9 @@ add_executable(Ortin
 target_compile_definitions(fmt PUBLIC FMT_EXCEPTIONS=0)
 
 target_compile_options(Ortin PRIVATE
-	-ftemplate-depth=20000
-	-fconstexpr-depth=20000
-	-MMD
+	-ftemplate-depth=10000
+	-fconstexpr-depth=10000
 	-MP
-	-mbmi2
 	#-Wall
 	#-fsanitize=address
 	#-fsanitize=leak
