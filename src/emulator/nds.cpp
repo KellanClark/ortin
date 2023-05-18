@@ -54,6 +54,12 @@ void NDS::reset() {
 }
 
 void NDS::directBoot() {
+	// Decrypt secure area
+	//gamecard->level1.decrypt((u64 *)&(gamecard->romData[0x78]));
+	gamecard->level2.decrypt((u64 *)&(gamecard->romData[0x4000]));
+	for (int i = 0; i < 0x800; i += 8)
+		gamecard->level3.decrypt((u64 *)&(gamecard->romData[0x4000 + i]));
+
 	// Copy entry points into memory
 	for (int i = 0; i < romInfo.arm9CopySize; i++)
 		nds9->write<u8>(romInfo.arm9CopyDestination + i, romMap[romInfo.arm9RomOffset + i], false);
@@ -91,7 +97,7 @@ void NDS::directBoot() {
 	nds9->write<u16>(0x27FFC80 + 0x62, 0xBF'FF, false); // Touch-screen calibration point (scr.x2,y2) 8bit pixel-position
 
 	// Cartridge State
-	gamecard->encryptionMode = Gamecard::KEY2;
+	gamecard->encryptionMode = Gamecard::ENCRYPTION_KEY2;
 
 	// IO registers
 	nds9->POSTFLG = 1;

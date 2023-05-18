@@ -327,8 +327,6 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 
 			if (channel[0].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
 				checkDma(DmaStart::DMA_IMMEDIATE);
-			if (channel[0].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
-				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000BC:
@@ -373,8 +371,6 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 
 			if (channel[1].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
 				checkDma(DmaStart::DMA_IMMEDIATE);
-			if (channel[1].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
-				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000C8:
@@ -419,8 +415,6 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 
 			if (channel[2].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
 				checkDma(DmaStart::DMA_IMMEDIATE);
-			if (channel[2].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
-				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000D4:
@@ -465,8 +459,6 @@ void DMA<dma9>::writeIO9(u32 address, u8 value) {
 
 			if (channel[3].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
 				checkDma(DmaStart::DMA_IMMEDIATE);
-			if (channel[3].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
-				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000E0:
@@ -675,8 +667,6 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 
 			if (channel[0].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
 				checkDma(DmaStart::DMA_IMMEDIATE);
-			if (channel[0].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
-				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000BC:
@@ -721,8 +711,6 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 
 			if (channel[1].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
 				checkDma(DmaStart::DMA_IMMEDIATE);
-			if (channel[1].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
-				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000C8:
@@ -767,8 +755,6 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 
 			if (channel[2].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
 				checkDma(DmaStart::DMA_IMMEDIATE);
-			if (channel[2].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
-				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	case 0x40000D4:
@@ -813,8 +799,6 @@ void DMA<dma9>::writeIO7(u32 address, u8 value) {
 
 			if (channel[3].startTiming == (int)DmaStart::DMA_IMMEDIATE) // Immediately
 				checkDma(DmaStart::DMA_IMMEDIATE);
-			if (channel[3].startTiming == (int)DmaStart::DMA_DS_SLOT) // Make cartridge DMA instant for now
-				checkDma(DmaStart::DMA_DS_SLOT);
 		}
 		break;
 	default:

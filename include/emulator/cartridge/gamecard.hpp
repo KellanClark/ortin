@@ -19,6 +19,7 @@ public:
 	u64 currentCommand;
 	u32 bytesRead;
 	u32 dataBlockSizeBytes;
+	KEY1 level1;
 	KEY1 level2;
 	KEY1 level3;
 
@@ -27,9 +28,9 @@ public:
 
 	// Cartridge State
 	enum {
-		UNENCRYPTED,
-		KEY1,
-		KEY2
+		ENCRYPTION_UNENCRYPTED,
+		ENCRYPTION_KEY1,
+		ENCRYPTION_KEY2
 	} encryptionMode;
 	union {
 		struct {

@@ -3,6 +3,7 @@
 Gamecard::Gamecard(std::shared_ptr<BusShared> shared) : shared(shared) {
 	logGamecard = true;
 
+	memset(level1.keyBuf, 0, sizeof(level1.keyBuf));
 	memset(level2.keyBuf, 0, sizeof(level2.keyBuf));
 	memset(level3.keyBuf, 0, sizeof(level3.keyBuf));
 
@@ -27,18 +28,21 @@ void Gamecard::reset() {
 	bytesRead = 0;
 	dataBlockSizeBytes = 0;
 
-	encryptionMode = UNENCRYPTED;
+	encryptionMode = ENCRYPTION_UNENCRYPTED;
 
 	nextCartridgeCommand = 0;
 	cartridgeReadData = 0xFFFFFFFF;
 
 	// Initialize encryption and secure area
-	level2.initKeycode(*(u32 *)(romData + 0xC), 2, 0x8); // `*(u32 *)(romData + 0xC)` is the gamecode stored in the header
-	level3.initKeycode(*(u32 *)(romData + 0xC), 2, 0x8);
+	u32 gamecode = *(u32 *)(romData + 0xC);
+	level1.initKeycode(gamecode, 1, 0x8);
+	level2.initKeycode(gamecode, 2, 0x8);
+	level3.initKeycode(gamecode, 3, 0x8);
 
 	for (int i = 0; i < 0x800; i += 8)
-		level3.encrypt((u64 *)&romData[0x4000 + i]);
-	level2.encrypt((u64 *)&romData[0x4000]);
+		level3.encrypt((u64 *)(romData + 0x4000 + i));
+	level2.encrypt((u64 *)(romData + 0x4000));
+	//level1.encrypt((u64 *)(romData + 0x78));
 }
 
 void Gamecard::sendCommand() {
@@ -52,7 +56,7 @@ void Gamecard::sendCommand() {
 		dataBlockSizeBytes = 0x100 << dataBlockSize;
 	}
 
-	if (encryptionMode == KEY1)
+	if (encryptionMode == ENCRYPTION_KEY1)
 		level2.decrypt(&currentCommand);
 
 	if (logGamecard) {
@@ -77,7 +81,7 @@ void Gamecard::sendCommand() {
 
 void Gamecard::readMoreData() {
 	switch (encryptionMode){
-	case UNENCRYPTED:
+	case ENCRYPTION_UNENCRYPTED:
 		switch (currentCommand >> 56) {
 		case 0x00: // Get Header (from address 00000000h)
 			//shared->log << fmt::format("[Gamecard] Address 0x{:0>4X}\n", (bytesRead & 0xFFF));
@@ -85,7 +89,7 @@ void Gamecard::readMoreData() {
 			break;
 		case 0x3C: // Activate KEY1 Encryption Mode
 			if (bytesRead == 0) {
-				encryptionMode = KEY1;
+				encryptionMode = ENCRYPTION_KEY1;
 			}
 			cartridgeReadData = 0xFFFFFFFF;
 			break;
@@ -100,7 +104,7 @@ void Gamecard::readMoreData() {
 			break;
 		}
 		break;
-	case KEY1:
+	case ENCRYPTION_KEY1:
 		switch (currentCommand >> 60) {
 		case 0x1: // KEY1 Get ROM Chip ID
 			cartridgeReadData = chipId;
@@ -118,13 +122,14 @@ void Gamecard::readMoreData() {
 				} else {
 					cartridgeReadData = *(u32 *)(romData + ((currentCommand >> 32) & 0xF000) + (bytesRead % 0x1018));
 				}
+				shared->log << fmt::format("0x{:X} = 0x{:0>8X}\n", ((currentCommand >> 32) & 0xF000) + (bytesRead % 0x1018), cartridgeReadData);
 			}
 			} break;
 		case 0x4: // Activate KEY2 Encryption Mode
 			cartridgeReadData = 0xFFFFFFFF;
 			break;
 		case 0xA: // Enter Main Data Mode
-			encryptionMode = KEY2;
+			encryptionMode = ENCRYPTION_KEY2;
 			cartridgeReadData = 0x00000000;
 			break;
 		default:
@@ -132,7 +137,7 @@ void Gamecard::readMoreData() {
 			break;
 		}
 		break;
-	case KEY2:
+	case ENCRYPTION_KEY2:
 		switch (currentCommand >> 56) {
 		case 0xB7: { // Get Data
 			u32 address = (currentCommand >> 24) & 0xFFFFFFFF;

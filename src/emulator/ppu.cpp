@@ -143,14 +143,6 @@ void PPU::hBlank() {
 		memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
 		if (engineB.displayMode == 1 && engineB.displayBgObj)
 			drawObjects<false>();
-	} else if (currentScanline == 262) {
-		// Draw first line of objects for next frame
-		/*memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
-		if (engineA.displayMode == 1 && engineA.displayBgObj)
-			drawObjects<true>();
-		memset(engineB.objInfoBuf, 0, sizeof(engineB.objInfoBuf));
-		if (engineB.displayMode == 1 && engineB.displayBgObj)
-			drawObjects<false>();*/
 	}
 }
 
@@ -366,6 +358,7 @@ void PPU::draw2D() {
 		}
 
 		TileInfo tile;
+		Pixel color;
 		tile.raw = readVram<u16, useEngineA, false>(tileAddress);
 
 		int xMod = tile.horizontalFlip ? (7 - (x % 8)) : (x % 8);
@@ -373,6 +366,12 @@ void PPU::draw2D() {
 		u8 tileData;
 		if (bg.eightBitColor) { // 8 bits per pixel
 			tileData = readVram<u8, useEngineA, false>(bg.charBlockBaseAddress + (tile.tileIndex * 64) + (yMod * 8) + xMod);
+
+			if (engine.bgExtendedPalette) {
+				color.raw = readExtendedPalette<useEngineA, false>(layer + (((layer <= 1) && bg.extendedPaletteSlot) ? 2 : 0), tileData);
+			} else {
+				color = (useEngineA ? engineABgPalette : engineBBgPalette)[tileData];
+			}
 		} else { // 4 bits per pixel
 			tileData = readVram<u8, useEngineA, false>(bg.charBlockBaseAddress + (tile.tileIndex * 32) + (yMod * 4) + (xMod / 2));
 
@@ -381,10 +380,12 @@ void PPU::draw2D() {
 			} else {
 				tileData &= 0xF;
 			}
+
+			color = (useEngineA ? engineABgPalette : engineBBgPalette)[(tile.paletteBank << 4) | tileData];
 		}
 
 		if (tileData != 0) {
-			bg.drawBuf[column] = (useEngineA ? engineABgPalette : engineBBgPalette)[((tile.paletteBank << 4) * !bg.eightBitColor) | tileData];
+			bg.drawBuf[column] = color;
 			bg.drawBuf[column].solid = true;
 		}
 
@@ -469,6 +470,7 @@ void PPU::draw2DAffine() {
 				}
 			} else { // rot/scal with 16bit bgmap entries (Text+Affine mixup)
 				TileInfo tile;
+				Pixel color;
 				tile.raw = readVram<u16, useEngineA, false>(bg.screenBlockBaseAddress + ((((y & (screenSizeY - 1)) / 8) * (screenSizeY / 8)) + ((x & (screenSizeX - 1)) / 8)) * 2);
 
 				// Despite BGCNT.7 being 0, this mode uses 8 bit palette indexes because it's affine
@@ -476,8 +478,14 @@ void PPU::draw2DAffine() {
 				int yMod = tile.verticalFlip ? (7 - (y % 8)) : (y % 8);
 				u8 tileData = readVram<u8, useEngineA, false>(bg.charBlockBaseAddress + (tile.tileIndex * 64) + (yMod * 8) + xMod);
 
+				if (engine.bgExtendedPalette) {
+					color.raw = readExtendedPalette<useEngineA, false>(layer + (((layer <= 1) && bg.extendedPaletteSlot) ? 2 : 0), tileData);
+				} else {
+					color = (useEngineA ? engineABgPalette : engineBBgPalette)[tileData];
+				}
+
 				if (tileData != 0) {
-					bg.drawBuf[column] = (useEngineA ? engineABgPalette : engineBBgPalette)[tileData];
+					bg.drawBuf[column] = color;
 					bg.drawBuf[column].solid = true;
 				}
 			}
@@ -515,7 +523,8 @@ void PPU::drawObjects() {
 
 			const bool isAffine = obj.objMode != 0;
 			const bool isDoubleSize = obj.objMode == 3;
-			const bool isBitmap = obj.gfxMode == 2;
+			const bool isObjWindow = obj.gfxMode == 2;
+			const bool isBitmap = obj.gfxMode == 3;
 
 			unsigned int column = obj.objX;
 			unsigned int line = realLine - obj.objY;
@@ -582,6 +591,7 @@ void PPU::drawObjects() {
 				} else {
 					u32 tileDataAddress;
 					u8 tileData = 0;
+					Pixel color;
 
 					int xMod = x & 7;//obj.horizontalFlip ? (7 - (x % 8)) : (x % 8);
 					if (obj.eightBitColor) { // 8 bits per pixel
@@ -591,6 +601,12 @@ void PPU::drawObjects() {
 							tileDataAddress = ((obj.tileIndex & ~1) * 32) + ((((y / 8) * 16) + (x / 8)) * 64) + ((y & 7) * 8) + xMod;
 						}
 						tileData = readVram<u8, useEngineA, true>(tileDataAddress);
+						
+						if (engine.objExtendedPalette) {
+							color.raw = readExtendedPalette<useEngineA, true>(0, (obj.paletteBank << 8) | tileData);
+						} else {
+							color = (useEngineA ? engineAObjPalette : engineBObjPalette)[tileData];
+						}
 					} else { // 4 bits per pixel
 						if (engine.tileObjMapping) { // 1D
 							tileDataAddress = (obj.tileIndex * (32 << engine.tileObjBoundary)) + ((((y / 8) * (xSize / 8)) + (x / 8)) * 32) + ((y & 7) * 4) + (xMod / 2);
@@ -604,10 +620,12 @@ void PPU::drawObjects() {
 						} else {
 							tileData &= 0xF;
 						}
+
+						color = (useEngineA ? engineAObjPalette : engineBObjPalette)[(obj.paletteBank << 4) | tileData];
 					}
 
 					if (tileData != 0) {
-						engine.objInfoBuf[column].pix = (useEngineA ? engineAObjPalette : engineBObjPalette)[((obj.paletteBank << 4) * !obj.eightBitColor) | tileData];
+						engine.objInfoBuf[column].pix = color;
 						engine.objInfoBuf[column].pix.solid = true;
 						engine.objInfoBuf[column].mosaic = obj.mosaic;
 						engine.objInfoBuf[column].priority = priority;
@@ -656,6 +674,10 @@ void PPU::refreshVramPages() {
 	for (int i = 0; i < 0x200; i++) {
 		vramInfoTable[i].raw = 0;
 		vramPageTable[i] = NULL;
+	}
+	for (int i = 0; i < 10; i++) {
+		epramInfoTable[i].raw = 0;
+		epramPageTable[i] = NULL;
 	}
 
 	if (vramAEnable) {
@@ -736,6 +758,12 @@ void PPU::refreshVramPages() {
 				vramInfoTable[toPage(0x400000) | i].bankE = i;
 			}
 			break;
+		case 4: // Engine A, BG Extended Palette, Slot 0-3
+			for (int i = 0; i < 4; i++) {
+				epramInfoTable[i].enableE = true;
+				epramInfoTable[i].bankE = i;
+			}
+			break;
 		}
 	}
 	if (vramFEnable) {
@@ -748,6 +776,16 @@ void PPU::refreshVramPages() {
 			vramInfoTable[toPage(0x400000) | (vramFOffset & 1) | ((vramFOffset & 2) << 1)].enableF = true;
 			vramInfoTable[toPage(0x400000) | (vramFOffset & 1) | ((vramFOffset & 2) << 1) | 2].enableF = true;
 			break;
+		case 4: // Engine A, BG Extended Palette, Slot 0-1 (OFS=0), Slot 2-3 (OFS=1)
+			epramInfoTable[((vramFOffset & 1) * 2) + 0].enableF = true;
+			epramInfoTable[((vramFOffset & 1) * 2) + 0].bankF = 0;
+			epramInfoTable[((vramFOffset & 1) * 2) + 1].enableF = true;
+			epramInfoTable[((vramFOffset & 1) * 2) + 1].bankF = 1;
+			break;
+		case 5: // Engine A, OBJ Extended Palette, Slot 0
+			epramInfoTable[4].enableF = true;
+			epramInfoTable[4].bankF = 0;
+			break;
 		}
 	}
 	if (vramGEnable) {
@@ -759,6 +797,16 @@ void PPU::refreshVramPages() {
 		case 2: // 6400000h+(4000h*OFS.0)+(10000h*OFS.1)
 			vramInfoTable[toPage(0x400000) | (vramGOffset & 1) | ((vramGOffset & 2) << 1)].enableG = true;
 			vramInfoTable[toPage(0x400000) | (vramGOffset & 1) | ((vramGOffset & 2) << 1) | 2].enableG = true;
+			break;
+		case 4: // Engine A, BG Extended Palette, Slot 0-1 (OFS=0), Slot 2-3 (OFS=1)
+			epramInfoTable[((vramFOffset & 1) * 2) + 0].enableG = true;
+			epramInfoTable[((vramFOffset & 1) * 2) + 0].bankG = 0;
+			epramInfoTable[((vramFOffset & 1) * 2) + 1].enableG = true;
+			epramInfoTable[((vramFOffset & 1) * 2) + 1].bankG = 1;
+			break;
+		case 5: // Engine A, OBJ Extended Palette, Slot 0
+			epramInfoTable[4].enableG = true;
+			epramInfoTable[4].bankG = 0;
 			break;
 		}
 	}
@@ -774,6 +822,11 @@ void PPU::refreshVramPages() {
 			vramInfoTable[toPage(0x200000) | 5].enableH = true;
 			vramInfoTable[toPage(0x200000) | 5].bankH = 1;
 			break;
+		case 2: // Engine B, BG Extended Palette, Slot 0-3
+			for (int i = 0; i < 4; i++) {
+				epramInfoTable[i].enableH = true;
+				epramInfoTable[i].bankH = i;
+			}
 		}
 	}
 	if (vramIEnable) {
@@ -787,6 +840,9 @@ void PPU::refreshVramPages() {
 		case 2: // 6600000h
 			for (int i = 0; i < 8; i++)
 				vramInfoTable[toPage(0x600000) | i].enableI = true;
+			break;
+		case 3: // Engine B, OBJ Extended Palette, Slot 0
+			epramInfoTable[9].enableI = true;
 			break;
 		}
 	}
@@ -816,6 +872,16 @@ void PPU::refreshVramPages() {
 			if (entry.enableI) vramPageTable[i] = vramI;
 		}
 	}
+	for (int i = 0; i < 10; i++) {
+		VramInfoEntry entry = epramInfoTable[i];
+		if (std::popcount(entry.raw & 0x1FF) == 1) {
+			if (entry.enableE) vramPageTable[i] = vramE + (entry.bankE * 0x2000);
+			if (entry.enableF) vramPageTable[i] = vramF + (entry.bankF * 0x2000);
+			if (entry.enableG) vramPageTable[i] = vramG + (entry.bankG * 0x2000);
+			if (entry.enableH) vramPageTable[i] = vramH + (entry.bankH * 0x2000);
+			if (entry.enableI) vramPageTable[i] = vramI;
+		}
+	}
 }
 
 template <typename T, bool useEngineA, bool useObj>
@@ -834,7 +900,7 @@ T PPU::readVram(u32 address) {
 	if (ptr != NULL) { [[likely]]
 		memcpy(&val, ptr + offset, sizeof(T));
 	} else {
-		VramInfoEntry entry = vramInfoTable[toPage(alignedAddress)];
+		VramInfoEntry entry = vramInfoTable[page];
 		T tmpVal = 0;
 
 		if (entry.enableA) { memcpy(&tmpVal, vramA + (entry.bankA * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
@@ -846,6 +912,38 @@ T PPU::readVram(u32 address) {
 		if (entry.enableG) { memcpy(&tmpVal, vramG + offset, sizeof(T)); val |= tmpVal; }
 		if (entry.enableH) { memcpy(&tmpVal, vramH + (entry.bankH * 0x4000) + offset, sizeof(T)); val |= tmpVal; }
 		if (entry.enableI) { memcpy(&tmpVal, vramI + offset, sizeof(T)); val |= tmpVal; }
+	}
+
+	return val;
+}
+
+template <bool useEngineA, bool useObj>
+u16 PPU::readExtendedPalette(int slot, u32 index) {
+	int page = 0;
+	if constexpr (!useEngineA) {
+		page += 5;
+	}
+	if constexpr (useObj) {
+		page += 4;
+	} else {
+		page += slot;
+	}
+
+	u32 offset = index * 2;
+	u16 val = 0;
+	u8 *ptr = epramPageTable[page];
+
+	if (ptr != NULL) { [[likely]]
+		memcpy(&val, ptr + offset, sizeof(u16));
+	} else {
+		VramInfoEntry entry = epramInfoTable[page];
+		u16 tmpVal = 0;
+
+		if (entry.enableE) { memcpy(&tmpVal, vramE + (entry.bankE * 0x2000) + offset, sizeof(u16)); val |= tmpVal; }
+		if (entry.enableF) { memcpy(&tmpVal, vramF + (entry.bankF * 0x2000) + offset, sizeof(u16)); val |= tmpVal; }
+		if (entry.enableG) { memcpy(&tmpVal, vramG + (entry.bankG * 0x2000) + offset, sizeof(u16)); val |= tmpVal; }
+		if (entry.enableH) { memcpy(&tmpVal, vramH + (entry.bankH * 0x2000) + offset, sizeof(u16)); val |= tmpVal; }
+		if (entry.enableI) { memcpy(&tmpVal, vramI + offset, sizeof(u16)); val |= tmpVal; }
 	}
 
 	return val;

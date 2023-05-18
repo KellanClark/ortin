@@ -1,6 +1,6 @@
 #include "emulator/cartridge/key1.hpp"
 
-// KEY1 functions are adapted from GBATEK
+// KEY1 functions are adapted from GBATEK pseudocode
 void KEY1::encrypt(u64 *data) {
 	u32 y = *data & 0xFFFFFFFF;
 	u32 x = *data >> 32;

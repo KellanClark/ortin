@@ -36,8 +36,10 @@ public:
 			u32 bankC : 3;
 			u32 bankD : 3;
 			u32 bankE : 2;
-			u32 bankH : 1;
-			u32 : 8;
+			u32 bankF : 1; // Only used for extended palettes
+			u32 bankG : 1; // Only used for extended palettes
+			u32 bankH : 2; // Top bit only used for extended palettes
+			u32 : 5;
 		};
 		u32 raw;
 	};
@@ -124,7 +126,7 @@ public:
 	template <bool useEngineA> void combineLayers();
 
 	// Memory Interface
-	union {
+	union { // Palette RAM
 		struct {
 			Pixel engineABgPalette[0x100];
 			Pixel engineAObjPalette[0x100];
@@ -136,8 +138,11 @@ public:
 
 	VramInfoEntry vramInfoTable[0x200];
 	u8 *vramPageTable[0x200];
-	u8 *vramAll;
-	u8 *vramA, *vramB, *vramC, *vramD, *vramE, *vramF, *vramG, *vramH, *vramI;
+	u8 *vramAll; // VRAM is allocated as one big contiguous block
+	u8 *vramA, *vramB, *vramC, *vramD, *vramE, *vramF, *vramG, *vramH, *vramI; // Each bank is an offset into that big block
+
+	VramInfoEntry epramInfoTable[10]; // For extended palettes (0-3 = engine A BG, 4 = engine A OBJ, 5-8 = engine B BG, 9 = engine B OBJ)
+	u8 *epramPageTable[10];
 
 	union {
 		struct {
@@ -153,6 +158,7 @@ public:
 
 	void refreshVramPages();
 	template <typename T, bool useEngineA, bool useObj> T readVram(u32 address);
+	template <bool useEngineA, bool useObj> u16 readExtendedPalette(int slot, u32 index);
 	u8 readIO9(u32 address);
 	void writeIO9(u32 address, u8 value);
 	u8 readIO7(u32 address);
