@@ -117,13 +117,15 @@ public:
 	};
 
 	// Events/Internal Function
-	void lineStart();
+	void lineStart(); // Timed events
 	void hBlank();
 	void drawLine();
-	template <bool useEngineA, int layer> void draw2D();
+	template <bool useEngineA, int layer> void draw2D(); // Drawing
 	template <bool useEngineA, int layer, bool extended> void draw2DAffine();
 	template <bool useEngineA> void drawObjects();
-	template <bool useEngineA> void combineLayers();
+	template <bool useEngineA, int layer> bool inWindow(int x);
+	template <bool useEngineA> void combineLayers(); // Merging
+	template <bool useEngineA> void calculateWindowMasks();
 
 	// Memory Interface
 	union { // Palette RAM
@@ -240,6 +242,78 @@ public:
 
 		union {
 			struct {
+				u16 win0Right : 8;
+				u16 win0Left : 8;
+			};
+			u16 WIN0H; // NDS9 - 0x4000040
+		};
+
+		union {
+			struct {
+				u16 win1Right : 8;
+				u16 win1Left : 8;
+			};
+			u16 WIN1H; // NDS9 - 0x4000042
+		};
+
+		union {
+			struct {
+				u16 win0Bottom : 8;
+				u16 win0Top : 8;
+			};
+			u16 WIN0V; // NDS9 - 0x4000044
+		};
+
+		union {
+			struct {
+				u16 win1Bottom : 8;
+				u16 win1Top : 8;
+			};
+			u16 WIN1V; // NDS9 - 0x4000046
+		};
+
+		union {
+			struct {
+				u16 win0Bg0Enable : 1;
+				u16 win0Bg1Enable : 1;
+				u16 win0Bg2Enable : 1;
+				u16 win0Bg3Enable : 1;
+				u16 win0ObjEnable : 1;
+				u16 win0BldEnable : 1;
+				u16 : 2;
+				u16 win1Bg0Enable : 1;
+				u16 win1Bg1Enable : 1;
+				u16 win1Bg2Enable : 1;
+				u16 win1Bg3Enable : 1;
+				u16 win1ObjEnable : 1;
+				u16 win1BldEnable : 1;
+				u16 : 2;
+			};
+			u16 WININ; // NDS9 - 0x4000048
+		};
+
+		union {
+			struct {
+				u16 winOutBg0Enable : 1;
+				u16 winOutBg1Enable : 1;
+				u16 winOutBg2Enable : 1;
+				u16 winOutBg3Enable : 1;
+				u16 winOutObjEnable : 1;
+				u16 winOutBldEnable : 1;
+				u16 : 2;
+				u16 winObjBg0Enable : 1;
+				u16 winObjBg1Enable : 1;
+				u16 winObjBg2Enable : 1;
+				u16 winObjBg3Enable : 1;
+				u16 winObjObjEnable : 1;
+				u16 winObjBldEnable : 1;
+				u16 : 2;
+			};
+			u16 WINOUT; // NDS9 - 0x400004A
+		};
+
+		union {
+			struct {
 				u16 bgMosH : 4;
 				u16 bgMosV : 4;
 				u16 objMosH : 4;
@@ -256,6 +330,10 @@ public:
 			};
 			u16 MASTER_BRIGHT; // NDS9 - 0x400006C
 		};
+
+		bool win0VerticalMatch, win1VerticalMatch;
+		std::bitset<256> win0Mask, win1Mask, winObjMask, win0EffectiveMask, win1EffectiveMask, winOutMask;
+		bool windowMasksDirty;
 	} engineA, engineB;
 
 	union {

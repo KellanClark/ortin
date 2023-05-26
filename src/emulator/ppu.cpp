@@ -1,5 +1,7 @@
 #include "emulator/ppu.hpp"
 
+#include <cmath>
+
 #define convertColor(x) ((x) | 0x8000)
 #define VRAM_SIZE ((128 + 128 + 128 + 128 + 64 + 16 + 16 + 32 + 16) * 1024)
 
@@ -61,6 +63,8 @@ void PPU::reset() {
 	engineA.bg[2].internalBGX = engineA.bg[3].internalBGX = engineB.bg[2].internalBGX = engineB.bg[3].internalBGX = 0;
 	engineA.bg[2].BGY = engineA.bg[3].BGY = engineB.bg[2].BGY = engineB.bg[3].BGY = 0;
 	engineA.bg[2].internalBGY = engineA.bg[3].internalBGY = engineB.bg[2].internalBGY = engineB.bg[3].internalBGY = 0;
+	engineA.WIN0H = engineA.WIN1H = engineA.WIN0V = engineA.WIN1V = engineB.WIN0H = engineB.WIN1H = engineB.WIN0V = engineB.WIN1V = 0;
+	engineA.WININ = engineA.WINOUT = engineB.WININ = engineB.WINOUT = 0;
 	engineA.MOSAIC = engineB.MOSAIC = 0;
 	engineA.MASTER_BRIGHT = engineB.MASTER_BRIGHT = 0;
 
@@ -122,6 +126,10 @@ void PPU::lineStart() {
 	} else {
 		vCounterFlag9 = vCounterFlag7 = false;
 	}
+
+	// Window
+	calculateWindowMasks<true>();
+	calculateWindowMasks<false>();
 }
 
 void PPU::hBlank() {
@@ -341,6 +349,9 @@ void PPU::draw2D() {
 		y = y - (y % (engine.bgMosV + 1));
 
 	for (int column = 0; column < 256; column++) {
+		if (!inWindow<useEngineA, layer>(column))
+			continue;
+
 		u32 tileAddress;
 		switch (bg.screenSize) {
 		case 0: // 256x256
@@ -439,6 +450,9 @@ void PPU::draw2DAffine() {
 	float pc = (float)bg.BGPC / 256;
 
 	for (int column = 0; column < 256; column++, affX += pa, affY += pc) {
+		if (!inWindow<useEngineA, layer>(column))
+			continue;
+
 		int x = bg.mosaic ? ((int)affX - ((int)affX % (engine.bgMosH + 1))) : (int)affX;
 		int y = bg.mosaic ? ((int)affY - ((int)affY % (engine.bgMosV + 1))) : (int)affY;
 		if (!bg.displayAreaWraparound && (((unsigned int)y >= screenSizeY) || ((unsigned int)x >= screenSizeX)))
@@ -514,6 +528,7 @@ void PPU::drawObjects() {
 	auto& objects = useEngineA ? oamA.objects : oamB.objects;
 	auto& matrices = useEngineA ? oamA.objectMatrices : oamB.objectMatrices;
 	const int realLine = (currentScanline == 262) ? 0 : currentScanline + 1;
+	engine.winObjMask = 0;
 
 	for (int priority = 3; priority >= 0; priority--) {
 		for (int objNum = 127; objNum >= 0; objNum--) {
@@ -562,6 +577,8 @@ void PPU::drawObjects() {
 
 			// Draw loop
 			for (unsigned int relX = 0; relX < (xSize << isDoubleSize); relX++) {
+				if (!inWindow<useEngineA, 4>(column) && !isObjWindow)
+					goto nextPixel;
 				if (column >= 256)
 					goto nextPixel;
 
@@ -625,10 +642,14 @@ void PPU::drawObjects() {
 					}
 
 					if (tileData != 0) {
-						engine.objInfoBuf[column].pix = color;
-						engine.objInfoBuf[column].pix.solid = true;
-						engine.objInfoBuf[column].mosaic = obj.mosaic;
-						engine.objInfoBuf[column].priority = priority;
+						if (isObjWindow) {
+							engine.winObjMask[column] = true;
+						} else {
+							engine.objInfoBuf[column].pix = color;
+							engine.objInfoBuf[column].pix.solid = true;
+							engine.objInfoBuf[column].mosaic = obj.mosaic;
+							engine.objInfoBuf[column].priority = priority;
+						}
 					}
 				}
 
@@ -643,11 +664,25 @@ void PPU::drawObjects() {
 	}
 }
 
+template <bool useEngineA, int layer> // Layer 4 is objects
+bool PPU::inWindow(int x) {
+	GraphicsEngine& engine = useEngineA ? engineA : engineB;
+
+	if (engine.win0Enable || engine.win1Enable || engine.winObjEnable) {
+		if (engine.win0EffectiveMask[x]) return (engine.WININ & (0x1 << layer));
+		if (engine.win1EffectiveMask[x]) return (engine.WININ & (0x100 << layer));
+		if (engine.winObjMask[x]) return (engine.WINOUT & (0x100 << layer));
+		if (engine.winOutMask[x]) return (engine.WINOUT & (0x1 << layer));
+
+		return false;
+	} else {
+		return true;
+	}
+}
+
 template <bool useEngineA>
 void PPU::combineLayers() {
 	GraphicsEngine& engine = useEngineA ? engineA : engineB;
-
-	// TODO: Window
 
 	// TODO: Blending
 
@@ -667,6 +702,38 @@ void PPU::combineLayers() {
 
 		(useEngineA ? framebufferA : framebufferB)[currentScanline][i] = final.raw;
 	}
+}
+
+template <bool useEngineA>
+void PPU::calculateWindowMasks() {
+	GraphicsEngine& engine = useEngineA ? engineA : engineB;
+
+	if ((currentScanline & 0xFF) == engine.win0Top) engine.win0VerticalMatch = true;
+	if ((currentScanline & 0xFF) == engine.win0Bottom) engine.win0VerticalMatch = false;
+	if ((currentScanline & 0xFF) == engine.win1Top) engine.win1VerticalMatch = true;
+	if ((currentScanline & 0xFF) == engine.win1Bottom) engine.win1VerticalMatch = false;
+
+	if (engine.windowMasksDirty) {
+		bool hMatch0 = false;
+		bool hMatch1 = false;
+		for (int i = 0; i < 256; i++) {
+			if (i == engine.win0Left) hMatch0 = true;
+			if (i == engine.win0Right) hMatch0 = false;
+			engine.win0Mask[i] = hMatch0;
+
+			if (i == engine.win1Left) hMatch1 = true;
+			if (i == engine.win1Right) hMatch1 = false;
+			engine.win1Mask[i] = hMatch1;
+		}
+
+		engine.windowMasksDirty = false;
+	}
+
+	engine.win0EffectiveMask = (engine.win0Enable && engine.win0VerticalMatch) ? engine.win0Mask : 0;
+	engine.win1EffectiveMask = (engine.win1Enable && engine.win1VerticalMatch) ? engine.win1Mask : 0;
+	engine.winObjMask = engine.winObjEnable ? engine.winObjMask : 0;
+
+	engine.winOutMask = ~(engine.win0EffectiveMask | engine.win1EffectiveMask | engine.winObjMask);
 }
 
 void PPU::refreshVramPages() {
@@ -983,6 +1050,14 @@ u8 PPU::readIO9(u32 address) {
 		return (u8)engineA.bg[3].BGCNT;
 	case 0x400000F:
 		return (u8)(engineA.bg[3].BGCNT >> 8);
+	case 0x4000048:
+		return (u8)engineA.WININ;
+	case 0x4000049:
+		return (u8)(engineA.WININ >> 8);
+	case 0x400004A:
+		return (u8)engineA.WINOUT;
+	case 0x400004B:
+		return (u8)(engineA.WINOUT >> 8);
 	case 0x400006C:
 		return (u8)engineA.MASTER_BRIGHT;
 	case 0x400006D:
@@ -1021,6 +1096,14 @@ u8 PPU::readIO9(u32 address) {
 		return (u8)engineB.bg[3].BGCNT;
 	case 0x400100F:
 		return (u8)(engineB.bg[3].BGCNT >> 8);
+	case 0x4001048:
+		return (u8)engineB.WININ;
+	case 0x4001049:
+		return (u8)(engineB.WININ >> 8);
+	case 0x400104A:
+		return (u8)engineB.WINOUT;
+	case 0x400104B:
+		return (u8)(engineB.WINOUT >> 8);
 	case 0x400106C:
 		return (u8)engineB.MASTER_BRIGHT;
 	case 0x400106D:
@@ -1253,6 +1336,50 @@ void PPU::writeIO9(u32 address, u8 value) {
 	case 0x400003F:
 		engineA.bg[3].BGY = (engineA.bg[3].BGY & 0x00FFFFFF) | ((value & 0x0F) << 24);
 		engineA.bg[3].internalBGY = (float)((i32)(engineA.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x4000040:
+		engineA.WIN0H = (engineA.WIN0H & 0xFF00) | ((value & 0xFF) << 0);
+		engineA.windowMasksDirty = true;
+		break;
+	case 0x4000041:
+		engineA.WIN0H = (engineA.WIN0H & 0x00FF) | ((value & 0xFF) << 8);
+		engineA.windowMasksDirty = true;
+		break;
+	case 0x4000042:
+		engineA.WIN1H = (engineA.WIN1H & 0xFF00) | ((value & 0xFF) << 0);
+		engineA.windowMasksDirty = true;
+		break;
+	case 0x4000043:
+		engineA.WIN1H = (engineA.WIN1H & 0x00FF) | ((value & 0xFF) << 8);
+		engineA.windowMasksDirty = true;
+		break;
+	case 0x4000044:
+		engineA.WIN0V = (engineA.WIN0V & 0xFF00) | ((value & 0xFF) << 0);
+		engineA.windowMasksDirty = true;
+		break;
+	case 0x4000045:
+		engineA.WIN0V = (engineA.WIN0V & 0x00FF) | ((value & 0xFF) << 8);
+		engineA.windowMasksDirty = true;
+		break;
+	case 0x4000046:
+		engineA.WIN1V = (engineA.WIN1V & 0xFF00) | ((value & 0xFF) << 0);
+		engineA.windowMasksDirty = true;
+		break;
+	case 0x4000047:
+		engineA.WIN1V = (engineA.WIN1V & 0x00FF) | ((value & 0xFF) << 8);
+		engineA.windowMasksDirty = true;
+		break;
+	case 0x4000048:
+		engineA.WININ = (engineA.WININ & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4000049:
+		engineA.WININ = (engineA.WININ & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x400004A:
+		engineA.WINOUT = (engineA.WINOUT & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400004B:
+		engineA.WINOUT = (engineA.WINOUT & 0x00FF) | ((value & 0xFF) << 8);
 		break;
 	case 0x400004C:
 		engineA.MOSAIC = (engineA.MOSAIC & 0xFF00) | ((value & 0xFF) << 0);
@@ -1528,6 +1655,50 @@ void PPU::writeIO9(u32 address, u8 value) {
 	case 0x400103F:
 		engineB.bg[3].BGY = (engineB.bg[3].BGY & 0x00FFFFFF) | ((value & 0x0F) << 24);
 		engineB.bg[3].internalBGY = (float)((i32)(engineB.bg[3].BGY << 4) >> 4) / 256;
+		break;
+	case 0x4001040:
+		engineB.WIN0H = (engineB.WIN0H & 0xFF00) | ((value & 0xFF) << 0);
+		engineB.windowMasksDirty = true;
+		break;
+	case 0x4001041:
+		engineB.WIN0H = (engineB.WIN0H & 0x00FF) | ((value & 0xFF) << 8);
+		engineB.windowMasksDirty = true;
+		break;
+	case 0x4001042:
+		engineB.WIN1H = (engineB.WIN1H & 0xFF00) | ((value & 0xFF) << 0);
+		engineB.windowMasksDirty = true;
+		break;
+	case 0x4001043:
+		engineB.WIN1H = (engineB.WIN1H & 0x00FF) | ((value & 0xFF) << 8);
+		engineB.windowMasksDirty = true;
+		break;
+	case 0x4001044:
+		engineB.WIN0V = (engineB.WIN0V & 0xFF00) | ((value & 0xFF) << 0);
+		engineB.windowMasksDirty = true;
+		break;
+	case 0x4001045:
+		engineB.WIN0V = (engineB.WIN0V & 0x00FF) | ((value & 0xFF) << 8);
+		engineB.windowMasksDirty = true;
+		break;
+	case 0x4001046:
+		engineB.WIN1V = (engineB.WIN1V & 0xFF00) | ((value & 0xFF) << 0);
+		engineB.windowMasksDirty = true;
+		break;
+	case 0x4001047:
+		engineB.WIN1V = (engineB.WIN1V & 0x00FF) | ((value & 0xFF) << 8);
+		engineB.windowMasksDirty = true;
+		break;
+	case 0x4001048:
+		engineB.WININ = (engineB.WININ & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x4001049:
+		engineB.WININ = (engineB.WININ & 0x00FF) | ((value & 0xFF) << 8);
+		break;
+	case 0x400104A:
+		engineB.WINOUT = (engineB.WINOUT & 0xFF00) | ((value & 0xFF) << 0);
+		break;
+	case 0x400104B:
+		engineB.WINOUT = (engineB.WINOUT & 0x00FF) | ((value & 0xFF) << 8);
 		break;
 	case 0x400104C:
 		engineB.MOSAIC = (engineB.MOSAIC & 0xFF00) | ((value & 0xFF) << 0);

@@ -20,8 +20,7 @@ private:
 	bool showIoReg7;
 
 	void logsWindow();
-	void arm9DebugWindow();
-	void arm7DebugWindow();
+	template <typename T> void armDebugWindow(T& cpu);
 	void memEditorWindow();
 	void ioReg9Window();
 	void ioReg7Window();
