@@ -33,8 +33,6 @@ jobs:
     - name: Create Archive
       run: |
         mkdir upload
-        ls build/CMakeFiles/Ortin.dir/
-        find ./ -name "Ortin"
         mv build/Ortin upload/
         mv LICENSE upload/
         cd upload
@@ -75,6 +73,7 @@ jobs:
       run: |
         mkdir upload
         ls build/CMakeFiles/Ortin.dir/
+        find ./ -name "Ortin.exe"
         mv build/Ortin.exe upload/
         mv build/SDL2.dll upload/
         mv LICENSE upload/
