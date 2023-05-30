@@ -33,7 +33,7 @@ jobs:
     - name: Create Archive
       run: |
         mkdir upload
-        ls build/
+        ls build/CMakeFiles
         mv build/Ortin/ortin upload/
         mv LICENSE upload/
         cd upload
@@ -73,7 +73,7 @@ jobs:
     - name: Create Archive
       run: |
         mkdir upload
-        ls CMakeFiles
+        ls build/CMakeFiles
         mv build/ortin.exe upload/
         mv build/SDL2.dll upload/
         mv LICENSE upload/
