@@ -39,6 +39,17 @@ void Gamecard::reset() {
 	level2.initKeycode(gamecode, 2, 0x8);
 	level3.initKeycode(gamecode, 3, 0x8);
 
+	if (*(u32 *)(romData + 0x4000) == 0xE7FFDEFF) { // Reinsert "encryObj" string into secure area ID
+		romData[0x4000] = 'e';
+		romData[0x4001] = 'n';
+		romData[0x4002] = 'c';
+		romData[0x4003] = 'r';
+		romData[0x4004] = 'y';
+		romData[0x4005] = 'O';
+		romData[0x4006] = 'b';
+		romData[0x4007] = 'j';
+	}
+
 	for (int i = 0; i < 0x800; i += 8)
 		level3.encrypt((u64 *)(romData + 0x4000 + i));
 	level2.encrypt((u64 *)(romData + 0x4000));

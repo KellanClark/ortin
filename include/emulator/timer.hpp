@@ -6,6 +6,7 @@
 class Timer {
 public:
 	bool timer9;
+	bool logTimer;
 	std::shared_ptr<BusShared> shared;
 
 	// External Use
@@ -15,7 +16,7 @@ public:
 
 	// Internal use
 	void updateCounter(int channel);
-	void scheduleTimer(int channel);
+	u64 scheduleTimer(int channel);
 	void checkOverflow();
 
 	// Memory Interface

@@ -1,7 +1,7 @@
 #include "emulator/timer.hpp"
 
 Timer::Timer(bool timer9, std::shared_ptr<BusShared> shared) : timer9(timer9), shared(shared) {
-	//
+	logTimer = false;
 }
 
 Timer::~Timer() {
@@ -25,12 +25,16 @@ void Timer::updateCounter(int channel) {
 		return;
 
 	tim.TIMCNT_L += (shared->currentTime - tim.lastIncrementTimestamp) >> shift;
-	tim.lastIncrementTimestamp = shared->currentTime & ~((1 << shift) - 1);
+	tim.lastIncrementTimestamp = (shared->currentTime >> shift) << shift; // Round down to last rising edge of the selected prescaler bit
 }
 
-void Timer::scheduleTimer(int channel) {
+u64 Timer::scheduleTimer(int channel) {
 	auto& tim = timer[channel];
-	shared->addEventAbsolute(((shared->currentTime >> prescalerShifts[tim.prescaler]) + (0x10000 - tim.TIMCNT_L)) << prescalerShifts[tim.prescaler], timer9 ? TIMER_OVERFLOW_9 : TIMER_OVERFLOW_7);
+	int shift = prescalerShifts[tim.prescaler];
+
+	u64 nextTime = ((shared->currentTime >> shift) + (0x10000 - tim.TIMCNT_L)) << shift;
+	shared->addEventAbsolute(nextTime, timer9 ? TIMER_OVERFLOW_9 : TIMER_OVERFLOW_7);
+	return nextTime;
 }
 
 void Timer::checkOverflow() {
@@ -60,7 +64,9 @@ void Timer::checkOverflow() {
 					tim.interruptRequested = true;
 
 				tim.TIMCNT_L = tim.reload;
-				scheduleTimer(channel);
+				u64 nextTime = scheduleTimer(channel);
+				if (logTimer)
+					shared->log << fmt::format("[NDS{} Bus][Timer] Timer {:X} overflow at time {:X}. Next overflow prediced at {:X}. {}\n", timer9 ? 9 : 7, channel, shared->currentTime, nextTime, tim.irqEnable ? "Interrupt requested" : "");
 
 				overflow = true;
 			}
@@ -130,7 +136,7 @@ void Timer::writeIO(u32 address, u8 value) {
 
 		updateCounter(0);
 		tim.TIMCNT_H = (tim.TIMCNT_H & 0xFF00) | ((value & 0xC3) << 0);
-		updateCounter(0);
+ 		updateCounter(0);
 
 		if (!oldStartStop && tim.startStop) // Rising edge
 			tim.TIMCNT_L = tim.reload;

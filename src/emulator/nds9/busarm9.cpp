@@ -60,6 +60,7 @@ void BusARM9::reset() {
 
 	dma->reset();
 	dsmath->reset();
+	timer->reset();
 	cpu->resetARM946E();
 }
 

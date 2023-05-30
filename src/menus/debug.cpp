@@ -78,7 +78,11 @@ void DebugMenu::logsWindow() {
 		systemLogFileStream.close();
 	}
 
+	ImGui::Checkbox("Log Timer9", &ortin.nds.nds9->timer->logTimer);
+	ImGui::SameLine();
 	ImGui::Checkbox("Log DMA9", &ortin.nds.nds9->dma->logDma);
+	ImGui::Checkbox("Log Timer7", &ortin.nds.nds7->timer->logTimer);
+	ImGui::SameLine();
 	ImGui::Checkbox("Log DMA7", &ortin.nds.nds7->dma->logDma);
 	ImGui::SameLine();
 	ImGui::Checkbox("Log RTC", &ortin.nds.nds7->rtc->logRtc);
@@ -130,9 +134,9 @@ template <typename T> void DebugMenu::armDebugWindow(T& cpu) {
 
 	ImGui::SetNextWindowSize(ImVec2(760, 480));
 	if constexpr (isNds9)
-		ImGui::Begin("ARM9 CPU Status", &showArm9Debug);
+		ImGui::Begin("ARM946E-S State", &showArm9Debug);
 	else
-		ImGui::Begin("ARM7 CPU Status", &showArm7Debug);
+		ImGui::Begin("ARM7TDMI State", &showArm7Debug);
 
 	if (ImGui::Button("Reset"))
 		ortin.nds.addThreadEvent(NDS::RESET);
@@ -149,6 +153,8 @@ template <typename T> void DebugMenu::armDebugWindow(T& cpu) {
 	if (ImGui::Button("Step")) {
 		ortin.nds.addThreadEvent(isNds9 ? NDS::STEP_ARM9 : NDS::STEP_ARM7);
 	}
+	ImGui::SameLine();
+	ImGui::Checkbox("Trace Instructions", isNds9 ? &ortin.nds.traceArm9 : &ortin.nds.traceArm7);
 	ImGui::Separator();
 
 	// CPU Status
@@ -940,7 +946,7 @@ static const std::vector<IoRegister> registers9 = {{
 															"Synchronous\0\0"},
 		{"Main Memory Access Priority", 15, 1, COMBO, "ARM9 Priority\0"
 													  "ARM7 Priority\0\0"}}},
-	{"IME", "Interrupt Master Enable", 0x4000208, 4, true, true, &ortin.nds.nds9->IME, {
+	{"IME", "Interrupt Master Enable", 0x4000208, sizeof(bool), true, true, &ortin.nds.nds9->IME, {
 		{"Enable Interrupts", 0, 1, CHECKBOX}}},
 	{"IE", "Interrupt Enable", 0x4000210, 4, true, true, &ortin.nds.nds9->IE, {
 		{"LCD V-BLank", 0, 1, CHECKBOX},
@@ -1607,7 +1613,7 @@ static const std::vector<IoRegister> registers7 = {{
 															"Synchronous\0\0"},
 		{"Main Memory Access Priority", 15, 1, COMBO, "ARM9 Priority\0"
 													  "ARM7 Priority\0\0"}}},
-	{"IME", "Interrupt Master Enable", 0x4000208, 4, true, true, &ortin.nds.nds7->IME, {
+	{"IME", "Interrupt Master Enable", 0x4000208, sizeof(bool), true, true, &ortin.nds.nds7->IME, {
 		{"Enable Interrupts", 0, 1, CHECKBOX}}},
 	{"IE", "Interrupt Enable", 0x4000210, 4, true, true, &ortin.nds.nds7->IE, {
 		{"LCD V-BLank", 0,  1, CHECKBOX},

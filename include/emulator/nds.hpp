@@ -27,7 +27,9 @@ public:
 	std::shared_ptr<BusARM9> nds9;
 	std::shared_ptr<BusARM7> nds7;
 
+	bool traceArm9;
 	ARM946EDisassembler disassembler9;
+	bool traceArm7;
 	ARM7TDMIDisassembler disassembler7;
 
 	struct {

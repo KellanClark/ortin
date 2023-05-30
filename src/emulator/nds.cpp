@@ -18,6 +18,9 @@ NDS::NDS() {
 	nds9 = std::make_shared<BusARM9>(shared, ipc, ppu, gamecard);
 	nds7 = std::make_shared<BusARM7>(shared, ipc, ppu, gamecard);
 
+	traceArm9 = false;
+	traceArm7 = false;
+
 	romInfo.romLoaded = romInfo.bios9Loaded = romInfo.bios7Loaded = romInfo.firmwareLoaded = false;
 	running = false;
 	stepArm9 = stepArm7 = 0;
@@ -110,13 +113,15 @@ void NDS::run() {
 	while (true) {
 		while (running && nds7->apu->soundRunning) { [[likely]]
 			if (nds9timestamp <= shared->currentTime) {
-				/*if (nds9->cpu->reg.thumbMode) {
-					std::string disasm = disassembler9.disassemble(nds9->cpu->reg.R[15] - 4, nds9->cpu->pipelineOpcode3, true);
-					shared->log << fmt::format("0x{:0>7X} |     0x{:0>4X} | {}\n", nds9->cpu->reg.R[15] - 4, nds9->cpu->pipelineOpcode3, disasm);
-				} else {
-					std::string disasm = disassembler9.disassemble(nds9->cpu->reg.R[15] - 8, nds9->cpu->pipelineOpcode3, false);
-					shared->log << fmt::format("0x{:0>7X} | 0x{:0>8X} | {}\n", nds9->cpu->reg.R[15] - 8, nds9->cpu->pipelineOpcode3, disasm);
-				}*/
+				if (traceArm9) {
+					if (nds9->cpu->reg.thumbMode) {
+						std::string disasm = disassembler9.disassemble(nds9->cpu->reg.R[15] - 4, nds9->cpu->pipelineOpcode3, true);
+						shared->log << fmt::format("0x{:0>7X} |     0x{:0>4X} | {}\n", nds9->cpu->reg.R[15] - 4, nds9->cpu->pipelineOpcode3, disasm);
+					} else {
+						std::string disasm = disassembler9.disassemble(nds9->cpu->reg.R[15] - 8, nds9->cpu->pipelineOpcode3, false);
+						shared->log << fmt::format("0x{:0>7X} | 0x{:0>8X} | {}\n", nds9->cpu->reg.R[15] - 8, nds9->cpu->pipelineOpcode3, disasm);
+					}
+				}
 
 				nds9->delay = 0;
 				nds9->cpu->cycle();
@@ -127,13 +132,15 @@ void NDS::run() {
 					running = stepArm9 = false;
 			}
 			if ((nds7timestamp <= shared->currentTime) && !nds7->HALTCNT) {
-				/*if (nds7->cpu->reg.thumbMode) {
-					std::string disasm = disassembler7.disassemble(nds7->cpu->reg.R[15] - 4, nds7->cpu->pipelineOpcode3, true);
-					shared->log << fmt::format("0x{:0>7X} |     0x{:0>4X} | {}\n", nds7->cpu->reg.R[15] - 4, nds7->cpu->pipelineOpcode3, disasm);
-				} else {
-					std::string disasm = disassembler7.disassemble(nds7->cpu->reg.R[15] - 8, nds7->cpu->pipelineOpcode3, false);
-					shared->log << fmt::format("0x{:0>7X} | 0x{:0>8X} | {}\n", nds7->cpu->reg.R[15] - 8, nds7->cpu->pipelineOpcode3, disasm);
-				}*/
+				if (traceArm7) {
+					if (nds7->cpu->reg.thumbMode) {
+						std::string disasm = disassembler7.disassemble(nds7->cpu->reg.R[15] - 4, nds7->cpu->pipelineOpcode3, true);
+						shared->log << fmt::format("0x{:0>7X} |     0x{:0>4X} | {}\n", nds7->cpu->reg.R[15] - 4, nds7->cpu->pipelineOpcode3, disasm);
+					} else {
+						std::string disasm = disassembler7.disassemble(nds7->cpu->reg.R[15] - 8, nds7->cpu->pipelineOpcode3, false);
+						shared->log << fmt::format("0x{:0>7X} | 0x{:0>8X} | {}\n", nds7->cpu->reg.R[15] - 8, nds7->cpu->pipelineOpcode3, disasm);
+					}
+				}
 
 				nds7->delay = 0;
 				nds7->cpu->cycle();

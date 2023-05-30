@@ -88,6 +88,7 @@ void BusARM7::reset() {
 	refreshRomPages();
 
 	dma->reset();
+	timer->reset();
 	rtc->reset();
 	spi->reset();
 	apu->reset();
