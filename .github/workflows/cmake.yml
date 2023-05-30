@@ -35,7 +35,7 @@ jobs:
         mkdir upload
         ls build/CMakeFiles/Ortin.dir/
         find ./ -name "Ortin"
-        mv build/Ortin/ortin upload/
+        mv build/ortin upload/
         mv LICENSE upload/
         cd upload
         tar -cavf ../ortin_linux.zip *
