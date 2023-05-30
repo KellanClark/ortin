@@ -1,5 +1,7 @@
 #include "emulator/nds9/dsmath.hpp"
 
+#include <cmath>
+
 DSMath::DSMath(std::shared_ptr<BusShared> shared) : shared(shared) {
 	//
 }

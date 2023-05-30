@@ -2,7 +2,7 @@ name: CMake
 
 on:
   push:
-    branches: [ main ]
+    branches: [ builds ]
   pull_request:
     branches: [ main ]
 
@@ -72,8 +72,9 @@ jobs:
     - name: Create Archive
       run: |
         mkdir upload
-        mv build/Release/ortin.exe upload/
-        mv build/Release/SDL2.dll upload/
+        ls build/
+        mv build/ortin.exe upload/
+        mv build/SDL2.dll upload/
         mv LICENSE upload/
         cd upload
         tar -cavf ../ortin_windows.zip *
