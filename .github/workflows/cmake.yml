@@ -33,10 +33,9 @@ jobs:
     - name: Create Archive
       run: |
         mkdir upload
-        mv build/ortin upload/
+        mv build/Ortin upload/
         mv LICENSE upload/
         cd upload
-        tar -cavf ../ortin_linux.zip *
         tar -cavf ../ortin_linux.tar.gz *
         cd ..
 

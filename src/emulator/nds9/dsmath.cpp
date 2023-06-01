@@ -1,5 +1,7 @@
 #include "emulator/nds9/dsmath.hpp"
 
+#include <cmath>
+
 DSMath::DSMath(std::shared_ptr<BusShared> shared) : shared(shared) {
 	//
 }
@@ -20,7 +22,7 @@ u8 DSMath::readIO9(u32 address, bool final) {
 	case 0x4000280:
 		return (u8)(DIVCNT >> 0);
 	case 0x4000281:
-		divBusy = divFinishTimestamp < shared->currentTime;
+		divBusy = divFinishTimestamp > shared->currentTime;
 
 		return (u8)(DIVCNT >> 8);
 	case 0x4000282:
@@ -93,7 +95,7 @@ u8 DSMath::readIO9(u32 address, bool final) {
 	case 0x40002B0:
 		return (u8)(SQRTCNT >> 0);
 	case 0x40002B1:
-		sqrtBusy = sqrtFinishTimestamp < shared->currentTime;
+		sqrtBusy = sqrtFinishTimestamp > shared->currentTime;
 
 		return (u8)(SQRTCNT >> 8);
 	case 0x40002B2:
