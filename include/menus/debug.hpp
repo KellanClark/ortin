@@ -25,6 +25,6 @@ private:
 	void ioReg9Window();
 	void ioReg7Window();
 
-	ARM946EDisassembler arm9disasm{};
-	ARM7TDMIDisassembler arm7disasm{};
+	ARM946EDisassembler arm9disasm;
+	ARM7TDMIDisassembler arm7disasm;
 };

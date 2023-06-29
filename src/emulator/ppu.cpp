@@ -364,7 +364,7 @@ void PPU::draw2D() {
 			tileAddress = bg.screenBlockBaseAddress + (((y % 512) / 8) * 64) + (((x % 256) / 8) * 2);
 			break;
 		case 3: // 512x512
-			tileAddress = bg.screenBlockBaseAddress + ((x & 0x100) << 3) + (16 * (y & 0x100)) + (((y % 256) / 8) * 64) + (((x % 256) / 8) * 2);
+			tileAddress = bg.screenBlockBaseAddress + ((x & 0x100) << 3) + ((y & 0x100) << 4) + (((y % 256) / 8) * 64) + (((x % 256) / 8) * 2);
 			break;
 		}
 

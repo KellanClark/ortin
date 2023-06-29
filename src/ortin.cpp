@@ -109,8 +109,8 @@ void Ortin::drawFrame() {
 void Ortin::drawScreens() {
 	ImGui::Begin("DS Screen");
 
-	ImGui::Image((void*)(intptr_t)(nds.ppu->displaySwap ? ortin.engineATexture : ortin.engineBTexture), ImVec2(256 * 1, 192 * 1));
-	ImGui::ImageButton((void*)(intptr_t)(nds.ppu->displaySwap ? ortin.engineBTexture : ortin.engineATexture), ImVec2(256 * 1, 192 * 1), ImVec2(0, 0), ImVec2(1, 1), 0);
+	ImGui::Image((void *)(intptr_t)(nds.ppu->displaySwap ? engineATexture : engineBTexture), ImVec2(256 * 1, 192 * 1));
+	ImGui::ImageButton((void *)(intptr_t)(nds.ppu->displaySwap ? engineBTexture : engineATexture), ImVec2(256 * 1, 192 * 1), ImVec2(0, 0), ImVec2(1, 1), 0);
 
 	if (ImGui::IsItemActive() && ImGui::IsItemHovered()) { // Touchscreen
 		auto mousePos = ImGui::GetMousePos();

@@ -442,8 +442,8 @@ void DebugMenu::memEditorWindow() {
 		{"Instruction TCM (32KB)", ortin.nds.nds9->cpu->cp15.itcm, 0x8000, false},
 		{"Data TCM (16KB)", ortin.nds.nds9->cpu->cp15.dtcm, 0x4000, false},
 		{"Standard Palettes (2KB mirrored 0x5000000 to 0x6000000)", ortin.nds.ppu->pram, 0x800, false},
-		{"OAM (2KB mirrored 0x6000000 to 0x7000000)", ortin.nds.ppu->oam, 0x800, false},
-		{"ARM9 BIOS (4KB)", ortin.nds.nds9->bios, 0x1000, false},
+		{"OAM (2KB mirrored 0x7000000 to 0x8000000)", ortin.nds.ppu->oam, 0x800, false},
+		{"ARM9 BIOS (4KB 0xFFFF0000 to 0xFFFF1000)", ortin.nds.nds9->bios, 0x1000, false},
 
 		{"--ARM7 Only--", NULL, 0, true},
 		{"ARM7 BIOS (16KB 0x0000000 to 0x0004000)", ortin.nds.nds7->bios, 0x4000, false},

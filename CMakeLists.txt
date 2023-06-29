@@ -60,19 +60,25 @@ add_executable(Ortin
 
 target_compile_definitions(fmt PUBLIC FMT_EXCEPTIONS=0)
 
-target_compile_options(Ortin PRIVATE
-	-ftemplate-depth=10000
-	-fconstexpr-depth=10000
-	-MP
-	#-Wall
-	#-fsanitize=address
-	#-fsanitize=leak
-	#-fsanitize=pointer-compare
-	#-fsanitize=pointer-subtract
-	#-fstack-protector-all
-	#-fsanitize=undefined
-	#-fsanitize=thread
-)
+if (True OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+	target_compile_options(Ortin PRIVATE
+		/Zc:__cplusplus
+		/std:c++20
+	)
+else()
+	target_compile_options(Ortin PRIVATE
+		-ftemplate-depth=10000
+		-fconstexpr-depth=10000
+		#-Wall
+		#-fsanitize=address
+		#-fsanitize=leak
+		#-fsanitize=pointer-compare
+		#-fsanitize=pointer-subtract
+		#-fstack-protector-all
+		#-fsanitize=undefined
+		#-fsanitize=thread
+	)
+endif()
 
 if (WIN32)
 	target_link_libraries(Ortin PRIVATE

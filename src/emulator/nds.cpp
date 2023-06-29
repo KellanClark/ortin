@@ -112,6 +112,7 @@ void NDS::run() {
 	u64 nds7timestamp = 0;
 	while (true) {
 		while (running && nds7->apu->soundRunning) { [[likely]]
+			//if (nds9->cpu->reg.R[15] == 0x2000808) traceArm9 = true;
 			if (nds9timestamp <= shared->currentTime) {
 				if (traceArm9) {
 					if (nds9->cpu->reg.thumbMode) {

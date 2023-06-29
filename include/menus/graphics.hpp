@@ -11,6 +11,11 @@ public:
 
 private:
 	bool showPalette;
+	bool showBgViewer;
 
 	void paletteWindow();
+	void bgViewerWindow();
+
+	GLuint bgViewerTexture;
+	u16 *bgViewerBuffer;
 };

@@ -257,6 +257,10 @@ void BusARM9::write(u32 address, T value, bool sequential) {
 	u32 offset = alignedAddress & 0x3FFF;
 	u8 *ptr = readTable[page];
 
+	//if (address == 0x21FEEB8) {
+	//	printf("test\n");
+	//}
+
 	// TCM
 	if (cpu->cp15.itcmEnable && (address < cpu->cp15.itcmEnd)) {
 		memcpy(&cpu->cp15.itcm[alignedAddress & 0x7FFF], &value, sizeof(T));
