@@ -1,6 +1,6 @@
 ![Ortin](logo.png)
 
-A *very* work in progress emulator for the Nindendo DS handheld game console.
+A *very* work in progress emulator for the Nintendo DS handheld game console.
 
 ## Building
 Precompiled binaries are provided for Windows and Linux under Releases.
@@ -13,7 +13,7 @@ I'm most likely going to change some aspects of the Windows build process very s
 - `libsdl2-dev` >= 2.16
 - `libgtk-3-dev`
 
-### Instrucions
+### Instructions
 Clone the repository with `git clone https://github.com/KellanClark/ortin.git --recurse-submodule`
 Then use the standard CMake build process
 ```
