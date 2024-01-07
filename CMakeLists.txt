@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.20...3.28)
 project(Ortin)
 set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE Release)
@@ -62,8 +62,10 @@ target_compile_definitions(fmt PUBLIC FMT_EXCEPTIONS=0)
 
 if (True OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
 	target_compile_options(Ortin PRIVATE
-		/Zc:__cplusplus
-		/std:c++20
+		#/Zc:__cplusplus
+		#/std:c++20
+		/clang:-ftemplate-depth=10000
+		/clang:-fconstexpr-depth=10000
 	)
 else()
 	target_compile_options(Ortin PRIVATE
