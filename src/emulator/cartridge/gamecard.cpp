@@ -18,7 +18,7 @@ Gamecard::~Gamecard() {
 
 void Gamecard::reset() {
 	AUXSPICNT = 0;
-	ROMCTRL = 0x00800000;
+	ROMCTRL = 0x20000000;
 	key2Seed0Low9 = key2Seed0Low7 = 0;
 	key2Seed1Low9 = key2Seed1Low7 = 0;
 	key2Seed0High9 = key2Seed0High7 = 0;
@@ -87,6 +87,7 @@ void Gamecard::sendCommand() {
 		}
 	}
 
+	dataReady = true;
 	readMoreData();
 }
 
@@ -176,6 +177,7 @@ void Gamecard::readMoreData() {
 	//shared->log << fmt::format("[Gamecard] Bytes read: 0x{:0>8X} - Data: 0x{:0>8X}\n", bytesRead, cartridgeReadData);
 	if (bytesRead >= dataBlockSizeBytes) {
 		blockStart = false;
+		dataReady = false;
 		//shared->log << fmt::format("[Gamecard] Transfer ready\n");
 		if (transferReadyIrq)
 			shared->addEvent(0, GAMECARD_COMMAND_COMPLETE);
@@ -275,7 +277,7 @@ void Gamecard::writeIO9(u32 address, u8 value) {
 		}
 		break;
 	case 0x40001A6:
-		ROMCTRL = (ROMCTRL & 0xFF00FFFF) | (((value & 0x7F) | 0x80) << 16);
+		ROMCTRL = (ROMCTRL & 0xFF00FFFF) | ((value & 0x7F) << 16) | (ROMCTRL & 0x00800000);
 		break;
 	case 0x40001A7: {
 		bool oldStart = blockStart;
@@ -442,7 +444,7 @@ void Gamecard::writeIO7(u32 address, u8 value) {
 		}
 		break;
 	case 0x40001A6:
-		ROMCTRL = (ROMCTRL & 0xFF00FFFF) | (((value & 0x7F) | 0x80) << 16);
+		ROMCTRL = (ROMCTRL & 0xFF00FFFF) | ((value & 0x7F) << 16) | (ROMCTRL & 0x00800000);
 		break;
 	case 0x40001A7: {
 		bool oldStart = blockStart;
